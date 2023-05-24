@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: confesi-db
+    image: postgres:14.8-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: confesi
+      POSTGRES_HOST: localhost
+    ports:
+      - 5432:5432
+    volumes:
+      - ./tmp/data:/var/lib/postgresql/data
+
+  app:
+    container_name: confesi-api
+    build: .
+    ports:
+      - 8080:8080
+    links:
+      - db
+    volumes:
+      - ./api:/api
+    environment:
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
+      POSTGRES_HOST:
+      POSTGRES_PORT:
+      PORT:
