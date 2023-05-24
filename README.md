@@ -10,6 +10,7 @@ cat env-example > .env
 
 ```sh
 docker exec -it confesi-db psql -U postgres confesi
+# or use script _db_ (see below)
 ```
 
 - Migration script
@@ -18,6 +19,9 @@ docker exec -it confesi-db psql -U postgres confesi
   - Run from root directory.
 
 ```sh
+# accessing postgres
+./db psql
+
 # new migrations
 ./db migrate new "<version-name>"
 

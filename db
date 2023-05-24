@@ -54,7 +54,10 @@ case $1 in
     "migrate")
         _migrate $2 $3
         ;;
+    "psql")
+        docker exec -it confesi-db psql -U postgres confesi
+        ;;
     *)
-        echo "usage: [migrate]"
+        echo "usage: [migrate|psql]"
         ;;
 esac
