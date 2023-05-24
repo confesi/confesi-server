@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# Golang migrate installation: 
+# https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
+# Golang migrate is a cli tool to manage db schemas versions, I'm opting in 
+# for the CLI option since it's the easiest to use imo.
+
+
+[[ -z "${DATABASE_URL}" ]] && export DATABASE_URL="postgres://postgres:postgres@localhost:5432/confesi?sslmode=disable"
+MIGRATION_DIR="./migrations"
+
+function up() {
+    step=$1
+    [[ -z "${1}" ]] && step="1"
+    migrate -verbose -path $MIGRATION_DIR -database $DATABASE_URL up $step
+}
+
+function down() {
+    step=$1
+    [[ -z "${1}" ]] && step="1"
+    migrate -verbose -path $MIGRATION_DIR -database $DATABASE_URL down $step 
+}
+
+function create() {
+    migrate -verbose create -ext sql -dir $MIGRATION_DIR -seq $1
+}
+
+function fix() {
+    migrate -verbose -path $MIGRATION_DIR -database $DATABASE_URL -verbose force $1
+}
+
+function _migrate() {
+    case $1 in
+        "up")
+            up $2
+            ;;
+        "down")
+            down $2
+            ;;
+        "new")
+            create $2
+            ;;
+        "fix")
+            fix $2
+            ;;
+        *)
+            echo "usage: migrate [up|down|new|fix]"
+            echo "for extensive usage details: https://github.com/golang-migrate/migrate/blob/master/GETTING_STARTED.md"
+            ;;
+    esac
+}
+
+case $1 in
+    "migrate")
+        _migrate $2 $3
+        ;;
+    *)
+        echo "usage: [migrate]"
+        ;;
+esac
