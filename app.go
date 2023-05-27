@@ -12,6 +12,7 @@ import (
 )
 
 var port string
+var app *config.FirebaseApp
 
 func init() {
 	port = os.Getenv("PORT")
@@ -19,17 +20,18 @@ func init() {
 		fmt.Println("PORT env not found, using default 8080")
 		port = "8080"
 	}
+
+	// Init Firebase app
+	var err error
+	app, err = config.InitFirebase("firebase-secrets.json")
+	if err != nil {
+		log.Fatal("Error initializing Firebase app: ", err)
+	}
 }
 
 func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
-
-	// Init firebase app
-	app, err := config.InitFirebase("firebase-secrets.json")
-	if err != nil {
-		log.Fatal("Error initializing Firebase app: ", err)
-	}
 
 	// Version 1 api group, alongside core middleware
 	api := r.Group("/api/v1")
