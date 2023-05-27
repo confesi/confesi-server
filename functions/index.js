@@ -10,6 +10,7 @@ admin.initializeApp(); // Initialize Firebase Admin SDK
 
 // Test auth function trigger
 exports.userSignUp = functions.auth.user().onCreate((user) => {
+    console.log(user);
     const userId = user.uid;
     const email = user.email;
 

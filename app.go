@@ -2,6 +2,7 @@ package main
 
 import (
 	"confesi/features/auth"
+	"confesi/middleware"
 	"fmt"
 	"os"
 
@@ -22,7 +23,13 @@ func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 
-	auth.Router(r.Group("/auth"))
+	// Version 1 api group, alongside core middleware
+	api := r.Group("/api/v1")
+	api.Use(middleware.Cors)
+	api.Use(gin.Recovery())
+
+	// Separate handler groups
+	auth.Router(api.Group("/auth"))
 
 	r.Run(fmt.Sprintf(":%s", port))
 }
