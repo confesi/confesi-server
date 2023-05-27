@@ -1,2 +1,12 @@
 .env
 /tmp
+
+# Cloud function dependencies
+/functions/node_modules/
+
+# Firebase secrets
+firebase-secrets.json
+
+# Firebase logs
+firebase-debug.log
+ui-debug.log
