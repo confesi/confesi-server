@@ -23,9 +23,9 @@
 
 ## Tables
 
-### `Posts` table
+### ~~`Posts` table~~
 
-- user_id
+- created_by
 - metadata: created by / updated by / etc
 - school_id
 - faculty_id: nullable
@@ -37,7 +37,7 @@
 - hottest_on: date | null
 - hidden: boolean
 
-### `Users`
+### ~~`Users`~~
 
 - meta
 - email
@@ -51,7 +51,7 @@
 
   - server verifies email for school's domain email -> checks for school
 
-### `Schools`
+### ~~`Schools`~~
 
 - id
 - name
@@ -61,25 +61,25 @@
   ie: 40.753, -73.983.
 - domain: string
 
-### `Faculty`
+### ~~`Faculty`~~
 
 - id
 - faculty
 
-### `mod_level`
+### ~~`mod_level`~~
 
 - enable
 - ban
 - limited
 - degen
 
-### school_follows
+### ~~school_follows~~
 
 - id
 - user_id
 - school_id
 
-### votes
+### ~~votes~~
 
 - id
 - user_id
@@ -87,7 +87,7 @@
 - post_id
 - vote: "1" || "-1 <- in" int though
 
-### comments
+### ~~comments~~
 
 - id
 - user_id
@@ -99,26 +99,26 @@
 - score
 - hidden: boolean
 
-### saved_posts
+### ~~saved_posts~~
 
 - id
 - meta
 - post_id
 
-### saved_comments
+### ~~saved_comments~~
 
 - id
 - meta
 - comment_id
 
-### feedbacks
+### ~~feedbacks~~
 
 - meta
 - user_id
 - content: text
 - type <- deferred feature
 
-### reports
+### ~~reports~~
 
 - meta
 - id
