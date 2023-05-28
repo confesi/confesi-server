@@ -48,22 +48,22 @@ docker compose up --build app
 # accessing postgres
 docker exec -it confesi-db psql -U postgres confesi
 # OR
-./db psql
+./database psql
 
 # new migrations
-./db migrate new "<version-name>"
+./database migrate new "<version-name>"
 
 # deploy migration
-./db migrate up "<step>" # arg $step can be omitted to deploy just the next one
+./database migrate up "<step>" # arg $step can be omitted to deploy just the next one
 
 # deploy rollback
-./db migrate down "<step>" # arg $step can be omitted to rollback just the prev one
+./database migrate down "<step>" # arg $step can be omitted to rollback just the prev one
 
 # fix version
-./db migrate fix "<version-number>" # omit leading 0's
+./database migrate fix "<version-number>" # omit leading 0's
 
 # generate a new `confesi.dbml`
-./db dbml
+./database dbml
 ```
 
 ## Testing Firebase functionality locally
