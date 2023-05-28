@@ -36,7 +36,7 @@ BEGIN;
         school_id INTEGER,
         mod_id INTEGER,
         CONSTRAINT us_fk_sch FOREIGN KEY (school_id) REFERENCES schools (id),
-        CONSTRAINT us_fk_fac FOREIGN KEY (faculty_id) REFERENCES faculty (id)
+        CONSTRAINT us_fk_fac FOREIGN KEY (faculty_id) REFERENCES faculties (id)
     );
 
     CREATE TABLE school_follows (
