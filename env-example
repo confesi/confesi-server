@@ -1,8 +1,11 @@
 GIN_MODE="debug"
 PORT="8080"
+POSTGRES_DSN="postgres://postgres:postgres@db:5432/confesi?sslmode=disable"
 
+# for postgres image only
 POSTGRES_USER="postgres"
 POSTGRES_PASSWORD="postgres"
 POSTGRES_DB="confesi"
 POSTGRES_HOST="db"
 POSTGRES_PORT="5432"
+
