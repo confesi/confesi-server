@@ -2,7 +2,10 @@ module confesi
 
 go 1.20
 
-require firebase.google.com/go v3.13.0+incompatible
+require (
+	firebase.google.com/go v3.13.0+incompatible
+	gorm.io/driver/postgres v1.5.2
+)
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
@@ -10,15 +13,17 @@ require (
 	cloud.google.com/go/iam v0.13.0 // indirect
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/storage v1.28.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v5 v5.3.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/testify v1.8.3 // indirect
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	gorm.io/driver/postgres v1.5.2 // indirect
 )
 
 require (
@@ -62,5 +67,5 @@ require (
 	google.golang.org/grpc v1.55.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/gorm v1.25.1 // indirect
+	gorm.io/gorm v1.25.1
 )
