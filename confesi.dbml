@@ -1,0 +1,138 @@
+Enum "vote_score_value" {
+	"1"
+	"-1"
+}
+
+Table "comments" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"updated_at" timestamp   
+ 	"user_id" varchar(255)  
+ 	"post_id" integer   
+ 	"comment_id" integer   
+ 	"content" text   
+ 	"upvote" integer   
+ 	"downvote" integer   
+ 	"score" integer   
+ 	"hidden" boolean   
+ } 
+ 
+ Table "faculties" {
+ 	"id" integer  [primary key] 
+ 	"faculty" varchar(255)  
+ } 
+ 
+ Table "feedbacks" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"user_id" varchar(255)  
+ 	"content" text   
+ } 
+ 
+ Table "mod_levels" {
+ 	"id" integer  [primary key] 
+ 	"mod" varchar(20)  
+ } 
+ 
+ Table "posts" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"updated_at" timestamp   
+ 	"user_id" varchar(100)  
+ 	"school_id" integer   
+ 	"faculty_id" integer   
+ 	"title" varchar(255)  
+ 	"content" text   
+ 	"downvote" integer   
+ 	"upvote" integer   
+ 	"vote_score" integer   
+ 	"trending_score" real   
+ 	"hottest_on" date   
+ 	"hidden" boolean   
+ } 
+ 
+ Table "reports" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"reported_by" varchar(255)  
+ 	"user_id" varchar(255)  
+ 	"description" text   
+ 	"type" varchar(255)  
+ 	"result" text   
+ 	"user_alerted" boolean  [default: false] 
+ } 
+ 
+ Table "saved_comments" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"user_id" varchar(255)  
+ 	"comment_id" integer   
+ } 
+ 
+ Table "saved_posts" {
+ 	"id" integer  [primary key] 
+ 	"created_at" timestamp   
+ 	"user_id" varchar(255)  
+ 	"post_id" integer   
+ } 
+ 
+ Table "schema_migrations" {
+ 	"version" bigint  [primary key] 
+ 	"dirty" boolean   
+ } 
+ 
+ Table "school_follows" {
+ 	"id" integer  [primary key] 
+ 	"user_id" varchar(255)  
+ 	"school_id" integer   
+ } 
+ 
+ Table "schools" {
+ 	"id" integer  [primary key] 
+ 	"name" varchar(255)  
+ 	"abbr" varchar(10)  
+ 	"lat" real   
+ 	"lon" real   
+ 	"domain" varchar(100)  
+ } 
+ 
+ Table "users" {
+ 	"id" varchar(255) [primary key] 
+ 	"created_at" timestamp   
+ 	"updated_at" timestamp   
+ 	"email" varchar(100)  
+ 	"year_of_study" integer   
+ 	"faculty_id" integer   
+ 	"school_id" integer   
+ 	"mod_id" integer   
+ } 
+ 
+ Table "votes" {
+ 	"id" integer  [primary key] 
+ 	"vote" vote_score_value   
+ 	"user_id" varchar(255)  
+ 	"post_id" integer   
+ 	"comment_id" integer   
+ } 
+ 
+ 
+Ref: "comments".user_id > "users".id
+Ref: "comments".post_id > "posts".id
+Ref: "feedbacks".user_id > "users".id
+Ref: "posts".faculty_id > "faculties".id
+Ref: "posts".school_id > "schools".id
+Ref: "posts".user_id > "users".id
+Ref: "reports".reported_by > "users".id
+Ref: "reports".user_id > "users".id
+Ref: "saved_comments".comment_id > "comments".id
+Ref: "saved_comments".user_id > "users".id
+Ref: "saved_posts".post_id > "posts".id
+Ref: "saved_posts".user_id > "users".id
+Ref: "school_follows".school_id > "schools".id
+Ref: "school_follows".user_id > "users".id
+Ref: "users".school_id > "schools".id
+Ref: "users".faculty_id > "faculties".id
+Ref: "votes".comment_id > "comments".id
+Ref: "votes".user_id > "users".id
+Ref: "votes".post_id > "posts".id 
+ 

@@ -1,13 +1,22 @@
+## Requirements
+
+- Go 1.20
+- Docker/Docker compose.
+- [pg-to-dbml](https://github.com/papandreou/pg-to-dbml) CLI.
+- [Golang Migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate#installation).
+- Bash env.
+
 ## Initial project setup
 
 **Generate example `.env` file:**
+
 ```sh
 cat env-example > .env
 ```
 
 **Add the `firebase-secrets.json` file to the root of the project:**
 
-This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Service accounts > Generate new private key. *Ensure this file is not checked into version control*.
+This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Service accounts > Generate new private key. _Ensure this file is not checked into version control_.
 
 **Install Node Modules for Cloud Functions:**
 
@@ -24,26 +33,21 @@ npm install -g firebase-tools
 ## Running the project
 
 **Start the Docker container (with the Docker daemon running):**
+
 ```sh
 docker compose up --build app
 ```
 
 ## PostgreSQL
 
-- Accessing PostgreSQL from Docker container.
+- [DB Diagram](https://dbdiagram.io/d/64727d587764f72fcff5bc9a).
 
-```sh
-docker exec -it confesi-db psql -U postgres confesi
-# or use script _db_ (see below)
-```
-
-- Migration script
-  - Install [Golang Migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate#installation).
-  - Bash env.
-  - Run from root directory.
+- Scripts:
 
 ```sh
 # accessing postgres
+docker exec -it confesi-db psql -U postgres confesi
+# OR
 ./db psql
 
 # new migrations
@@ -57,6 +61,9 @@ docker exec -it confesi-db psql -U postgres confesi
 
 # fix version
 ./db migrate fix "<version-number>" # omit leading 0's
+
+# generate a new `confesi.dbml`
+./db dbml
 ```
 
 ## Testing Firebase functionality locally

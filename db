@@ -57,7 +57,10 @@ case $1 in
     "psql")
         docker exec -it confesi-db psql -U postgres confesi
         ;;
+    "dbml")
+        pg-to-dbml --c=${DATABASE_URL} -o="./"
+        ;;
     *)
-        echo "usage: [migrate|psql]"
+        echo "usage: [migrate|psql|dbml]"
         ;;
 esac
