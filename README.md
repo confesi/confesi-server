@@ -30,6 +30,8 @@ cd functions ; npm i ; cd ..
 npm install -g firebase-tools
 ```
 
+**NOTE**: all scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
+
 ## Running the project
 
 **Start the Docker container (with the Docker daemon running):**
@@ -48,22 +50,22 @@ docker compose up --build app
 # accessing postgres
 docker exec -it confesi-db psql -U postgres confesi
 # OR
-./database psql
+./scripts/database psql
 
 # new migrations
-./database migrate new "<version-name>"
+./scripts/database migrate new "<version-name>"
 
 # deploy migration
-./database migrate up "<step>" # arg $step can be omitted to deploy just the next one
+./scripts/database migrate up "<step>" # arg $step can be omitted to deploy just the next one
 
 # deploy rollback
-./database migrate down "<step>" # arg $step can be omitted to rollback just the prev one
+./scripts/database migrate down "<step>" # arg $step can be omitted to rollback just the prev one
 
 # fix version
-./database migrate fix "<version-number>" # omit leading 0's
+./scripts/database migrate fix "<version-number>" # omit leading 0's
 
 # generate a new `confesi.dbml`
-./database dbml
+./scripts/database dbml
 ```
 
 ## Testing Firebase functionality locally
@@ -75,3 +77,9 @@ firebase emulators:start
 ```
 
 This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command)
+
+## Test runner
+
+```sh
+./scripts/test "./path/to/package"
+```

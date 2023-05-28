@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+export APPCHECK_TOKEN="test_token"
+export POSTGRES_DSN="postgres://postgres:postgres@localhost:5432/confesi?sslmode=disable"
+
+go test $1 
