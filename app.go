@@ -25,6 +25,7 @@ func init() {
 	var err error
 	app, err = config.InitFirebase("firebase-secrets.json")
 	if err != nil {
+		// if we can't init firebase, we have an unrecoverable error
 		log.Fatal("Error initializing Firebase app: ", err)
 	}
 }

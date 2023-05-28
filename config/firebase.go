@@ -5,12 +5,14 @@ import (
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
+	"firebase.google.com/go/messaging"
 	"google.golang.org/api/option"
 )
 
 type FirebaseApp struct {
 	App        *firebase.App
 	AuthClient *auth.Client
+	MsgClient  *messaging.Client
 }
 
 func InitFirebase(secretsPath string) (*FirebaseApp, error) {
@@ -25,9 +27,15 @@ func InitFirebase(secretsPath string) (*FirebaseApp, error) {
 		return nil, err
 	}
 
+	msgClient, err := app.Messaging(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	firebaseApp := &FirebaseApp{
 		App:        app,
 		AuthClient: authClient,
+		MsgClient:  msgClient,
 	}
 
 	return firebaseApp, nil
