@@ -13,7 +13,7 @@ func AppCheck(c *gin.Context) {
 	if requestToken != token {
 		c.AbortWithStatus(http.StatusForbidden)
 		url := c.Request.URL.String()
-		lib.StdErr(errors.New("unauthorized request from: " + url))
+		lib.StdErr(errors.New("unauthorized request to: " + url))
 		return
 	}
 
