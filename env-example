@@ -4,4 +4,4 @@ PORT="8080"
 POSTGRES_DSN="postgres://postgres:postgres@db:5432/confesi?sslmode=disable"
 
 # generate token at https://generate-random.org/api-token-generator
-APPCHECK_TOKEN="kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H"
+APPCHECK_TOKEN=""
