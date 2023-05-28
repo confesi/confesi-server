@@ -1,12 +1,22 @@
 package auth
 
 import (
+	"confesi/db"
+
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
+type handler struct {
+	db       *gorm.DB
+	firebase any // TODO: firebase embedded struct
+}
+
 func Router(mux *gin.RouterGroup, authClient *auth.Client) {
-	mux.POST("/login", handleLogin)
+	h := handler{db: db.New(), firebase: nil}
+
+	mux.POST("/login", h.handleLogin)
 	mux.POST("/register", func(c *gin.Context) {
 		handleRegister(c, authClient)
 	})
