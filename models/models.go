@@ -64,11 +64,11 @@ type User struct {
 	ID          string `gorm:"primaryKey"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	Email       string `json:"email"`
-	YearOfStudy uint8  `json:"yearOfStudy"`
-	FacultyID   uint   `json:"-"`
-	SchoolID    uint   `json:"-"`
-	ModID       uint   `json:"-"`
+	Email       string
+	YearOfStudy uint8
+	FacultyID   uint
+	SchoolID    uint
+	ModID       uint
 }
 
 type SchoolFollow struct {
@@ -82,13 +82,13 @@ type Post struct {
 	UserID        string
 	SchoolID      uint
 	FacultyID     uint
-	Title         string `json:"title"`
-	Content       string `json:"content"`
-	Downvote      uint   `json:"downvote"`
-	Upvote        uint   `json:"upvote"`
-	TrendingScore uint64 `json:"trendingScore"`
-	HottestScore  uint64 `json:"hottestScore"`
-	Hidden        bool   `json:"hidden"`
+	Title         string
+	Content       string
+	Downvote      uint
+	Upvote        uint
+	TrendingScore uint64
+	HottestScore  uint64
+	Hidden        bool
 }
 
 type Comment struct {
@@ -97,10 +97,10 @@ type Comment struct {
 	PostID    string
 	CommentID *uint
 	Content   string
-	Downvote  uint `json:"downvote"`
-	Upvote    uint `json:"upvote"`
-	Score     int  `json:"score"`
-	Hidden    bool `json:"hidden"`
+	Downvote  uint
+	Upvote    uint
+	Score     int
+	Hidden    bool
 }
 
 const (
