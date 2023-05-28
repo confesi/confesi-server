@@ -14,5 +14,5 @@ BEGIN;
         reports
     ;
 
-    DROP TYPE IF EXISTS VOTE;
+    DROP TYPE IF EXISTS vote_score_value;
 END;
