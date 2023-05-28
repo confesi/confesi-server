@@ -27,3 +27,4 @@ services:
     environment:
       PORT:
       POSTGRES_DSN:
+      APPCHECK_TOKEN:
