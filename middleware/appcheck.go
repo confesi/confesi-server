@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"confesi/lib"
-	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,9 @@ func AppCheck(c *gin.Context) {
 	if requestToken != token {
 		c.AbortWithStatus(http.StatusForbidden)
 		url := c.Request.URL.String()
-		lib.StdErr(errors.New("unauthorized request to: " + url))
+		ip := c.ClientIP()
+		str := fmt.Errorf("unauthorized request:\nfrom %s\nto: %s", ip, url)
+		lib.StdErr(str)
 		return
 	}
 

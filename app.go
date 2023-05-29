@@ -33,6 +33,7 @@ func init() {
 func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
+	r.Use(middleware.AppCheck)
 
 	// Version 1 api group, alongside core middleware
 	api := r.Group("/api/v1")

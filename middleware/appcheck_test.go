@@ -18,7 +18,6 @@ func appCheckInit(r *http.Request) int {
 	})
 
 	w := httptest.NewRecorder()
-
 	mux.ServeHTTP(w, r)
 
 	return w.Result().StatusCode
@@ -48,10 +47,9 @@ func TestAppCheckOK(t *testing.T) {
 
 	statusCode := appCheckInit(r)
 	assert.Equal(t, http.StatusOK, statusCode)
-
 }
 
-func TestAppCheckWrongToke(t *testing.T) {
+func TestAppCheckWrongToken(t *testing.T) {
 	r, err := http.NewRequest("GET", "/test", nil)
 	if err != nil {
 		panic(err)
