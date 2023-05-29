@@ -14,6 +14,10 @@
 cat env-example > .env
 ```
 
+**Add the app check token:**
+
+Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
+
 **Add the `firebase-secrets.json` file to the root of the project:**
 
 This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Service accounts > Generate new private key. _Ensure this file is not checked into version control_.
