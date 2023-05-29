@@ -22,8 +22,7 @@ func init() {
 	}
 
 	// Init Firebase app
-	var err error
-	app, err = config.InitFirebase("firebase-secrets.json")
+	err := config.InitFirebase("firebase-secrets.json")
 	if err != nil {
 		// if we can't init firebase, we have an unrecoverable error
 		log.Fatal("Error initializing Firebase app: ", err)
@@ -41,7 +40,7 @@ func main() {
 	api.Use(gin.Recovery())
 
 	// Separate handler groups
-	auth.Router(api.Group("/auth"), app.AuthClient)
+	auth.Router(api.Group("/auth"))
 
 	r.Run(fmt.Sprintf(":%s", port))
 }

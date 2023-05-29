@@ -1,6 +1,7 @@
-package lib
+package response
 
 import (
+	"confesi/lib"
 	"errors"
 	"fmt"
 
@@ -9,7 +10,7 @@ import (
 
 // Api result standardization. Any errors logged to StdErr. Usage:
 //
-// lib.New(http.StatusAccepted).
+// response.New(http.StatusAccepted).
 //		Err("Some error message").
 //		Val(gin.H{"name": "John"}).
 //		Send(c)
@@ -39,7 +40,7 @@ func New(code int) *apiResult {
 func (r *apiResult) Send(c *gin.Context) {
 	if r.Error != nil {
 		errString := fmt.Sprintf("[status_code: %d], %v", r.Code, r.Error)
-		StdErr(errors.New(errString))
+		lib.StdErr(errors.New(errString))
 	}
 	c.JSON(r.Code, r)
 	c.Abort()
