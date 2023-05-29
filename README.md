@@ -80,7 +80,7 @@ docker exec -it confesi-db psql -U postgres confesi
 firebase emulators:start
 ```
 
-This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command)
+This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command).
 
 ## Test runner
 

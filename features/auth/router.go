@@ -2,6 +2,8 @@ package auth
 
 import (
 	"confesi/db"
+	"confesi/middleware"
+	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,10 @@ type handler struct {
 
 func Router(mux *gin.RouterGroup, authClient *auth.Client) {
 	h := handler{db: db.New(), firebase: nil}
+
+	mux.Use(func(c *gin.Context) {
+		middleware.RateLimit(c, 10, time.Minute)
+	})
 
 	mux.POST("/login", func(c *gin.Context) {
 		h.handleLogin(c, authClient)

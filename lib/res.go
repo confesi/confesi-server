@@ -9,7 +9,7 @@ import (
 
 // Api result standardization. Any errors logged to StdErr. Usage:
 //
-// lib.Res(http.StatusAccepted).
+// lib.New(http.StatusAccepted).
 //		Err("Some error message").
 //		Val(gin.H{"name": "John"}).
 //		Send(c)
@@ -30,7 +30,7 @@ func (r *apiResult) Val(value interface{}) *apiResult {
 	return r
 }
 
-func Res(code int) *apiResult {
+func New(code int) *apiResult {
 	return &apiResult{
 		Code: code,
 	}
