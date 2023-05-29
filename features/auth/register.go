@@ -11,7 +11,7 @@ import (
 // Example creating a Firebase user
 func handleRegister(c *gin.Context, authClient *auth.Client) {
 	params := (&auth.UserToCreate{}).
-		Email("user@example.com").
+		Email("user99@example.com").
 		Password("examplePassword").
 		Disabled(false)
 
