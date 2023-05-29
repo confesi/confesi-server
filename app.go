@@ -24,6 +24,7 @@ func init() {
 func main() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
+	r.Use(middleware.AppCheck)
 
 	// Init firebase app
 	app, err := config.InitFirebase("firebase-secrets.json")
