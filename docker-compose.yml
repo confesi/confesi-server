@@ -25,9 +25,6 @@ services:
     volumes:
       - ./api:/api
     environment:
-      POSTGRES_USER:
-      POSTGRES_PASSWORD:
-      POSTGRES_DB:
-      POSTGRES_HOST:
-      POSTGRES_PORT:
       PORT:
+      POSTGRES_DSN:
+      APPCHECK_TOKEN:

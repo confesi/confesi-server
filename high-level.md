@@ -25,7 +25,7 @@
 
 ### `Posts` table
 
-- user_id
+- created_by
 - metadata: created by / updated by / etc
 - school_id
 - faculty_id: nullable

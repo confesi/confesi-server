@@ -7,6 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleLogin(c *gin.Context, authClient *auth.Client) {
+func (h *handler) handleLogin(c *gin.Context, authClient *auth.Client) {
 	c.Status(http.StatusOK)
 }
