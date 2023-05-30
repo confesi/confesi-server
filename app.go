@@ -1,8 +1,8 @@
 package main
 
 import (
-	"confesi/config"
 	"confesi/features/auth"
+	"confesi/lib/fire"
 	"confesi/middleware"
 	"fmt"
 	"log"
@@ -12,7 +12,7 @@ import (
 )
 
 var port string
-var app *config.FirebaseApp
+var app *fire.FirebaseApp
 
 func init() {
 	port = os.Getenv("PORT")
@@ -22,7 +22,7 @@ func init() {
 	}
 
 	// Init Firebase app
-	err := config.InitFirebase("firebase-secrets.json")
+	err := fire.InitFirebase("firebase-secrets.json")
 	if err != nil {
 		// if we can't init firebase, we have an unrecoverable error
 		log.Fatal("Error initializing Firebase app: ", err)

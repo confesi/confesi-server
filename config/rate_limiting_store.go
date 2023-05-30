@@ -5,22 +5,18 @@ import (
 	"time"
 )
 
-type requestStore struct {
-	Bucket map[string]*TokenBucket
-	Mutex  sync.Mutex
-}
-
-var store requestStore
+var store sync.Map
 
 func init() {
-	store = requestStore{Bucket: make(map[string]*TokenBucket)}
+	store = sync.Map{} // thread-safe sync map for holding rate limiting buckets
 }
 
-type TokenBucket struct {
-	Tokens     int
-	LastRefill time.Time
+type Bucket struct {
+	Tokens         int
+	LastRefill     time.Time
+	RefillInterval time.Duration
 }
 
-func StoreRef() *requestStore {
+func StoreRef() *sync.Map {
 	return &store
 }

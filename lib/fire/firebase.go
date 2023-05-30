@@ -1,6 +1,6 @@
 package fire
 
-//! Named `fire` because `firebase` is already taken by the official firebase package.
+//! Package named `fire` because `firebase` is already taken many times by official packages.
 
 import (
 	"context"
