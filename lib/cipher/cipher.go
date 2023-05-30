@@ -3,15 +3,17 @@ package cipher
 import (
 	"crypto/aes"
 	c "crypto/cipher"
-	"os"
+	"encoding/hex"
 )
 
 var block c.Block
+
 var err error = nil
 
 func init() {
-	key := os.Getenv("CIPHER_KEY")
-	block, err = aes.NewCipher([]byte(key))
+	// key := os.Getenv("CIPHER_KEY")
+	key := "thisis32bitlongpassphraseimusing"
+	block, _ = aes.NewCipher([]byte(key))
 	if err != nil {
 		// panic since err here signifies an invalid key.
 		// key can only be of length 16, 24, or 32 bytes.
@@ -26,8 +28,13 @@ func Encrypt(plainText string) string {
 	return string(buf)
 }
 
-func Decrypt(hashed string) string {
-	buf := make([]byte, len(hashed))
-	block.Decrypt(buf, []byte(hashed))
-	return string(buf)
+func Decrypt(hashed string) (string, error) {
+	cipherText, err := hex.DecodeString(hashed)
+	if err != nil {
+		return "", err
+	}
+
+	buf := make([]byte, len(cipherText))
+	block.Decrypt(buf, cipherText)
+	return string(buf), nil
 }
