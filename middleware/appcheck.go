@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"confesi/lib"
+	"confesi/lib/logger"
 	"fmt"
 	"net/http"
 
@@ -15,7 +15,7 @@ func AppCheck(c *gin.Context) {
 		url := c.Request.URL.String()
 		ip := c.ClientIP()
 		str := fmt.Errorf("unauthorized request:\nfrom %s\nto: %s", ip, url)
-		lib.StdErr(str)
+		logger.StdErr(str)
 		return
 	}
 
