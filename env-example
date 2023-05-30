@@ -5,3 +5,7 @@ POSTGRES_DSN="postgres://postgres:postgres@db:5432/confesi?sslmode=disable"
 
 # generate token at https://generate-random.org/api-token-generator
 APPCHECK_TOKEN=""
+
+# generate key from https://numbergenerator.org/hex-code-generator
+# either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256
+CIPHER_KEY=""
