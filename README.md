@@ -1,6 +1,6 @@
 ## Requirements
 
-- Go 1.20
+- Go 1.20.
 - Docker/Docker compose.
 - [pg-to-dbml](https://github.com/papandreou/pg-to-dbml) CLI.
 - [Golang Migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate#installation).

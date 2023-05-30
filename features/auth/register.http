@@ -1,2 +1,0 @@
-POST http://127.0.0.1:8080/api/v1/auth/register
-X-AppCheck-Token: owzN/GzTL4oXRCkRfFkCxrJR1-5ltFXl7gSdBuDa1UfFyKlLho?IBAK3jJFfy7Ll0cQhrm8sDfz4qwgU?ZegJqcEhcM?QnO8C/mvSOhPfFrErRtaX-!FxH9jZRzF5TpKy/G?4Gl8Q9N9vGsFPxSKSTWNtabRdFyDiyUZyix9o0vjwDdYkNESe97h4--OOCzRh//?VPVPUEVcHIwqJz/Q2qJ=fc-phSlS5QWd4Zqoa0r9r3EINgPjGAoexuSjkbx6

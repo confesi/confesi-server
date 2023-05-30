@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +37,9 @@ func main() {
 
 	// Version 1 api group, alongside core middleware
 	api := r.Group("/api/v1")
+	api.Use(func(c *gin.Context) {
+		middleware.RateLimit(c, 10, time.Minute) // 10 requests per minute per IP
+	})
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
 

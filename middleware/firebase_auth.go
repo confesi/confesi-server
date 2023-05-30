@@ -40,7 +40,7 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 		return
 	}
 
-	if token.Firebase.SignInProvider == "password" {
+	if token.Firebase.SignInProvider == "password" { // todo: AND where claims "profile_created": true, else send different message back and block (also need to have route to check if token says false, but user is saved in both fb and postgres)
 		// registered user
 		c.Set("user", token)
 		c.Next()
