@@ -1,10 +1,11 @@
 package auth
 
+// TODO: initializer syntax
+
 import (
 	"confesi/config"
 	"confesi/db"
 	"confesi/lib/response"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -52,6 +53,7 @@ func domainFromEmail(email string) (string, error) {
 	return regex.FindString(string(input)), nil
 }
 
+// TODO: add email verification, and route to enable checking if email is verified to pass through the middleware
 // Example creating a Firebase user
 func (h *handler) handleRegister(c *gin.Context) {
 
@@ -100,7 +102,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 
 	firebaseUser, err := h.fb.AuthClient.CreateUser(c, newUser)
 	if err != nil {
-		fmt.Println("error creating user:", err)
 		if strings.Contains(err.Error(), "EMAIL_EXISTS") {
 			response.New(http.StatusConflict).Err("email already exists").Send(c)
 		} else {
@@ -110,22 +111,22 @@ func (h *handler) handleRegister(c *gin.Context) {
 	}
 
 	user := db.User{
-		ID:          firebaseUser.UID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-		Email:       req.Email,
+		ID:        firebaseUser.UID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Email:     req.Email,
+		// TODO: replace with non-dummy values:
 		YearOfStudy: 3,
 		FacultyID:   1,
 		SchoolID:    1,
-
-		ModID: 1,
+		ModID:       1,
 	}
 
 	// save user to postgres
 	err = h.db.Create(&user).Error
 	if err != nil {
 		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val(gin.H{"account": "auth"}).Send(c)
+		response.New(http.StatusCreated).Val("auth").Send(c)
 		return
 	}
 
@@ -133,14 +134,16 @@ func (h *handler) handleRegister(c *gin.Context) {
 	claims := map[string]interface{}{
 		"profile_created": true,
 	}
-	_, err = h.fb.AuthClient.CustomTokenWithClaims(c, firebaseUser.UID, claims)
+
+	// Set the custom token on the user
+	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, claims)
 	if err != nil {
 		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val(gin.H{"account": "auth"}).Send(c)
+		response.New(http.StatusCreated).Val("auth").Send(c)
 		return
 	}
 
 	// if this succeeds, send back success to indicate the user should reload their account because both their account & profile
 	// has been created
-	response.New(http.StatusCreated).Val(gin.H{"account": "full"}).Send(c)
+	response.New(http.StatusCreated).Val("full").Send(c)
 }

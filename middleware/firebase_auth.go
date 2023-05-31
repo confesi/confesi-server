@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"confesi/lib/response"
+
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 )
@@ -8,8 +10,8 @@ import (
 type AllowedUser string
 
 const (
-	AllFbUsers        AllowedUser = "all_fb_users"
-	RegisteredFbUsers AllowedUser = "registered_fb_users"
+	AllFbUsers        AllowedUser = "all_fb_users"        // anon or registered users (aka, we don't care about their account)
+	RegisteredFbUsers AllowedUser = "registered_fb_users" // only registered users who have a postgres profile (fully created account)
 )
 
 // Only allows valid Firebase users to pass through.
@@ -19,7 +21,7 @@ const (
 func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 	idToken := c.GetHeader("Authorization")
 	if len(idToken) < 8 || idToken[:7] != "Bearer " {
-		c.AbortWithStatus(401)
+		response.New(401).Err("malformed Authorization header").Send(c)
 		return
 	}
 	tokenValue := idToken[7:] // extract the token value by removing the "Bearer " prefix
@@ -27,26 +29,43 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 	// ensure the token is valid, aka, there is some valid user
 	token, err := auth.VerifyIDToken(c, tokenValue)
 	if err != nil {
-		println("Error verifying token: ", err)
 		// no Firebase user or malformed token
-		c.AbortWithStatus(401)
+		response.New(401).Err("invalid token").Send(c)
 		return
 	}
 
-	// anon or registered user, but resource is okay with taking either
+	// anon or registered user; the resource is okay with taking either
+	// and it doesn't care if the potentially registered user has a postgres profile
 	if allowedUser == AllFbUsers {
 		c.Set("user", token)
 		c.Next()
 		return
 	}
 
-	if token.Firebase.SignInProvider == "password" { // todo: AND where claims "profile_created": true, else send different message back and block (also need to have route to check if token says false, but user is saved in both fb and postgres)
-		// registered user
-		c.Set("user", token)
-		c.Next()
+	if token.Firebase.SignInProvider == "password" {
+		var profileCreated bool
+		var ok bool
+		if profileCreated, ok = token.Claims["profile_created"].(bool); !ok {
+			// TODO: it's technically possible fb and postgres profiles get created by the token creation somehow fails if the server crashes
+			// TODO: at a bizzare time or something? So in the future, we'd also have to check if the postgres profile exists before creating a new one
+			// TODO: after this error is sent back
+			// registered user without postgres profile since the claim isn't created till after their account gets saved to postgres
+			response.New(401).Err("registered user without profile").Send(c)
+			return
+		} else if profileCreated {
+			// registered user with postgres profile
+			c.Set("user", token)
+			c.Next()
+			return
+		} else {
+			// registered user without postgres profile (handling the future case where the claim at "profile_created" is turned back to false for some reason)
+			response.New(401).Err("registered user without profile").Send(c)
+			return
+		}
+
 	} else {
 		// anon user (but resource requires registered user)
-		c.AbortWithStatus(401)
+		response.New(401).Err("registered users only").Send(c)
 	}
 
 }
