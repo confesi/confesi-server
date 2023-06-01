@@ -4,6 +4,7 @@ package fire
 
 import (
 	"context"
+	"log"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/auth"
@@ -17,6 +18,15 @@ type FirebaseApp struct {
 	App        *firebase.App
 	AuthClient *auth.Client
 	MsgClient  *messaging.Client
+}
+
+func init() {
+	// Init Firebase app
+	err := InitFirebase("firebase-secrets.json")
+	if err != nil {
+		// if we can't init firebase, we have an unrecoverable error
+		log.Fatal("Error initializing Firebase app: ", err)
+	}
 }
 
 func InitFirebase(secretsPath string) error {

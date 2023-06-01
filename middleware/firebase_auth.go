@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"confesi/lib/response"
+	"net/http"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,7 @@ const (
 func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 	idToken := c.GetHeader("Authorization")
 	if len(idToken) < 8 || idToken[:7] != "Bearer " {
-		response.New(401).Err("malformed Authorization header").Send(c)
+		response.New(http.StatusUnauthorized).Err("malformed Authorization header").Send(c)
 		return
 	}
 	tokenValue := idToken[7:] // extract the token value by removing the "Bearer " prefix
@@ -30,7 +31,7 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 	token, err := auth.VerifyIDToken(c, tokenValue)
 	if err != nil {
 		// no Firebase user or malformed token
-		response.New(401).Err("invalid token").Send(c)
+		response.New(http.StatusUnauthorized).Err("invalid token").Send(c)
 		return
 	}
 
@@ -46,11 +47,8 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 		var profileCreated bool
 		var ok bool
 		if profileCreated, ok = token.Claims["profile_created"].(bool); !ok {
-			// TODO: it's technically possible fb and postgres profiles get created by the token creation somehow fails if the server crashes
-			// TODO: at a bizzare time or something? So in the future, we'd also have to check if the postgres profile exists before creating a new one
-			// TODO: after this error is sent back
 			// registered user without postgres profile since the claim isn't created till after their account gets saved to postgres
-			response.New(401).Err("registered user without profile").Send(c)
+			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
 		} else if profileCreated {
 			// registered user with postgres profile
@@ -59,13 +57,13 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 			return
 		} else {
 			// registered user without postgres profile (handling the future case where the claim at "profile_created" is turned back to false for some reason)
-			response.New(401).Err("registered user without profile").Send(c)
+			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
 		}
 
 	} else {
 		// anon user (but resource requires registered user)
-		response.New(401).Err("registered users only").Send(c)
+		response.New(http.StatusUnauthorized).Err("registered users only").Send(c)
 	}
 
 }

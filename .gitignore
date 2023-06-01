@@ -10,3 +10,6 @@ firebase-secrets.json
 # Firebase logs
 firebase-debug.log
 ui-debug.log
+
+# Ignore Apple OSX Finder shenanigans
+**/*/.DS_Store

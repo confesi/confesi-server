@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/response"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -25,7 +26,8 @@ func (h *handler) handleRegister(c *gin.Context) {
 		Validator: validator.New(),
 	}
 	if err := binding.Bind(c.Request, &req); err != nil {
-		response.New(http.StatusBadRequest).Err("invalid json").Send(c)
+		fmt.Println(err)
+		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
 		return
 	}
 
@@ -41,6 +43,14 @@ func (h *handler) handleRegister(c *gin.Context) {
 	err = h.db.Select("id").Where("domain = ?", domain).First(&school).Error
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("domain doesn't belong to school").Send(c)
+		return
+	}
+
+	// check if user's faculty is valid (aka, the faculty exists in the database)
+	var faculty db.Faculty
+	err = h.db.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
 		return
 	}
 
@@ -63,13 +73,12 @@ func (h *handler) handleRegister(c *gin.Context) {
 	user := db.User{
 		ID: firebaseUser.UID,
 		// UTC times in milliseconds of when the user was created and last updated (both "default" to when user was created initially)
-		CreatedAt: time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
-		UpdatedAt: time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
-		Email:     req.Email,
-		// TODO: replace with non-dummy values:
+		CreatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
+		UpdatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
+		Email:       req.Email,
 		SchoolID:    school.ID,
-		YearOfStudy: 3,
-		FacultyID:   1,
+		YearOfStudy: req.YearOfStudy,
+		FacultyID:   uint(faculty.ID),
 		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... that's another story
 	}
 
@@ -82,12 +91,9 @@ func (h *handler) handleRegister(c *gin.Context) {
 	}
 
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
-	claims := map[string]interface{}{
+	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
 		"profile_created": true,
-	}
-
-	// Set the custom token on the user
-	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, claims)
+	})
 	if err != nil {
 		// If firebase account creation succeeds, but postgres profile save fails
 		response.New(http.StatusCreated).Val("auth").Send(c)

@@ -9,11 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	// 30 requests per minute
+	tokensPerUnit = 30
+	unit          = time.Minute
+)
+
 // Rate limit middleware.
 //
 // Limits the amount of times a user can access a resource in a given time window.
 // Returns a 429 error if the user has exceeded the limit.
-func RateLimit(c *gin.Context, tokensPerUnit int, unit time.Duration) {
+func RateLimit(c *gin.Context) {
 	refillFreq := unit // refill tokens every unit, aka, you have n tokens per unit to use
 
 	store := config.StoreRef()
