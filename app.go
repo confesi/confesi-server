@@ -26,9 +26,7 @@ func main() {
 
 	// Version 1 api group, alongside core middleware
 	api := r.Group("/api/v1")
-	api.Use(func(c *gin.Context) {
-		middleware.RateLimit(c)
-	})
+	api.Use(middleware.RateLimit)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
 
