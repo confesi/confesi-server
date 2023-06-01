@@ -31,6 +31,26 @@ const (
 	ModLimited   = "limited"
 )
 
+const (
+	YearOfStudyOneID = 1
+	YearOfStudyOne   = "one"
+
+	YearOfStudyTwoID = 2
+	YearOfStudyTwo   = "two"
+
+	YearOfStudyThreeID = 3
+	YearOfStudyThree   = "three"
+
+	YearOfStudyFourID = 4
+	YearOfStudyFour   = "four"
+
+	YearOfStudyAlumniGraduateID = 5
+	YearOfStudyAlumniGraduate   = "alumni_graduate"
+
+	YearOfStudyHiddenID = 6
+	YearOfStudyHidden   = "hidden"
+)
+
 type meta struct {
 	ID        uint `gorm:"primaryKey"`
 	CreatedAt time.Time

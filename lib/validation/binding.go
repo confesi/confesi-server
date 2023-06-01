@@ -48,6 +48,9 @@ func (b *DefaultBinding) Bind(req *http.Request, obj interface{}) error {
 	return nil
 }
 
+// ValidationError is a custom error type that is returned when a validation error occurs.
+//
+// Implements the error interface.
 type ValidationError struct {
 	Field string
 	Tag   string

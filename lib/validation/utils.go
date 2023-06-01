@@ -1,6 +1,8 @@
 package validation
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // Extracts the domain from an email address.
 //

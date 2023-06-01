@@ -61,15 +61,16 @@ func (h *handler) handleRegister(c *gin.Context) {
 	}
 
 	user := db.User{
-		ID:        firebaseUser.UID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID: firebaseUser.UID,
+		// UTC times in milliseconds of when the user was created and last updated (both "default" to when user was created initially)
+		CreatedAt: time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
+		UpdatedAt: time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
 		Email:     req.Email,
 		// TODO: replace with non-dummy values:
+		SchoolID:    school.ID,
 		YearOfStudy: 3,
 		FacultyID:   1,
-		SchoolID:    1,
-		ModID:       1,
+		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... that's another story
 	}
 
 	// save user to postgres
