@@ -2,22 +2,21 @@ package auth
 
 import (
 	"confesi/db"
+	"confesi/lib/fire"
 
-	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type handler struct {
-	db       *gorm.DB
-	firebase any // TODO: firebase embedded struct
+	db *gorm.DB
+	fb *fire.FirebaseApp
 }
 
-func Router(mux *gin.RouterGroup, authClient *auth.Client) {
-	h := handler{db: db.New(), firebase: nil}
+func Router(mux *gin.RouterGroup) {
+	h := handler{db: db.New(), fb: fire.New()}
 
-	mux.POST("/login", h.handleLogin)
 	mux.POST("/register", func(c *gin.Context) {
-		handleRegister(c, authClient)
+		h.handleRegister(c)
 	})
 }

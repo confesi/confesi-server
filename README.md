@@ -1,6 +1,6 @@
 ## Requirements
 
-- Go 1.20
+- Go 1.20.
 - Docker/Docker compose.
 - [pg-to-dbml](https://github.com/papandreou/pg-to-dbml) CLI.
 - [Golang Migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate#installation).
@@ -13,6 +13,10 @@
 ```sh
 cat env-example > .env
 ```
+
+**Add the app check token:**
+
+Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
 **Add the `firebase-secrets.json` file to the root of the project:**
 
@@ -76,7 +80,7 @@ docker exec -it confesi-db psql -U postgres confesi
 firebase emulators:start
 ```
 
-This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command)
+This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command).
 
 ## Test runner
 
