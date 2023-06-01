@@ -1,86 +1,36 @@
 package auth
 
-// TODO: initializer syntax
-
 import (
-	"confesi/config"
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/validation"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
-
-type request struct {
-	Email    string `json:"email" validate:"required"`
-	Password string `json:"password" validate:"required"`
-}
-
-func validEmail(email string) (bool, error) {
-	// check email length
-	if len(email) > config.MaxEmailLength || len(email) < config.MinEmailLength {
-		return false, nil
-	}
-	// check email format
-	pattern := `(?i)^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})`
-	input := []byte(email)
-	regex, err := regexp.Compile(pattern)
-	if err != nil {
-		return false, err
-	}
-	return regex.Match(input), nil
-}
-
-func validPassword(password string) bool {
-	// check password length
-	if len(password) > config.MaxPasswordLength || len(password) < config.MinPasswordLength {
-		return false
-	}
-	return true
-}
-
-func domainFromEmail(email string) (string, error) {
-	pattern := `\@[A-Za-z0-9]+\.[A-Za-z]{2,6}`
-	input := []byte(email)
-	regex, err := regexp.Compile(pattern)
-	if err != nil {
-		return "", err
-	}
-	return regex.FindString(string(input)), nil
-}
 
 // TODO: add email verification, and route to enable checking if email is verified to pass through the middleware
 // Example creating a Firebase user
 func (h *handler) handleRegister(c *gin.Context) {
 
-	// deserialize request
-	var req request
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// extract request body
+	var req validation.CreateAccountDetails
+
+	// create a binding instance with the validator, check if json valid, if so, deserialize into req
+	binding := &validation.DefaultBinding{
+		Validator: validator.New(),
+	}
+	if err := binding.Bind(c.Request, &req); err != nil {
 		response.New(http.StatusBadRequest).Err("invalid json").Send(c)
 		return
 	}
 
-	// check if email is valid
-	if valid, err := validEmail(req.Email); !valid {
-		response.New(http.StatusBadRequest).Err("invalid email").Send(c)
-		return
-	} else if err != nil {
-		response.New(http.StatusBadRequest).Err("error validating email").Send(c)
-		return
-	}
-
-	// check pw meets standards
-	if !validPassword(req.Password) {
-		response.New(http.StatusBadRequest).Err("invalid password").Send(c)
-		return
-	}
-
 	// extract domain from user's email
-	domain, err := domainFromEmail(req.Email)
+	domain, err := validation.ExtractEmailDomain(req.Email)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("error extracting domain from email").Send(c)
 		return
