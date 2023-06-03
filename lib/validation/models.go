@@ -10,3 +10,9 @@ type CreateAccountDetails struct {
 	// [required] we'll do validation later against the postgres table
 	Faculty string `json:"faculty" validate:"required"`
 }
+
+// TODO: update length of title and body, and other stuff
+type CreatePostDetails struct {
+	Title string `json:"title" validate:"required,max=100"`
+	Body  string `json:"body" validate:"required,max=2000"`
+}
