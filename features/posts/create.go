@@ -50,8 +50,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	// fetch the user's facultyId
-	var userFaculty db.User
-	err := h.db.Select("faculty_id").Where("id = ?", token.UID).First(&userFaculty).Error
+	var userData db.User
+	err := h.db.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("error fetching user's faculty").Send(c)
 		return
@@ -60,12 +60,15 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// post to save to postgres
 	post := db.Post{
 		UserID:        token.UID,
-		FacultyID:     userFaculty.FacultyID,
+		SchoolID:      userData.SchoolID,
+		FacultyID:     userData.FacultyID,
 		Title:         title,
 		Content:       body,
 		Downvote:      0,
 		Upvote:        0,
 		TrendingScore: 0,
+		HottestScore:  0,
+		Hidden:        false,
 	}
 
 	// save user to postgres
