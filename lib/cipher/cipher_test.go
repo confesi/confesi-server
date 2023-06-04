@@ -13,7 +13,7 @@ func TestCipher(t *testing.T) {
 	encrypted := Encrypt(testStr)
 	assert.NotEqual(t, testStr, encrypted)
 
-	// description test
+	// decryption test
 	decrypted, err := Decrypt(encrypted)
 	assert.Nil(t, err)
 	assert.Equal(t, testStr, decrypted)
