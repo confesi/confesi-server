@@ -11,8 +11,9 @@ type CreateAccountDetails struct {
 	Faculty string `json:"faculty" validate:"required"`
 }
 
-// TODO: update length of title and body, and other stuff
 type CreatePostDetails struct {
-	Title string `json:"title" validate:"required,max=100"`
-	Body  string `json:"body" validate:"required,max=2000"`
+	// [required if Body empty/null] at most 100 characters
+	Title string `json:"title" validate:"max=100,required_without=Body"`
+	// [required if Title empty/null] at most 2000 characters
+	Body string `json:"body" validate:"max=2000,required_without=Title"`
 }

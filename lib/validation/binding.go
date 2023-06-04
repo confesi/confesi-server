@@ -59,3 +59,24 @@ type ValidationError struct {
 func (v *ValidationError) Error() string {
 	return v.Field + " validation failed for tag: " + v.Tag
 }
+
+// Custom validation function for "required_without" tag
+func RequiredWithout(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	otherFieldName := fl.Param()
+
+	// Get the other field value
+	otherField := fl.Parent().FieldByName(otherFieldName)
+	if !otherField.IsValid() {
+		// Handle the case where the other field is not found
+		return false
+	}
+	otherFieldValue := otherField.String()
+
+	// If the other field is empty and the current field is also empty, return false
+	if otherFieldValue == "" && field.String() == "" {
+		return false
+	}
+
+	return true
+}
