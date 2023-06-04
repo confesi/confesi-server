@@ -4,37 +4,56 @@ import (
 	"crypto/aes"
 	c "crypto/cipher"
 	"encoding/hex"
+	"os"
 )
 
-var block c.Block
-
-var err error = nil
-
-func init() {
-	// key := os.Getenv("CIPHER_KEY")
-	key := "thisis32bitlongpassphraseimusing"
-	block, _ = aes.NewCipher([]byte(key))
-	if err != nil {
-		// panic since err here signifies an invalid key.
-		// key can only be of length 16, 24, or 32 bytes.
-		// https://pkg.go.dev/crypto/aes#NewCipher
-		panic(err)
-	}
-}
-
 func Encrypt(plainText string) string {
-	buf := make([]byte, len(plainText))
-	block.Encrypt(buf, []byte(plainText))
-	return string(buf)
+	aesgcm, nonce := getAesGCM()
+	encrypted := aesgcm.Seal(nil, nonce, []byte(plainText), nil)
+	return string(encrypted)
 }
 
-func Decrypt(hashed string) (string, error) {
-	cipherText, err := hex.DecodeString(hashed)
+func Decrypt(encryptedText string) (string, error) {
+	aesgcm, nonce := getAesGCM()
+	plainText, err := aesgcm.Open(nil, nonce, []byte(encryptedText), nil)
 	if err != nil {
 		return "", err
 	}
 
-	buf := make([]byte, len(cipherText))
-	block.Decrypt(buf, cipherText)
-	return string(buf), nil
+	return string(plainText), nil
+}
+
+// NOTE: `cipher.Block` is not threadsafe, initialize a new one every
+// function call instead of a global `init()`
+func getAesGCM() (c.AEAD, []byte) {
+	key := os.Getenv("CIPHER_KEY")
+	if key == "" {
+		panic("`CIPHER_KEY` env not set")
+	}
+
+	block, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		// NOTE: valid key has the length of 16, 24, or 32 bytes to generate
+		// a AES-128, AES-192 or AES-256 respectively.
+		// and `panic(err)` since err is returned when they key has an invalid
+		// length (ie, not of 16, 24, or 32 bytes.)
+		panic(err)
+	}
+
+	nonceHex := os.Getenv("CIPHER_NONCE")
+	if nonceHex == "" {
+		panic("`CIPHER_NONCE` env not set")
+	}
+
+	nonce, err := hex.DecodeString(nonceHex)
+	if err != nil {
+		panic("invalid `CIPHER_NONCE`:" + nonceHex)
+	}
+
+	aesgcm, err := c.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return aesgcm, nonce
 }
