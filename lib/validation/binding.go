@@ -3,6 +3,7 @@ package validation
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -65,16 +66,19 @@ func RequiredWithout(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	otherFieldName := fl.Param()
 
-	// Get the other field value
+	// get the other field value
 	otherField := fl.Parent().FieldByName(otherFieldName)
 	if !otherField.IsValid() {
-		// Handle the case where the other field is not found
+		// aka, not found
 		return false
 	}
-	otherFieldValue := otherField.String()
+	otherFieldValue := strings.TrimSpace(otherField.String())
 
-	// If the other field is empty and the current field is also empty, return false
-	if otherFieldValue == "" && field.String() == "" {
+	// trim spaces from the current field value (ex: "  " shouldn't be considered valid)
+	fieldValue := strings.TrimSpace(field.String())
+
+	// if the other field is empty and the current field is also empty, return false
+	if otherFieldValue == "" && fieldValue == "" {
 		return false
 	}
 

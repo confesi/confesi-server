@@ -35,15 +35,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// strip whitespace from title and body
+	// strip whitespace from title and body (custom validator already confirmed this is still not empty)
 	title := strings.TrimSpace(req.Title)
 	body := strings.TrimSpace(req.Body)
-
-	// check if title and body are BOTH empty
-	if title == "" && body == "" {
-		response.New(http.StatusBadRequest).Err("title and body cannot both be empty").Send(c)
-		return
-	}
 
 	user, ok := c.Get("user")
 	if !ok {
@@ -68,7 +62,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		}
 	}()
 
-	// fetch the user's facultyId
+	// fetch the user's facultyId, and schoolId
 	var userData db.User
 	err := tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
@@ -88,13 +82,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
-		HottestOn:     sql.NullTime{},
+		HottestOn:     sql.NullTime{}, // default to a null time, aka, it hasn't yet been hottest on any day
 	}
 
 	// save user to postgres
 	err = tx.Create(&post).Error
 	if err != nil {
-		fmt.Println(err)
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return

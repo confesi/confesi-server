@@ -43,5 +43,5 @@ func (r *apiResult) Send(c *gin.Context) {
 		logger.StdErr(errors.New(errString))
 	}
 	c.JSON(r.Code, r)
-	c.Abort()
+	c.Abort() // added back, because without it things break
 }
