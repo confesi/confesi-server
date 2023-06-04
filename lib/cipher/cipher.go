@@ -2,7 +2,7 @@ package cipher
 
 import (
 	"crypto/aes"
-	"crypto/cipher"
+	c "crypto/cipher"
 	"encoding/hex"
 	"os"
 )
@@ -25,7 +25,7 @@ func Decrypt(encryptedText string) (string, error) {
 
 // NOTE: `cipher.Block` is not threadsafe, initialize a new one every
 // function call instead of a global `init()`
-func getAesGCM() (cipher.AEAD, []byte) {
+func getAesGCM() (c.AEAD, []byte) {
 	key := os.Getenv("CIPHER_KEY")
 	if key == "" {
 		panic("`CIPHER_KEY` env not set")
@@ -50,7 +50,7 @@ func getAesGCM() (cipher.AEAD, []byte) {
 		panic("invalid `CIPHER_NONCE`:" + nonceHex)
 	}
 
-	aesgcm, err := cipher.NewGCM(block)
+	aesgcm, err := c.NewGCM(block)
 	if err != nil {
 		panic(err.Error())
 	}
