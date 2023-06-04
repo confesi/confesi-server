@@ -84,6 +84,21 @@ This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http
 
 ## Test runner
 
+**Run all tests:**
+
 ```sh
-./scripts/test "./path/to/package"
+./scripts/test ./...
 ```
+
+**Running tests to a specific package:**
+
+```sh
+./scripts/test <./path/to/package>
+```
+
+For example, to run tests on the cipher package:
+
+```sh
+./scripts/test ./lib/cipher
+```
+
