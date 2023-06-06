@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Tests posts with different upvotes and downvote counts.
 func TestTrendingDiffScore(t *testing.T) {
 	// post 1
 	p1Upvotes := 10             // upvotes
@@ -24,6 +25,7 @@ func TestTrendingDiffScore(t *testing.T) {
 	assert.Less(t, p1TrendingScore, p2TrendingScore)
 }
 
+// Tests posts with the same upvotes and downvotes, but where one is "limited".
 func TestTrendingLimited(t *testing.T) {
 	// post 1
 	p1Upvotes := 10             // upvotes
@@ -42,6 +44,8 @@ func TestTrendingLimited(t *testing.T) {
 	assert.Less(t, p2TrendingScore, p1TrendingScore)
 }
 
+// Test posts created at different times, where the older one's score is higher, but
+// should have decayed to a lower score than the newer post.
 func TestTrendingTimeDecay(t *testing.T) {
 	// post 1
 	p1Upvotes := 100            // upvotes
