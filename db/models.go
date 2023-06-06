@@ -116,6 +116,7 @@ type Post struct {
 	VoteScore     int          `gorm:"column:vote_score"`
 }
 
+// Interface
 // `BeforeSave` is a GORM hook that will be called before saving a post (auto-update the `vote_score` field)
 func (p *Post) BeforeSave(tx *gorm.DB) error {
 	p.VoteScore = int(p.Upvote) - int(p.Downvote)
