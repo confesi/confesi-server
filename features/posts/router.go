@@ -22,7 +22,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
 	})
 
-	mux.POST("/create", func(c *gin.Context) {
-		h.handleCreate(c)
-	})
+	mux.POST("/create", h.handleCreate)
 }

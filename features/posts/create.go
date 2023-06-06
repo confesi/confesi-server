@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/response"
 	"confesi/lib/validation"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,6 +15,52 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
+
+func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token) error {
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			return
+		}
+	}()
+
+	// fetch the user's facultyId, and schoolId
+	var userData db.User
+	err := tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New("server error")
+	}
+
+	// post to save to postgres
+	post := db.Post{
+		UserID:        token.UID,
+		SchoolID:      userData.SchoolID,
+		FacultyID:     userData.FacultyID,
+		Title:         title,
+		Content:       body,
+		Downvote:      0,
+		Upvote:        0,
+		TrendingScore: 0,
+		Hidden:        false,
+		HottestOn:     sql.NullTime{}, // default to a null time, aka, it hasn't yet been hottest on any day
+	}
+
+	// save user to postgres
+	err = tx.Create(&post).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New("server error")
+	}
+
+	// commit the transaction
+	tx.Commit()
+	return nil
+}
 
 func (h *handler) handleCreate(c *gin.Context) {
 
@@ -51,50 +98,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// start a transaction
-	tx := h.db.Begin()
-	// if something went ary, rollback
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
-			return
-		}
-	}()
-
-	// fetch the user's facultyId, and schoolId
-	var userData db.User
-	err := tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	err := h.createPost(c, title, body, token)
 	if err != nil {
-		tx.Rollback()
+		// all returned errors are just general client-facing "server errors"
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
-
-	// post to save to postgres
-	post := db.Post{
-		UserID:        token.UID,
-		SchoolID:      userData.SchoolID,
-		FacultyID:     userData.FacultyID,
-		Title:         title,
-		Content:       body,
-		Downvote:      0,
-		Upvote:        0,
-		TrendingScore: 0,
-		Hidden:        false,
-		HottestOn:     sql.NullTime{}, // default to a null time, aka, it hasn't yet been hottest on any day
-	}
-
-	// save user to postgres
-	err = tx.Create(&post).Error
-	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
-	}
-
-	// commit the transaction
-	tx.Commit()
 
 	// if all goes well, send 201
 	response.New(http.StatusCreated).Send(c)
