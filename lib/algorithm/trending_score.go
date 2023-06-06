@@ -2,6 +2,9 @@ package algorithm
 
 import "math"
 
+// Based on Reddit's trending algorithm found in this article: https://moz.com/blog/reddit-stumbleupon-delicious-and-hacker-news-algorithms-exposed
+// at this location: https://github.com/reddit-archive/reddit/blob/bd922104b971a5c6794b199f364a06fdf61359a2/r2/r2/lib/db/_sorts.pyx#L47
+
 const (
 	baseTime          = 1686037996000 // base time in milliseconds (aka, the epoch for our trending calculations)
 	limitedMultiplier = 0.5           // multiplier for limited posts
@@ -25,7 +28,7 @@ func TrendingScore(upvotes int, downvotes int, currTime int, limited bool) float
 		y = 0
 	}
 
-	// calculate the z factor
+	// calculate the z-factor
 	var z float64
 	if math.Abs(score) >= 1 {
 		z = math.Abs(score)
