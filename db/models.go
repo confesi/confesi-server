@@ -142,10 +142,10 @@ const (
 
 type Vote struct {
 	ID        uint
-	Vote      int
-	UserID    string
-	PostID    uint
-	CommentID uint
+	Vote      int    `db:"vote"`
+	UserID    string `db:"user_id"`
+	PostID    uint   `db:"post_id"`
+	CommentID uint   `db:"comment_id"`
 }
 
 type SavedPost struct {
