@@ -70,6 +70,10 @@ docker exec -it confesi-db psql -U postgres confesi
 
 # generate a new `confesi.dbml`
 ./scripts/database dbml
+
+# seed data
+export DATABASE_URL="" # TODO: make a new bash env scripts that exports all of this
+go run ./scripts/main.go --seed-schools
 ```
 
 ## Testing Firebase functionality locally
@@ -101,4 +105,3 @@ For example, to run tests on the cipher package:
 ```sh
 ./scripts/test ./lib/cipher
 ```
-
