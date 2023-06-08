@@ -1,11 +1,12 @@
-### Create post
+### Vote
 
-POST http://127.0.0.1:8080/api/v1/posts/create
+PUT http://127.0.0.1:8080/api/v1/votes/vote
 Content-Type: application/json
 X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
 Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjU0NWUyNDZjNTEwNmExMGQ2MzFiMTA0M2E3MWJiNTllNWJhMGM5NGQiLCJ0eXAiOiJKV1QifQ.eyJwcm9maWxlX2NyZWF0ZWQiOnRydWUsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9jb25mZXNpLXNlcnZlci1kZXYiLCJhdWQiOiJjb25mZXNpLXNlcnZlci1kZXYiLCJhdXRoX3RpbWUiOjE2ODYyMTM2NTcsInVzZXJfaWQiOiJXUmFGZ3ZaVEdLVzVHaDZRN1I1TlB3d0Z0WDQzIiwic3ViIjoiV1JhRmd2WlRHS1c1R2g2UTdSNU5Qd3dGdFg0MyIsImlhdCI6MTY4NjIxMzY1NywiZXhwIjoxNjg2MjE3MjU3LCJlbWFpbCI6InVzZXI0QHV2aWMuY2EiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsidXNlcjRAdXZpYy5jYSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.n1lskve7bLmgpWE4INSnRqWbc09Qjzx1_sxFNAw0yio5MWRvRoRjKt307kpNmVtKNi9nX_SmHosY0ba5catsnHX1jsCUMQTtao25d4lDyI7LOHnKX6vXfONybQEPufuKzfea-AEC3br2ftB1lPm1W-PwXqI6cIvxXvD2neAlLPFnTbF-PUkfXy4nGigTKYyu_B-cSbnCt_1DDTSQlziW84QPT5fDXS0Pr0i0h4vPH1O0Jh351-9DFb6Z9Efdjbg_0kSW-izZbTRvhwW_FKKYc0irXmTMaR9gTw8JnYR47GrzXFJjx1p83tnPhYueyJR_ZY_WU6caorXfC9q0-cVBsw
 
 {
-    "title": "dummy title",
-    "body": "dummy body"
+    "content_id": 1,
+    "value": 1,
+    "content_type": "post"
 }

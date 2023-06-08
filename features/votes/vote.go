@@ -25,7 +25,8 @@ type contentMatcher struct {
 	model     interface{}
 }
 
-// todo: check if content matching id actually exists before adding
+// todo: check if content matching id actually exists before adding (FK enforces this?)
+// todo: make separate vote collections for posts and comments & update schema because of double foreign keys which don't work
 
 func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error {
 	// start a transaction
@@ -39,7 +40,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		}
 	}()
 
-	//! New
+	fmt.Println("here 1")
+
 	var content contentMatcher
 	if contentType == "comment" {
 		content = contentMatcher{fieldName: "comment_id", id: &vote.CommentID, model: &db.Comment{}}
@@ -51,6 +53,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	}
 
 	var old_vote int
+
+	fmt.Println("here 2")
 
 	var model db.Vote
 	// find if there's an existing vote matching id and user and content type
@@ -64,6 +68,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	}
 	old_vote = model.Vote
 	delta_vote := vote.Vote - old_vote
+	fmt.Println("here 3")
 
 	// update/create the vote
 	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).FirstOrCreate(&vote).Update("vote", vote.Vote).Error; err != nil {
@@ -71,11 +76,16 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		return errors.New(ServerError)
 	}
 
+	fmt.Println("here 4")
+
+	// todo: update each one individually, aka, upvotes, downvotes, and then hook for everything else?
 	// update the score of the content
 	if err := tx.Model(content.model).Where("id = ?", content.id).Update("score", gorm.Expr("score + ?", delta_vote)).Error; err != nil {
 		tx.Rollback()
 		return errors.New(ServerError)
 	}
+
+	fmt.Println("here 5")
 
 	// commit the transaction
 	tx.Commit()
@@ -115,6 +125,7 @@ func (h *handler) handleVote(c *gin.Context) {
 	}
 
 	if err := h.doVote(c, vote, req.ContentType); err != nil {
+		// todo: handle different types of thrown errors
 		response.New(http.StatusInternalServerError).Err(fmt.Sprintf("failed to vote: %v", err)).Send(c)
 		return
 	}
