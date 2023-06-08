@@ -136,8 +136,9 @@ type Comment struct {
 }
 
 const (
-	Upvote   = 1
-	Downvote = -1
+	Upvote      = 1
+	NeutralVote = 0
+	Downvote    = -1
 )
 
 type Vote struct {

@@ -22,7 +22,7 @@ type VoteDetail struct {
 	// [required] content id to vote on
 	ContentID uint `json:"post_id" validate:"required"`
 	// [required] "upvote" for upvote, "downvote" for downvote
-	Value int8 `json:"value" validate:"required,oneof=-1 1"`
+	Value int8 `json:"value" validate:"required,oneof=-1 0 1"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }

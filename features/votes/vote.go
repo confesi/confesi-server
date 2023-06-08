@@ -11,34 +11,74 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"gorm.io/gorm"
 )
 
-// todo: check if content matching id actually exists before adding
-// todo: utils/middleware for grabbing user id from token
+const (
+	ServerError        = "server error"
+	InvalidContentType = "invalid content type"
+)
 
-func (h *handler) doVote(c *gin.Context, vote db.Vote) error {
+type contentMatcher struct {
+	fieldName string
+	id        *uint
+	model     interface{}
+}
+
+// todo: check if content matching id actually exists before adding
+
+func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error {
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			// todo: will this always trigger or just for "transaction-specific" errors?
-			// todo: AKA, make specific errors for each unique case?
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
 			return
 		}
 	}()
-	// save the vote
-	// if the vote doesn't exist, create it, else, update it
 
-	// err := tx.Where(...)
-
-	err := tx.FirstOrCreate(&vote).Error
-	if err != nil {
+	//! New
+	var content contentMatcher
+	if contentType == "comment" {
+		content = contentMatcher{fieldName: "comment_id", id: &vote.CommentID, model: &db.Comment{}}
+	} else if contentType == "post" {
+		content = contentMatcher{fieldName: "post_id", id: &vote.PostID, model: &db.Post{}}
+	} else {
 		tx.Rollback()
-		return errors.New("server error")
+		return errors.New(InvalidContentType)
 	}
+
+	var old_vote int
+
+	var model db.Vote
+	// find if there's an existing vote matching id and user and content type
+	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).First(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			old_vote = 0
+		} else {
+			tx.Rollback()
+			return errors.New(ServerError)
+		}
+	}
+	old_vote = model.Vote
+	delta_vote := vote.Vote - old_vote
+
+	// update/create the vote
+	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).FirstOrCreate(&vote).Update("vote", vote.Vote).Error; err != nil {
+		tx.Rollback()
+		return errors.New(ServerError)
+	}
+
+	// update the score of the content
+	if err := tx.Model(content.model).Where("id = ?", content.id).Update("score", gorm.Expr("score + ?", delta_vote)).Error; err != nil {
+		tx.Rollback()
+		return errors.New(ServerError)
+	}
+
+	// commit the transaction
+	tx.Commit()
 	return nil
 }
 
@@ -74,7 +114,10 @@ func (h *handler) handleVote(c *gin.Context) {
 		return
 	}
 
-	// update vote, if unique, then update CONTENT with new vote count and call hooks to run delta score
-	// and trending algorithms
+	if err := h.doVote(c, vote, req.ContentType); err != nil {
+		response.New(http.StatusInternalServerError).Err(fmt.Sprintf("failed to vote: %v", err)).Send(c)
+		return
+	}
 
+	response.New(http.StatusOK).Send(c)
 }
