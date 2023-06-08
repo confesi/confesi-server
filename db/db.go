@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var db *gorm.DB
@@ -31,7 +32,9 @@ func init() {
 
 	// initialize gorm
 	postgresConn := postgres.New(postgres.Config{Conn: sqlConn})
-	db, err = gorm.Open(postgresConn, &gorm.Config{})
+	db, err = gorm.Open(postgresConn, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info), // added for debugging to log the underlying Gorm-generated SQL queries
+	})
 	if err != nil {
 		panic(err)
 	}

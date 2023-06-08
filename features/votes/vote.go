@@ -14,6 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// todo: which aren't using these? which are?
 const (
 	ServerError        = "server error"
 	InvalidContentType = "invalid content type"
@@ -40,8 +41,6 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		}
 	}()
 
-	fmt.Println("here 1")
-
 	var content contentMatcher
 	if contentType == "comment" {
 		content = contentMatcher{fieldName: "comment_id", id: &vote.CommentID, model: &db.Comment{}}
@@ -52,40 +51,54 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		return errors.New(InvalidContentType)
 	}
 
-	var old_vote int
-
-	fmt.Println("here 2")
+	var oldVote int
 
 	var model db.Vote
 	// find if there's an existing vote matching id and user and content type
 	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).First(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			old_vote = 0
+			oldVote = 0
 		} else {
 			tx.Rollback()
 			return errors.New(ServerError)
 		}
+	} else {
+		oldVote = model.Vote
 	}
-	old_vote = model.Vote
-	delta_vote := vote.Vote - old_vote
-	fmt.Println("here 3")
+	// if the vote are the same, just rollback & return, there's no more work to do, but
+	// we consider it idempotently a "success"
+	if oldVote == vote.Vote {
+		fmt.Println("OLD == NEW => ROLLBACK")
+		tx.Rollback()
+		return nil
+	}
 
-	// update/create the vote
-	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).FirstOrCreate(&vote).Update("vote", vote.Vote).Error; err != nil {
+	// if the vote value is 0, just delete it, no point storing a 0-vote
+	var err error
+	if vote.Vote == 0 {
+		err = tx.Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).Delete(&model).Error
+	} else {
+		// else, update/add the vote
+		err = tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).Update("vote", vote.Vote).FirstOrCreate(&vote).Error
+	}
+	if err != nil {
 		tx.Rollback()
 		return errors.New(ServerError)
 	}
-
-	fmt.Println("here 4")
 
 	// todo: update each one individually, aka, upvotes, downvotes, and then hook for everything else?
 	// update the score of the content
-	if err := tx.Model(content.model).Where("id = ?", content.id).Update("score", gorm.Expr("score + ?", delta_vote)).Error; err != nil {
-		tx.Rollback()
-		return errors.New(ServerError)
-	}
+	query := tx.Model(content.model).
+		Where("id = ?", content.id).
+		UpdateColumns(map[string]interface{}{
+			"upvote":   gorm.Expr("+1", vote.Vote, oldVote),
+			"downvote": gorm.Expr("+1", vote.Vote, oldVote),
+		})
 
-	fmt.Println("here 5")
+	if err := query.Error; err != nil {
+		tx.Rollback()
+		return err
+	}
 
 	// commit the transaction
 	tx.Commit()
@@ -113,7 +126,7 @@ func (h *handler) handleVote(c *gin.Context) {
 
 	var vote db.Vote
 	vote.UserID = token.UID
-	vote.Vote = int(req.Value)
+	vote.Vote = int(*req.Value)
 	if req.ContentType == "post" {
 		vote.PostID = req.ContentID
 	} else if req.ContentType == "comment" {

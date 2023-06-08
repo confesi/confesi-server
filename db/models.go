@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -116,12 +117,16 @@ type Post struct {
 	VoteScore     int          `gorm:"column:vote_score"`
 }
 
-// Interface
-// `BeforeSave` is a GORM hook that will be called before saving a post (auto-update the `vote_score` field)
-func (p *Post) BeforeSave(tx *gorm.DB) error {
+// Implementing an interface
+// GORM hook that will be called after updating a post (auto-update the `vote_score` + `trending_score` fields)
+func (p *Post) AfterUpdate(tx *gorm.DB) error {
+	fmt.Println("=======> GORM HOOK CALLED!!")
 	p.VoteScore = int(p.Upvote) - int(p.Downvote)
+	// todo: add trending score calculation
 	return nil
 }
+
+// todo: make it implement both the post and comment interface
 
 type Comment struct {
 	meta
@@ -136,17 +141,16 @@ type Comment struct {
 }
 
 const (
-	Upvote      = 1
-	NeutralVote = 0
-	Downvote    = -1
+	Upvote   = 1
+	Downvote = -1
 )
 
 type Vote struct {
 	ID        uint
 	Vote      int    `db:"vote"`
 	UserID    string `db:"user_id"`
-	PostID    uint   `db:"post_id"`
-	CommentID uint   `db:"comment_id"`
+	PostID    uint   `db:"post_id" gorm:"default:NULL"`    // Either one of these FKs can be null, but the constraint
+	CommentID uint   `db:"comment_id" gorm:"default:NULL"` // is that exactly one of them is a valid FK
 }
 
 type SavedPost struct {
