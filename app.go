@@ -3,6 +3,7 @@ package main
 import (
 	"confesi/features/auth"
 	"confesi/features/posts"
+	"confesi/features/schools"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -34,6 +35,7 @@ func main() {
 	// Separate handler groups
 	auth.Router(api.Group("/auth"))
 	posts.Router(api.Group("/posts"))
+	schools.Router(api.Group("/schools"))
 
 	r.Run(fmt.Sprintf(":%s", port))
 }
