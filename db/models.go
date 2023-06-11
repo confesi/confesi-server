@@ -66,12 +66,12 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID     uint
-	Name   string
-	Abbr   string
-	Lat    float32
-	Lon    float32
-	Domain string
+	ID     uint    `json:"id"`
+	Name   string  `json:"name"`
+	Abbr   string  `json:"abbr"`
+	Lat    float32 `json:"lat"`
+	Lon    float32 `json:"lon"`
+	Domain string  `json:"domain"`
 }
 
 type Faculty struct {
