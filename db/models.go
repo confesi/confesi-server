@@ -2,10 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Table names
@@ -102,6 +99,7 @@ type SchoolFollow struct {
 }
 
 type Post struct {
+	ID            *int         `gorm:"primary_key;column:id"` // pointer so postgres will auto-create the id on insert if we don't provide it
 	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime"`
 	UserID        string       `gorm:"column:user_id"`
@@ -116,17 +114,6 @@ type Post struct {
 	Hidden        bool         `gorm:"column:hidden"`
 	VoteScore     int          `gorm:"column:vote_score"`
 }
-
-// Implementing an interface
-// GORM hook that will be called after updating a post (auto-update the `vote_score` + `trending_score` fields)
-func (p *Post) AfterUpdate(tx *gorm.DB) error {
-	fmt.Println("=======> GORM HOOK CALLED!!")
-	p.VoteScore = int(p.Upvote) - int(p.Downvote)
-	// todo: add trending score calculation
-	return nil
-}
-
-// todo: make it implement both the post and comment interface
 
 type Comment struct {
 	meta

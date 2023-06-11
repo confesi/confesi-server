@@ -2,22 +2,24 @@ package votes
 
 import (
 	"confesi/db"
+	"confesi/lib/algorithm"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-// todo: which aren't using these? which are?
 const (
-	ServerError        = "server error"
-	InvalidContentType = "invalid content type"
+	ServerError  = "server error"
+	InvalidValue = "invalid value"
 )
 
 type contentMatcher struct {
@@ -26,8 +28,16 @@ type contentMatcher struct {
 	model     interface{}
 }
 
-// todo: check if content matching id actually exists before adding (FK enforces this?)
-// todo: make separate vote collections for posts and comments & update schema because of double foreign keys which don't work
+func voteToColumnName(vote int) (string, error) {
+	switch vote {
+	case 1:
+		return "upvote", nil
+	case -1:
+		return "downvote", nil
+	default:
+		return "", errors.New(InvalidValue)
+	}
+}
 
 func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error {
 	// start a transaction
@@ -48,7 +58,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		content = contentMatcher{fieldName: "post_id", id: &vote.PostID, model: &db.Post{}}
 	} else {
 		tx.Rollback()
-		return errors.New(InvalidContentType)
+		return errors.New(InvalidValue)
 	}
 
 	var oldVote int
@@ -86,16 +96,54 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		return errors.New(ServerError)
 	}
 
-	// todo: update each one individually, aka, upvotes, downvotes, and then hook for everything else?
-	// update the score of the content
-	query := tx.Model(content.model).
-		Where("id = ?", content.id).
-		UpdateColumns(map[string]interface{}{
-			"upvote":   gorm.Expr("+1", vote.Vote, oldVote),
-			"downvote": gorm.Expr("+1", vote.Vote, oldVote),
-		})
+	columnUpdates := make(map[string]interface{})
+	var oldVoteColumn string
+	var newVoteColumn string
+	if oldVote != 0 {
+		if oldVoteColumn, err = voteToColumnName(oldVote); err == nil {
+			columnUpdates[oldVoteColumn] = gorm.Expr(oldVoteColumn+" - ?", 1)
+		} else {
+			tx.Rollback()
+			return errors.New(InvalidValue)
+		}
+	}
+	if vote.Vote != 0 {
+		if newVoteColumn, err = voteToColumnName(vote.Vote); err == nil {
+			columnUpdates[newVoteColumn] = gorm.Expr(newVoteColumn+" + ?", 1)
+		} else {
+			tx.Rollback()
+			return errors.New(InvalidValue)
+		}
+	}
 
-	if err := query.Error; err != nil {
+	type foundVotes struct {
+		Upvote   int
+		Downvote int
+	}
+
+	var votes foundVotes
+	if oldVote != 0 || vote.Vote != 0 {
+		// update the score of the content
+		query := tx.Model(&content.model).
+			Where("id = ?", content.id).
+			Updates(columnUpdates).
+			Clauses(clause.Returning{}).
+			Select("upvote, downvote").
+			Scan(&votes)
+		if err := query.Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// update the post with the modified vote values and the new trending score
+	err = tx.Model(&content.model).
+		Where("id = ?", content.id).
+		Updates(map[string]interface{}{
+			"vote_score":     votes.Upvote - votes.Downvote,                                                        // new overall post score
+			"trending_score": algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new post trending score
+		}).Error
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -138,8 +186,7 @@ func (h *handler) handleVote(c *gin.Context) {
 	}
 
 	if err := h.doVote(c, vote, req.ContentType); err != nil {
-		// todo: handle different types of thrown errors
-		response.New(http.StatusInternalServerError).Err(fmt.Sprintf("failed to vote: %v", err)).Send(c)
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
 	}
 
