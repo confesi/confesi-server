@@ -5,7 +5,6 @@ import (
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"errors"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -64,7 +63,7 @@ func (h *handler) getSchools(c *gin.Context) {
 	if schoolName != "" {
 		var schools []db.School
 		if err := h.getBySchoolName(&schools, schoolName, pagination); err != nil {
-			log.Println(err)
+			logger.StdErr(err)
 			response.
 				New(http.StatusInternalServerError).
 				Err(err.Error()).
@@ -183,7 +182,7 @@ func (h *handler) getBySchoolName(
 	schoolSql := "%" + strings.ToUpper(schoolName) + "%"
 	err := h.DB.
 		Table(db.Schools).
-		Where("name LIKE ? OR abbr LIKE ?", schoolSql, schoolSql).
+		Where("name LIKE ? OR abbr LIKE ?", schoolName, schoolSql).
 		Offset(pag.Offset).
 		Limit(pag.Limit).
 		Scan(schools).
