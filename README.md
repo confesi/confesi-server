@@ -72,7 +72,7 @@ docker exec -it confesi-db psql -U postgres confesi
 ./scripts/database dbml
 
 # seed data
-export DATABASE_URL="" # TODO: make a new bash env scripts that exports all of this
+export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
 go run ./scripts/main.go --seed-schools
 ```
 
