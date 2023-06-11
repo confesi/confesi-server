@@ -15,10 +15,10 @@ import (
 
 type Response struct {
 	*Pagination
-	Schools []SchoolInfo `json:"schools"`
+	Schools []School `json:"schools"`
 }
 
-type SchoolInfo struct {
+type School struct {
 	db.School
 	Distance *float64 `json:"distance"`
 }
@@ -70,9 +70,9 @@ func (h *handler) getSchools(c *gin.Context) {
 			return
 		}
 
-		var schoolReponse []SchoolInfo
+		var schoolReponse []School
 		for _, school := range schools {
-			schoolReponse = append(schoolReponse, SchoolInfo{school, nil})
+			schoolReponse = append(schoolReponse, School{school, nil})
 		}
 
 		response.
@@ -82,7 +82,7 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	var schools []db.School
+	var schools []School
 	if err := h.getAllSchools(&schools); err != nil {
 		logger.StdErr(err)
 		response.
@@ -101,35 +101,36 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	var schoolsInRange []SchoolInfo
-	for _, school := range schools {
+	schoolCount := len(schools)
+	schoolsInRange := make([]School, schoolCount)
+
+	for i, school := range schools {
 		distance := coord.getDistance(school)
 		if distance <= coord.radius {
-			schoolsInRange = append(schoolsInRange, SchoolInfo{school, &distance})
+			school.Distance = &distance
+			schoolsInRange[i] = school
 		}
 	}
 
-	schoolCount := len(schoolsInRange)
-
-	startingOffset := pagination.Offset
-	if startingOffset > schoolCount {
-		startingOffset = 0
+	start := pagination.Offset
+	if start > schoolCount {
+		start = 0
 	}
 
-	endingOffset := pagination.Offset + pagination.Limit
-	if endingOffset > schoolCount {
-		endingOffset = schoolCount
+	end := pagination.Offset + pagination.Limit
+	if end > schoolCount {
+		end = schoolCount
 	}
 
 	response.
 		New(http.StatusOK).
-		Val(schoolsInRange[startingOffset:endingOffset]).
+		Val(Response{pagination, schoolsInRange[start:end]}).
 		Send(c)
 }
 
 // Algo from:
 // https://stackoverflow.com/a/365853
-func (c *coordinate) getDistance(dest db.School) float64 {
+func (c *coordinate) getDistance(dest School) float64 {
 	const r float64 = 6371 // earth radius
 	destLat := degreeToRad(float64(dest.Lat))
 	originLat := degreeToRad(c.lat)
@@ -154,10 +155,16 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 	if err != nil {
 		return nil, errors.New("invalid lat value")
 	}
+	if lat < -90 || lat > 90 {
+		return nil, errors.New("lat value out of bound")
+	}
 
 	lon, err := strconv.ParseFloat(lonStr, 64)
 	if err != nil {
 		return nil, errors.New("invalid lon value")
+	}
+	if lon < -180 || lon > 180 {
+		return nil, errors.New("lon value out of bound")
 	}
 
 	radius, err := strconv.ParseFloat(radiusStr, 64)
@@ -168,8 +175,8 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 	return &coordinate{lat, lon, radius}, nil
 }
 
-func (h *handler) getAllSchools(schools *[]db.School) error {
-	return h.Find(schools).Error
+func (h *handler) getAllSchools(schools *[]School) error {
+	return h.Table(db.Schools).Scan(schools).Error
 }
 
 func (h *handler) getBySchoolName(
