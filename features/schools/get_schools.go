@@ -43,7 +43,6 @@ func (h *handler) getSchools(c *gin.Context) {
 			Err(err.Error()).
 			Send(c)
 		return
-
 	}
 
 	schoolName := c.Query("school")
@@ -69,7 +68,6 @@ func (h *handler) getSchools(c *gin.Context) {
 				Err(err.Error()).
 				Send(c)
 			return
-
 		}
 
 		var schoolReponse []SchoolInfo
