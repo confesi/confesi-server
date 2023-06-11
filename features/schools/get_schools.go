@@ -3,6 +3,8 @@ package schools
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,73 +13,92 @@ import (
 )
 
 type Response struct {
-	Offset  uint        `json:"offset"`
+	*Pagination
 	Schools []db.School `json:"schools"`
 }
 
-func (h *handler) getSchools(c *gin.Context) {
-	offsetStr := c.Query("offset")
-	if strings.EqualFold(offsetStr, "") {
-		offsetStr = "1"
-	}
+type Pagination struct {
+	Offset int `json:"offset"`
+	Limit  int `json:"limit"`
+}
 
-	offset, err := getOffset(offsetStr)
+func (h *handler) getSchools(c *gin.Context) {
+
+	pagination, err := getPagination(c)
 	if err != nil {
 		response.
 			New(http.StatusBadRequest).
-			Err("invalid offset").
+			Err(err.Error()).
 			Send(c)
+
 		return
 
 	}
 
-	// by query, ignore lat and lon
 	schoolName := c.Query("school")
-	if schoolName != "" {
-		response.
-			New(http.StatusBadRequest).
-			Err("invalid school query name").
-			Send(c)
-		return
-	}
-
-	// by lat and lon
 	latStr := c.Query("lat")
 	lonStr := c.Query("lon")
-	if strings.EqualFold(latStr, "") || strings.EqualFold(lonStr, "") {
+
+	if schoolName != "" {
+		var schools []db.School
+		if err := h.getBySchoolName(&schools, schoolName, pagination); err != nil {
+			log.Println(err)
+			response.
+				New(http.StatusInternalServerError).
+				Err(err.Error()).
+				Send(c)
+			return
+
+		}
+
 		response.
-			New(http.StatusBadRequest).
-			Err("missing coordinate information").
+			New(http.StatusOK).
+			Val(Response{pagination, schools}).
 			Send(c)
 		return
-	}
-
-	lat, err := validateCoord(latStr)
-	if err != nil {
+	} else if latStr == "" || lonStr == "" {
 		response.
 			New(http.StatusBadRequest).
-			Err("invalid lat").
-			Send(c)
-		return
-	}
-
-	lon, err := validateCoord(lonStr)
-	if err != nil {
-		response.
-			New(http.StatusBadRequest).
-			Err("invalid lon").
+			Err("invalid lat and lon query").
 			Send(c)
 		return
 	}
 
 }
 
-func validateCoord(c string) (float32, error) {
-	coord, err := strconv.ParseFloat(c, 32)
-	return float32(coord), err
+func (h *handler) getBySchoolName(
+	schools *[]db.School,
+	schoolName string,
+	pag *Pagination,
+) error {
+	schoolSql := "%" + strings.ToUpper(schoolName) + "%"
+	err := h.DB.
+		Table(db.Schools).
+		Where("name LIKE ? OR abbr LIKE ?", schoolSql, schoolSql).
+		Offset(pag.Offset).
+		Limit(pag.Limit).
+		Scan(schools).
+		Error
+
+	return err
 }
 
-func getOffset(c string) (uint, error) {
-	coord, err := strconv.ParseFloat(c, 32)
-	return uint(coord), err
+func getPagination(c *gin.Context) (*Pagination, error) {
+	offset, err := strconv.ParseInt(c.Query("offset"), 10, 32)
+	if err != nil {
+		return nil, errors.New("invalid page offset query")
+	}
+	if offset <= 0 {
+		return nil, errors.New("invalid page offset value, offset must be greater than 0")
+	}
+
+	limit, err := strconv.ParseInt(c.Query("limit"), 10, 32)
+	if err != nil {
+		return nil, errors.New("invalid page limit query")
+	}
+
+	return &Pagination{
+		Offset: int((offset - 1) * limit),
+		Limit:  int(limit),
+	}, nil
 }
