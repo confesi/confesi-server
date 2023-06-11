@@ -61,7 +61,6 @@ func TestGetSchoolBadRequest(t *testing.T) {
 	for _, testCase := range testCases {
 		w, r := testSetup(testCase)
 		mux.ServeHTTP(w, r)
-		log.Println(w.Code)
-		//assert.Equal(t, w.Code, http.StatusBadRequest)
+		assert.Equal(t, w.Code, http.StatusBadRequest)
 	}
 }
