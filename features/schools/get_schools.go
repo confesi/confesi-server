@@ -16,7 +16,12 @@ import (
 
 type Response struct {
 	*Pagination
-	Schools []db.School `json:"schools"`
+	Schools []SchoolInfo `json:"schools"`
+}
+
+type SchoolInfo struct {
+	db.School
+	Distance *float64 `json:"distance"`
 }
 
 type Pagination struct {
@@ -68,9 +73,14 @@ func (h *handler) getSchools(c *gin.Context) {
 
 		}
 
+		var schoolReponse []SchoolInfo
+		for _, school := range schools {
+			schoolReponse = append(schoolReponse, SchoolInfo{school, nil})
+		}
+
 		response.
 			New(http.StatusOK).
-			Val(Response{pagination, schools}).
+			Val(Response{pagination, schoolReponse}).
 			Send(c)
 		return
 	}
@@ -94,10 +104,11 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	var schoolsInRange []db.School
+	var schoolsInRange []SchoolInfo
 	for _, school := range schools {
-		if coord.getDistance(school) <= coord.radius {
-			schoolsInRange = append(schoolsInRange, school)
+		distance := coord.getDistance(school)
+		if distance <= coord.radius {
+			schoolsInRange = append(schoolsInRange, SchoolInfo{school, &distance})
 		}
 	}
 
