@@ -47,10 +47,18 @@ func TestGetSchoolBadRequest(t *testing.T) {
 		"/schools?limit=10&lat=40.799391&lon=-77.860863&radius=800",
 		// missing limit
 		"/schools?offset=1&lat=40.799391&lon=-77.860863&radius=800",
+		// invalid limit
+		"/schools?offset=1&limit=100000&lat=40.799391&lon=-77.860863&radius=800",
 		// missing lat
 		"/schools?offset=1&limit=10&lon=-77.860863&radius=800",
+		// invalid lat
+		"/schools?offset=1&limit=10&lat=91&lon=-77.860863&radius=800",
+		"/schools?offset=1&limit=10&lat=-91&lon=-77.860863&radius=800",
 		// missing lon
 		"/schools?offset=1&limit=10&lat=40.799391&radius=800",
+		// invalid lon
+		"/schools?offset=1&limit=10&lat=90&lon=-181&radius=800",
+		"/schools?offset=1&limit=10&lat=90&lon=181&radius=800",
 		// missing radius
 		"/schools?offset=1&limit=10&lat=40.799391&lon=-76.860863",
 		// either `school`, `lat`, `lon` are specified
