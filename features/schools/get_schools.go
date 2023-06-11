@@ -13,6 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	limitQueryMax = 100
+
+	latValueMax = 90
+	latValueMin = -90
+
+	lonValueMax = 180
+	lonValueMin = -180
+)
+
 type Response struct {
 	*Pagination
 	Schools []School `json:"schools"`
@@ -59,6 +69,7 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
+	/* If `school` param is found */
 	if schoolName != "" {
 		var schools []db.School
 		if err := h.getBySchoolName(&schools, schoolName, pagination); err != nil {
@@ -82,6 +93,7 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
+	/* If `lat` and `lon` is supplied */
 	var schools []School
 	if err := h.getAllSchools(&schools); err != nil {
 		logger.StdErr(err)
@@ -155,7 +167,7 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 	if err != nil {
 		return nil, errors.New("invalid lat value")
 	}
-	if lat < -90 || lat > 90 {
+	if lat < latValueMin || lat > latValueMax {
 		return nil, errors.New("lat value out of bound")
 	}
 
@@ -163,7 +175,7 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 	if err != nil {
 		return nil, errors.New("invalid lon value")
 	}
-	if lon < -180 || lon > 180 {
+	if lon < lonValueMin || lon > lonValueMax {
 		return nil, errors.New("lon value out of bound")
 	}
 
@@ -208,6 +220,10 @@ func getPagination(c *gin.Context) (*Pagination, error) {
 	limit, err := strconv.ParseInt(c.Query("limit"), 10, 32)
 	if err != nil {
 		return nil, errors.New("invalid page limit query")
+	}
+
+	if limit > limitQueryMax || limit < 0 {
+		return nil, errors.New("limit query out of bound")
 	}
 
 	return &Pagination{
