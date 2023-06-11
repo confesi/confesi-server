@@ -10,6 +10,6 @@ import (
 func TestGetSchoolByName(t *testing.T) {
 	h := handler{db.New()}
 	var schools []db.School
-	err := h.getBySchoolName(schools, "uvic", &Pagination{Offset: 1, Limit: 20})
+	err := h.getBySchoolName(&schools, "uvic", &Pagination{Offset: 1, Limit: 20})
 	assert.Nil(t, err)
 }
