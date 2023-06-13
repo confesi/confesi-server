@@ -1,0 +1,11 @@
+GET http://127.0.0.1:8080/api/v1/schools?offset=1&limit=10&school=uvic
+Content-Type: application/json
+X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
+###
+GET http://127.0.0.1:8080/api/v1/schools?offset=1&limit=10&lat=40.799391&lon=-77.860863&radius=1000
+Content-Type: application/json
+X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
+###
+GET http://127.0.0.1:8080/api/v1/schools?offset=1&limit=10
+Content-Type: application/json
+X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
