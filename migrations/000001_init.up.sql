@@ -108,10 +108,12 @@ BEGIN;
     CREATE TABLE saved_posts (
         id SERIAL PRIMARY KEY UNIQUE NOT NULL,
         created_at TIMESTAMPTZ NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL,
         user_id VARCHAR(255) NOT NULL,
         post_id INTEGER NOT NULL,
         CONSTRAINT sap_fk_use FOREIGN KEY (user_id) REFERENCES users (id),
-        CONSTRAINT sap_fk_pos FOREIGN KEY (post_id) REFERENCES posts (id)
+        CONSTRAINT sap_fk_pos FOREIGN KEY (post_id) REFERENCES posts (id),
+        CONSTRAINT unique_content UNIQUE (user_id, post_id)
     );
 
     CREATE TABLE saved_comments (

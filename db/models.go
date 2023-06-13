@@ -149,13 +149,15 @@ type Vote struct {
 }
 
 type SavedPost struct {
-	meta
-	UserID string
-	PostID string
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	UserID    string
+	PostID    uint
 }
 
 type SavedComment struct {
-	meta
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	UserID    string
 	CommentID uint
 }

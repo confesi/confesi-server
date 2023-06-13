@@ -17,3 +17,10 @@ type CreatePostDetails struct {
 	// [required if Title empty/null] at most 2000 characters
 	Body string `json:"body" validate:"max=2000,required_without=Title"`
 }
+
+type SaveContentDetails struct {
+	// [required] content id to save/unsave
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+}
