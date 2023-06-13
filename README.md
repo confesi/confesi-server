@@ -1,3 +1,8 @@
+# Confesi
+
+![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
+![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
+
 ## Requirements
 
 - Go 1.20.
