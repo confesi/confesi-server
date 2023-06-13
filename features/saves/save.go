@@ -14,10 +14,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const (
-	ServerError = "server error"
-)
-
 func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.SaveContentDetails) error {
 	// bit of saved content
 	var err error

@@ -14,6 +14,10 @@ type handler struct {
 	fb *fire.FirebaseApp
 }
 
+const (
+	ServerError = "server error"
+)
+
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
