@@ -37,6 +37,7 @@ func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.
 		var pgErr *pgconn.PgError
 		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
 		if ok := errors.As(err, &pgErr); !ok || pgErr.Code != "23505" {
+			// if it's already been saved, just ignore and say "ok! saved it!"
 			return errors.New(ServerError)
 		}
 	}

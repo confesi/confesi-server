@@ -24,3 +24,10 @@ type SaveContentDetails struct {
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
+
+type SaveContentCursor struct {
+	// [required] timestamp of last saved content (ms since epoch)
+	Next uint `json:"next" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+}

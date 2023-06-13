@@ -100,19 +100,20 @@ type SchoolFollow struct {
 	SchoolID uint
 }
 
+// ! Very important that SOME FIELDS ARE NOT SERIALIZED TO PROTECT SENSATIVE DATA
 type Post struct {
-	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime"`
-	UserID        string       `gorm:"column:user_id"`
+	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID        string       `gorm:"column:user_id" json:"-"`
 	SchoolID      uint         `gorm:"column:school_id"`
 	FacultyID     uint         `gorm:"column:faculty_id"`
 	Title         string       `gorm:"column:title"`
 	Content       string       `gorm:"column:content"`
 	Downvote      uint         `gorm:"column:downvote"`
 	Upvote        uint         `gorm:"column:upvote"`
-	TrendingScore uint64       `gorm:"column:trending_score"`
-	HottestOn     sql.NullTime `gorm:"column:hottest_on"`
-	Hidden        bool         `gorm:"column:hidden"`
+	TrendingScore float64      `gorm:"column:trending_score" json:"-"`
+	HottestOn     sql.NullTime `gorm:"column:hottest_on" json:"-"`
+	Hidden        bool         `gorm:"column:hidden" json:"-"`
 	VoteScore     int          `gorm:"column:vote_score"`
 }
 
