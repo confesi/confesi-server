@@ -87,7 +87,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	title := strings.TrimSpace(req.Title)
 	body := strings.TrimSpace(req.Body)
 
-	token, err := utils.UserFromContext(c)
+	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return

@@ -78,7 +78,6 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	// if the vote are the same, just rollback & return, there's no more work to do, but
 	// we consider it idempotently a "success"
 	if oldVote == vote.Vote {
-		fmt.Println("OLD == NEW => ROLLBACK")
 		tx.Rollback()
 		return nil
 	}
@@ -122,18 +121,16 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	}
 
 	var votes foundVotes
-	if oldVote != 0 || vote.Vote != 0 {
-		// update the score of the content
-		query := tx.Model(&content.model).
-			Where("id = ?", content.id).
-			Updates(columnUpdates).
-			Clauses(clause.Returning{}).
-			Select("upvote, downvote").
-			Scan(&votes)
-		if err := query.Error; err != nil {
-			tx.Rollback()
-			return err
-		}
+	// update the score of the content
+	query := tx.Model(&content.model).
+		Where("id = ?", content.id).
+		Updates(columnUpdates).
+		Clauses(clause.Returning{}).
+		Select("upvote, downvote").
+		Scan(&votes)
+	if err := query.Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	// update the post with the modified vote values and the new trending score
@@ -166,7 +163,7 @@ func (h *handler) handleVote(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.UserFromContext(c)
+	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
@@ -186,6 +183,7 @@ func (h *handler) handleVote(c *gin.Context) {
 	}
 
 	if err := h.doVote(c, vote, req.ContentType); err != nil {
+		// errors are always server error if they arise from here
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
 	}
