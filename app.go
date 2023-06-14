@@ -5,6 +5,7 @@ import (
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
+	"confesi/features/votes"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -36,6 +37,7 @@ func main() {
 	// Separate handler groups
 	auth.Router(api.Group("/auth"))
 	posts.Router(api.Group("/posts"))
+	votes.Router(api.Group("/votes"))
 	schools.Router(api.Group("/schools"))
 	saves.Router(api.Group("/saves"))
 

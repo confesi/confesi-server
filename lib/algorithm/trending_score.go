@@ -6,11 +6,13 @@ import "math"
 // at this location: https://github.com/reddit-archive/reddit/blob/bd922104b971a5c6794b199f364a06fdf61359a2/r2/r2/lib/db/_sorts.pyx#L47
 
 const (
-	baseTime          = 1686037996000 // base time in milliseconds (aka, the epoch for our trending calculations)
-	limitedMultiplier = 0.5           // multiplier for limited posts
+	baseTime          = 1257894000 // base time in seconds (aka, the epoch for our trending calculations)
+	limitedMultiplier = 0.5        // multiplier for limited posts
 )
 
 // Calculates the trending score of a bit of content.
+//
+// Accepts time in seconds since unix epoch, UTC.
 func TrendingScore(upvotes int, downvotes int, currTime int, limited bool) float64 {
 	// calculate the time difference
 	timeDelta := float64(currTime - baseTime)
