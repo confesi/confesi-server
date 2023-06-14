@@ -3,6 +3,7 @@ package posts
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
 	"fmt"
@@ -86,19 +87,13 @@ func (h *handler) handleCreate(c *gin.Context) {
 	title := strings.TrimSpace(req.Title)
 	body := strings.TrimSpace(req.Body)
 
-	user, ok := c.Get("user")
-	if !ok {
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
-	token, ok := user.(*auth.Token)
-	if !ok {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
-	}
-
-	err := h.createPost(c, title, body, token)
+	err = h.createPost(c, title, body, token)
 	if err != nil {
 		// all returned errors are just general client-facing "server errors"
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)

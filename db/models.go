@@ -3,8 +3,6 @@ package db
 import (
 	"database/sql"
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Table names
@@ -101,6 +99,7 @@ type SchoolFollow struct {
 }
 
 type Post struct {
+	ID            int          `gorm:"primary_key;column:id"`
 	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime"`
 	UserID        string       `gorm:"column:user_id"`
@@ -114,13 +113,6 @@ type Post struct {
 	HottestOn     sql.NullTime `gorm:"column:hottest_on"`
 	Hidden        bool         `gorm:"column:hidden"`
 	VoteScore     int          `gorm:"column:vote_score"`
-}
-
-// Interface
-// `BeforeSave` is a GORM hook that will be called before saving a post (auto-update the `vote_score` field)
-func (p *Post) BeforeSave(tx *gorm.DB) error {
-	p.VoteScore = int(p.Upvote) - int(p.Downvote)
-	return nil
 }
 
 type Comment struct {
@@ -142,10 +134,10 @@ const (
 
 type Vote struct {
 	ID        uint
-	Vote      int
-	UserID    string
-	PostID    uint
-	CommentID uint
+	Vote      int    `db:"vote"`
+	UserID    string `db:"user_id"`
+	PostID    uint   `db:"post_id" gorm:"default:NULL"`    // Either one of these FKs can be null, but the constraint
+	CommentID uint   `db:"comment_id" gorm:"default:NULL"` // is that exactly one of them is a valid FK
 }
 
 type SavedPost struct {
