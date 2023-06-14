@@ -17,9 +17,9 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const (
-	ServerError  = "server error"
-	InvalidValue = "invalid value"
+var (
+	serverError  = errors.New("server error")
+	invalidValue = errors.New("invalid value")
 )
 
 type contentMatcher struct {
@@ -35,7 +35,7 @@ func voteToColumnName(vote int) (string, error) {
 	case -1:
 		return "downvote", nil
 	default:
-		return "", errors.New(InvalidValue)
+		return "", invalidValue
 	}
 }
 
@@ -46,7 +46,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}()
@@ -58,7 +58,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		content = contentMatcher{fieldName: "post_id", id: &vote.PostID, model: &db.Post{}}
 	} else {
 		tx.Rollback()
-		return errors.New(InvalidValue)
+		return invalidValue
 	}
 
 	var oldVote int
@@ -70,7 +70,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 			oldVote = 0
 		} else {
 			tx.Rollback()
-			return errors.New(ServerError)
+			return serverError
 		}
 	} else {
 		oldVote = model.Vote
@@ -92,7 +92,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	}
 	if err != nil {
 		tx.Rollback()
-		return errors.New(ServerError)
+		return serverError
 	}
 
 	columnUpdates := make(map[string]interface{})
@@ -103,7 +103,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 			columnUpdates[oldVoteColumn] = gorm.Expr(oldVoteColumn+" - ?", 1)
 		} else {
 			tx.Rollback()
-			return errors.New(InvalidValue)
+			return invalidValue
 		}
 	}
 	if vote.Vote != 0 {
@@ -111,7 +111,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 			columnUpdates[newVoteColumn] = gorm.Expr(newVoteColumn+" + ?", 1)
 		} else {
 			tx.Rollback()
-			return errors.New(InvalidValue)
+			return invalidValue
 		}
 	}
 
