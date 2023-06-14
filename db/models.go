@@ -118,14 +118,14 @@ type Post struct {
 
 type Comment struct {
 	meta
-	UserID    string
+	UserID    string `json:"-"`
 	PostID    string
 	CommentID *uint
 	Content   string
 	Downvote  uint
 	Upvote    uint
 	Score     int
-	Hidden    bool
+	Hidden    bool `json:"-"`
 }
 
 const (
