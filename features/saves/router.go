@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -14,8 +15,10 @@ type handler struct {
 	fb *fire.FirebaseApp
 }
 
-const (
-	ServerError = "server error"
+var (
+	serverError = errors.New("server error")
+	invalidId   = errors.New("invalid id")
+	cursorSize  = 10 // how many saved posts/comments to fetch at a time
 )
 
 func Router(mux *gin.RouterGroup) {
@@ -28,5 +31,9 @@ func Router(mux *gin.RouterGroup) {
 
 	mux.POST("/save", h.handleSave)
 	mux.DELETE("/unsave", h.handleUnsave)
-	mux.GET("/get_saved", h.handleGetSaved)
+	// these two endpoints have some code duplication, but it
+	// appears to be cleaner than to try to combine them and have to
+	// deal with union types
+	mux.GET("/posts", h.handleGetPosts)
+	mux.GET("/comments", h.handleGetComments)
 }

@@ -98,7 +98,7 @@ type SchoolFollow struct {
 	SchoolID uint
 }
 
-// ! Very important that SOME FIELDS ARE NOT SERIALIZED TO PROTECT SENSATIVE DATA
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
 	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime" json:"-"`
 	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime" json:"-"`
@@ -110,12 +110,13 @@ type Post struct {
 	Content       string       `gorm:"column:content"`
 	Downvote      uint         `gorm:"column:downvote"`
 	Upvote        uint         `gorm:"column:upvote"`
-	TrendingScore float64      `gorm:"column:trending_score" json:"-"`
+	TrendingScore float64      `gorm:"column:trending_score"`
 	HottestOn     sql.NullTime `gorm:"column:hottest_on" json:"-"`
 	Hidden        bool         `gorm:"column:hidden" json:"-"`
 	VoteScore     int          `gorm:"column:vote_score"`
 }
 
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	meta
 	UserID    string `json:"-"`

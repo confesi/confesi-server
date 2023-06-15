@@ -3,6 +3,7 @@ package saves
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
 	"fmt"
@@ -31,14 +32,23 @@ func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.
 		err = h.db.Create(&savedComment).Error
 	} else {
 		// should never happen with validated struct, but to be defensive
-		return errors.New(ServerError)
+		return serverError
 	}
 	if err != nil {
 		var pgErr *pgconn.PgError
 		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
-		if ok := errors.As(err, &pgErr); !ok || pgErr.Code != "23505" {
-			// if it's already been saved, just ignore and say "ok! saved it!"
-			return errors.New(ServerError)
+		if ok := errors.As(err, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			return serverError
+		}
+		switch pgErr.Code {
+		case "23505": // duplicate key value violates unique constraint
+			return nil // just let the user know it's been created, if it's already there
+		case "23503": // foreign key constraint violation
+			return invalidId // aka, you provided an invalid post/comment id to try saving
+		default:
+			// some other postgreSQL error
+			return serverError
 		}
 	}
 	return nil
@@ -60,25 +70,21 @@ func (h *handler) handleSave(c *gin.Context) {
 		return
 	}
 
-	// TODO: START: once firebase user utils function is merged, use that instead to be cleaner
-	// get firebase user
-	user, ok := c.Get("user")
-	if !ok {
-		response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
-		return
-	}
-
-	token, ok := user.(*auth.Token)
-	if !ok {
-		response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
-		return
-	}
-	// TODO: END
-
-	err := h.saveContent(c, token, req)
+	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		// all returned errors are just general client-facing "server errors"
-		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
+	err = h.saveContent(c, token, req)
+	if err != nil {
+		// switch over err
+		switch err {
+		case invalidId:
+			response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
+		default:
+			response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		}
 		return
 	}
 

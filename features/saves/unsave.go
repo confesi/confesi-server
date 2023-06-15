@@ -3,8 +3,8 @@ package saves
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,10 +28,10 @@ func (h *handler) unsaveContent(c *gin.Context, token *auth.Token, req validatio
 		}
 		err = h.db.Delete(&savedComment, "user_id = ? AND comment_id = ?", savedComment.UserID, savedComment.CommentID).Error
 	} else {
-		return errors.New(ServerError)
+		return serverError
 	}
 	if err != nil {
-		return errors.New(ServerError)
+		return serverError
 	}
 	return nil
 }
@@ -51,23 +51,13 @@ func (h *handler) handleUnsave(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
 		return
 	}
-
-	// TODO: START: once firebase user utils function is merged, use that instead to be cleaner
-	// get firebase user
-	user, ok := c.Get("user")
-	if !ok {
-		response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
-	token, ok := user.(*auth.Token)
-	if !ok {
-		response.New(http.StatusInternalServerError).Err(ServerError).Send(c)
-		return
-	}
-	// TODO: END
-
-	err := h.unsaveContent(c, token, req)
+	err = h.unsaveContent(c, token, req)
 	if err != nil {
 		// all returned errors are just general client-facing "server errors"
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
