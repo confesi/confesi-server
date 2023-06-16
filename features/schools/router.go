@@ -32,4 +32,5 @@ func Router(r *gin.RouterGroup) {
 	})
 	protectedRoutes.POST("/watch", h.handleWatchSchool)
 	protectedRoutes.DELETE("/unwatch", h.handleUnwatchSchool)
+	protectedRoutes.GET("/watched", h.handleGetWatchedSchools)
 }

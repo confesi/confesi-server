@@ -92,11 +92,12 @@ type User struct {
 	ModID       uint
 }
 
+// ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
-	ID        uint      `gorm:"primary_key;column:id"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
-	UserID    string
+	ID        uint      `gorm:"primary_key;column:id" json:"-"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID    string    `gorm:"column:user_id" json:"-"`
 	SchoolID  uint
 }
 
