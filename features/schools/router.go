@@ -31,4 +31,5 @@ func Router(r *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
 	})
 	protectedRoutes.POST("/watch", h.handleWatchSchool)
+	protectedRoutes.DELETE("/unwatch", h.handleUnwatchSchool)
 }
