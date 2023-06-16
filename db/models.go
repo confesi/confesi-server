@@ -82,9 +82,9 @@ func (Faculty) TableName() string {
 }
 
 type User struct {
-	ID          string `gorm:"primaryKey"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string    `gorm:"primaryKey"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	Email       string
 	YearOfStudy uint8
 	FacultyID   uint
@@ -93,9 +93,11 @@ type User struct {
 }
 
 type SchoolFollow struct {
-	ID       uint
-	UserID   uint
-	SchoolID uint
+	ID        uint      `gorm:"primary_key;column:id"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	UserID    string
+	SchoolID  uint
 }
 
 type Post struct {

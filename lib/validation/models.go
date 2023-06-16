@@ -26,3 +26,8 @@ type VoteDetail struct {
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
+
+type WatchSchool struct {
+	// [required] school id to watch
+	SchoolID uint `json:"school_id" validate:"required"`
+}
