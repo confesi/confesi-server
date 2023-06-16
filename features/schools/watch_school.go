@@ -32,7 +32,7 @@ func (h *handler) watchSchool(c *gin.Context, token *auth.Token, req validation.
 		case "23505": // duplicate key value violates unique constraint
 			return nil // just let the user know it's been watched, if it's already there
 		case "23503": // foreign key constraint violation
-			return invalidId // aka, you provided an invalid post/comment id to try saving
+			return invalidId // aka, you provided an school id to try watching
 		default:
 			// some other postgreSQL error
 			return serverError

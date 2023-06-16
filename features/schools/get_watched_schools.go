@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// value that gets sent back to client for each of their watchd schools
+// value that gets sent back to client for each of their watched schools
 type schoolResult struct {
 	ID     uint   `json:"id"`
 	Name   string `json:"name"`
