@@ -31,6 +31,8 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 		Where("saved_posts.user_id = ?", token.UID).
 		Where("posts.hidden = ?", false).
 		Order("saved_posts.updated_at DESC").
+		Preload("School").
+		Preload("Faculty").
 		Limit(cursorSize).
 		Find(&fetchResult.Posts).Error
 
