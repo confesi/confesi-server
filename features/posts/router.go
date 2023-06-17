@@ -17,10 +17,14 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
+	// allow any user to get the hottest posts
+	mux.GET("/hottest", h.handleGetHottest)
+
 	// only allow registered users to create a post
-	mux.Use(func(c *gin.Context) {
+	protectedRoutes := mux.Group("")
+	protectedRoutes.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
 	})
+	protectedRoutes.POST("/create", h.handleCreate)
 
-	mux.POST("/create", h.handleCreate)
 }
