@@ -14,6 +14,7 @@ require (
 	cloud.google.com/go/longrunning v0.4.1 // indirect
 	cloud.google.com/go/storage v1.28.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -24,6 +25,7 @@ require (
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	gorm.io/driver/mysql v1.4.7 // indirect
 )
 
 require (
@@ -68,5 +70,6 @@ require (
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/guregu/null.v4 v4.0.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/datatypes v1.2.0
 	gorm.io/gorm v1.25.1
 )

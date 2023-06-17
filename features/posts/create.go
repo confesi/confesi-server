@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"strings"
 
-	"database/sql"
-
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -48,7 +46,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
-		HottestOn:     sql.NullTime{}, // default to a null time, aka, it hasn't yet been hottest on any day
+		// `HottestOn` not included so that it defaults to NULL
 	}
 
 	// save user to postgres

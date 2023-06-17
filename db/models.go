@@ -1,7 +1,8 @@
 package db
 
 import (
-	"database/sql"
+	"gorm.io/datatypes"
+
 	"time"
 )
 
@@ -99,20 +100,20 @@ type SchoolFollow struct {
 }
 
 type Post struct {
-	ID            int          `gorm:"primary_key;column:id"`
-	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime"`
-	UserID        string       `gorm:"column:user_id"`
-	SchoolID      uint         `gorm:"column:school_id"`
-	FacultyID     uint         `gorm:"column:faculty_id"`
-	Title         string       `gorm:"column:title"`
-	Content       string       `gorm:"column:content"`
-	Downvote      uint         `gorm:"column:downvote"`
-	Upvote        uint         `gorm:"column:upvote"`
-	TrendingScore uint64       `gorm:"column:trending_score"`
-	HottestOn     sql.NullTime `gorm:"column:hottest_on"`
-	Hidden        bool         `gorm:"column:hidden"`
-	VoteScore     int          `gorm:"column:vote_score"`
+	ID            int             `gorm:"primary_key;column:id"`
+	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
+	UserID        string          `gorm:"column:user_id"`
+	SchoolID      uint            `gorm:"column:school_id"`
+	FacultyID     uint            `gorm:"column:faculty_id"`
+	Title         string          `gorm:"column:title"`
+	Content       string          `gorm:"column:content"`
+	Downvote      uint            `gorm:"column:downvote"`
+	Upvote        uint            `gorm:"column:upvote"`
+	TrendingScore uint64          `gorm:"column:trending_score"`
+	HottestOn     *datatypes.Date `gorm:"column:hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
+	Hidden        bool            `gorm:"column:hidden"`
+	VoteScore     int             `gorm:"column:vote_score"`
 }
 
 type Comment struct {
