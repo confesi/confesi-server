@@ -100,10 +100,10 @@ type SchoolFollow struct {
 }
 
 type Post struct {
-	ID            int             `gorm:"primary_key;column:id"`
+	ID            int             `gorm:"primary_key;column:id" json:"-"`
 	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
-	UserID        string          `gorm:"column:user_id"`
+	UserID        string          `gorm:"column:user_id" json:"-"`
 	SchoolID      uint            `gorm:"column:school_id" json:"-"`
 	School        School          `gorm:"foreignKey:SchoolID"`
 	FacultyID     uint            `gorm:"column:faculty_id" json:"-"`
@@ -114,20 +114,20 @@ type Post struct {
 	Upvote        uint            `gorm:"column:upvote"`
 	TrendingScore uint64          `gorm:"column:trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
-	Hidden        bool            `gorm:"column:hidden"`
+	Hidden        bool            `gorm:"column:hidden" json:"-"`
 	VoteScore     int             `gorm:"column:vote_score"`
 }
 
 type Comment struct {
 	meta
-	UserID    string
+	UserID    string `gorm:"column:user_id" json:"-"`
 	PostID    string
 	CommentID *uint
 	Content   string
 	Downvote  uint
 	Upvote    uint
 	Score     int
-	Hidden    bool
+	Hidden    bool `gorm:"column:hidden" json:"-"`
 }
 
 const (
