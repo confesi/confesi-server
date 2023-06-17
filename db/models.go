@@ -104,8 +104,10 @@ type Post struct {
 	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
 	UserID        string          `gorm:"column:user_id"`
-	SchoolID      uint            `gorm:"column:school_id"`
-	FacultyID     uint            `gorm:"column:faculty_id"`
+	SchoolID      uint            `gorm:"column:school_id" json:"-"`
+	School        School          `gorm:"foreignKey:SchoolID"`
+	FacultyID     uint            `gorm:"column:faculty_id" json:"-"`
+	Faculty       Faculty         `gorm:"foreignKey:FacultyID"`
 	Title         string          `gorm:"column:title"`
 	Content       string          `gorm:"column:content"`
 	Downvote      uint            `gorm:"column:downvote"`

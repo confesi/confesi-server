@@ -17,7 +17,13 @@ var (
 
 func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, error) {
 	var posts []db.Post
-	err := h.db.Where("hottest_on = ?", date).Limit(maxHottestPostsReturned).Find(&posts).Error
+	err := h.db.
+		Where("hottest_on = ?", date).
+		Limit(maxHottestPostsReturned).
+		Preload("School").
+		Preload("Faculty").
+		Find(&posts).
+		Error
 	if err != nil {
 		return nil, serverError
 	}
