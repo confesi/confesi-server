@@ -26,3 +26,8 @@ type VoteDetail struct {
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
+
+type UserStanding struct {
+	// [required] user standing must be one of "limited", "banned", or "enabled"
+	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
+}
