@@ -3,6 +3,7 @@ package posts
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/lib/validation"
 
 	"fmt"
@@ -33,9 +34,18 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// session key that can only be created by *this* user, so it can't be guessed to manipulate other's feeds
+	idSessionKey := utils.CreateCacheKey("posts", token.UID, req.SessionKey)
+
 	if req.PurgeCache {
 		// purge the cache
-		err := h.redis.Del(c, "posts:"+req.SessionKey).Err()
+		err := h.redis.Del(c, idSessionKey).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
@@ -43,7 +53,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	}
 
 	// retrieve the post IDs from the cache
-	ids, err := h.redis.SMembers(c, "posts:"+req.SessionKey).Result()
+	ids, err := h.redis.SMembers(c, idSessionKey).Result()
 	if err != nil {
 		if err == redis.Nil {
 			ids = []string{} // assigns an empty slice
@@ -53,14 +63,27 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		}
 	}
 
+	var sortField string
+	switch req.Sort {
+	case "new":
+		sortField = "created_at DESC"
+	case "trending":
+		sortField = "vote_score DESC"
+	default:
+		// should never happen with validated struct, but to be defensive
+		response.New(http.StatusBadRequest).Err("invalid sort field").Send(c)
+		return
+	}
+
 	// select all posts that are not in the retrieved post IDs
 	var posts []db.Post
 	query := h.db.
 		Preload("School").
 		Preload("Faculty").
-		Order("vote_score DESC").
+		Order(sortField).
 		Limit(postPageSize).
-		Where("hidden = ?", false)
+		Where("hidden = ?", false).
+		Where("school_id = ?", req.School)
 
 	if len(ids) > 0 {
 		query = query.Where("posts.id NOT IN (?)", ids)
@@ -75,7 +98,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	// update the cache with the retrieved post IDs
 	for _, post := range posts {
 		id := fmt.Sprint(post.ID)
-		err := h.redis.SAdd(c, "posts:"+req.SessionKey, id).Err()
+		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {
 			fmt.Println("error: ", err)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
@@ -84,7 +107,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	}
 
 	// set the expiration for the cache
-	err = h.redis.Expire(c, "posts:"+req.SessionKey, cacheExpiration).Err()
+	err = h.redis.Expire(c, idSessionKey, cacheExpiration).Err()
 	if err != nil {
 		fmt.Println("error: ", err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)

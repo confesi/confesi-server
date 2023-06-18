@@ -29,12 +29,18 @@ func Router(mux *gin.RouterGroup) {
 	// allow any user to get the hottest posts
 	mux.GET("/hottest", h.handleGetHottest)
 	mux.GET("/post", h.handleGetPostById)
-	mux.GET("/posts", h.handleGetPosts)
+
+	anyFirebaseUserRoutes := mux.Group("")
+	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers)
+	})
+	anyFirebaseUserRoutes.GET("/posts", h.handleGetPosts)
+	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgePostsCache)
 
 	// only allow registered users to create a post
-	protectedRoutes := mux.Group("")
-	protectedRoutes.Use(func(c *gin.Context) {
+	registeredFirebaseUserRoutes := mux.Group("")
+	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
 	})
-	protectedRoutes.POST("/create", h.handleCreate)
+	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
 }
