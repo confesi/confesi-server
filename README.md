@@ -48,10 +48,18 @@ sudo npm install -g redis-commander
 
 ## Running the project
 
-**Start the Docker container (with the Docker daemon running):**
+For both steps below, ensure the Docker daemon is running.
+
+**Run/build the Docker container (first time running the project):**
 
 ```sh
 docker compose up --build app
+```
+
+**Run the Docker container (after you've built it the first time):**
+
+```sh
+docker-compose up
 ```
 
 ## PostgreSQL
