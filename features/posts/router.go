@@ -2,7 +2,9 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/cache"
 	"confesi/lib/fire"
+
 	"confesi/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -17,10 +19,11 @@ type handler struct {
 }
 
 func Router(mux *gin.RouterGroup) {
-	h := handler{db: db.New(), fb: fire.New()}
+	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
 	// allow any user to get the hottest posts
 	mux.GET("/hottest", h.handleGetHottest)
+	mux.GET("/post", h.handleGetPostById)
 
 	// only allow registered users to create a post
 	protectedRoutes := mux.Group("")
@@ -28,5 +31,4 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
 	})
 	protectedRoutes.POST("/create", h.handleCreate)
-
 }

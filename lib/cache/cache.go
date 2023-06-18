@@ -1,7 +1,8 @@
-package db
+package cache
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/go-redis/redis/v8"
@@ -19,10 +20,10 @@ func init() {
 		Addr: connString,
 	})
 	if _, err := redisClient.Ping(context.TODO()).Result(); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("failed to connect to redis: %v", err))
 	}
 }
 
-func NewRedisConn() *redis.Client {
+func New() *redis.Client {
 	return redisClient
 }
