@@ -34,6 +34,6 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjY3YmFiYWFiYTEwNWFkZDZiM2ZiYj
 {
     "sort": "trending",
     "school": 1,
-    "purge_cache": true,
+    "purge_cache": false,
     "session_key": "123"
 }

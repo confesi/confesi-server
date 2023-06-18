@@ -7,7 +7,7 @@ import (
 
 	"fmt"
 	"net/http"
-	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 
@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	postPageSize = 10
+	postPageSize    = 5
+	cacheExpiration = 1 * time.Minute
 )
 
 func (h *handler) handleGetPosts(c *gin.Context) {
@@ -32,66 +33,61 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("PRINT 1")
-
 	if req.PurgeCache {
-		// Purge the cache
-		err := h.redis.HDel(c, "posts", req.SessionKey).Err()
+		// purge the cache
+		err := h.redis.Del(c, "posts:"+req.SessionKey).Err()
 		if err != nil {
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}
 
-	fmt.Println("PRINT 2")
-
-	values, err := h.redis.HGet(c, "posts", req.SessionKey).Result()
+	// retrieve the post IDs from the cache
+	ids, err := h.redis.SMembers(c, "posts:"+req.SessionKey).Result()
 	if err != nil {
 		if err == redis.Nil {
-			values = "" // Assign an empty string
-			// Alternatively, you can assign an empty list:
-			// values = []string{}
+			ids = []string{} // assigns an empty slice
 		} else {
-			fmt.Println("error: ", err)
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}
 
-	// Rest of the code...
-
-	fmt.Println("PRINT 3")
-
-	// Convert values to a string of post ids
-	ids := strings.Split(values, ",")
-
-	fmt.Println("PRINT 4")
-
-	// Select all posts
+	// select all posts that are not in the retrieved post IDs
 	var posts []db.Post
-	h.db.
+	query := h.db.
 		Preload("School").
 		Preload("Faculty").
-		Find(&posts).
 		Order("vote_score DESC").
-		Where("id NOT IN (?)", ids).
-		Where("hidden = ?", false).
-		Limit(postPageSize)
+		Limit(postPageSize).
+		Where("hidden = ?", false)
 
-	// Update the cache with the retrieved post IDs
-	var postIDs []string
-	for _, post := range posts {
-		postIDs = append(postIDs, fmt.Sprint(post.ID))
+	if len(ids) > 0 {
+		query = query.Where("posts.id NOT IN (?)", ids)
 	}
 
-	// Convert postIDs to a string slice
-	postIDsString := strings.Join(postIDs, ",")
+	err = query.Find(&posts).Error
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
 
-	// Save the post IDs to the cache
-	err = h.redis.HSet(c, "posts", req.SessionKey, postIDsString).Err()
+	// update the cache with the retrieved post IDs
+	for _, post := range posts {
+		id := fmt.Sprint(post.ID)
+		err := h.redis.SAdd(c, "posts:"+req.SessionKey, id).Err()
+		if err != nil {
+			fmt.Println("error: ", err)
+			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
+			return
+		}
+	}
+
+	// set the expiration for the cache
+	err = h.redis.Expire(c, "posts:"+req.SessionKey, cacheExpiration).Err()
 	if err != nil {
 		fmt.Println("error: ", err)
-		response.New(http.StatusInternalServerError).Err("failed to save post IDs to cache").Send(c)
+		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}
 
