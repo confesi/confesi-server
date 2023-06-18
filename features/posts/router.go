@@ -6,12 +6,14 @@ import (
 	"confesi/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
 type handler struct {
-	db *gorm.DB
-	fb *fire.FirebaseApp
+	db    *gorm.DB
+	fb    *fire.FirebaseApp
+	redis *redis.Client
 }
 
 func Router(mux *gin.RouterGroup) {

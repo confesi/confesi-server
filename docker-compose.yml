@@ -24,9 +24,23 @@ services:
       - 8080:8080
     links:
       - db
+      - redis
     volumes:
       - .:/confesi
     environment:
       PORT:
       POSTGRES_DSN:
       APPCHECK_TOKEN:
+      REDIS_CONN:
+
+  redis:
+      image: redis:alpine
+      volumes:
+        - redis-data:/data
+      container_name: redis
+      ports:
+        - '6379:6379'
+
+volumes:
+  redis-data:
+    driver: local
