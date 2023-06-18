@@ -4,12 +4,17 @@ import (
 	"confesi/db"
 	"confesi/lib/cache"
 	"confesi/lib/fire"
+	"errors"
 
 	"confesi/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+)
+
+var (
+	serverError = errors.New("server error")
 )
 
 type handler struct {
@@ -24,6 +29,7 @@ func Router(mux *gin.RouterGroup) {
 	// allow any user to get the hottest posts
 	mux.GET("/hottest", h.handleGetHottest)
 	mux.GET("/post", h.handleGetPostById)
+	mux.GET("/posts", h.handleGetPosts)
 
 	// only allow registered users to create a post
 	protectedRoutes := mux.Group("")

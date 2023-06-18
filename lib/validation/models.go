@@ -26,3 +26,10 @@ type VoteDetail struct {
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
+
+type PostQuery struct {
+	Sort       string `json:"sort" validate:"oneof=trending new"`
+	School     uint   `json:"school" validate:"required"`
+	PurgeCache bool   `json:"purge_cache" validate:"required"`
+	SessionKey string `json:"session_key" validate:"required"`
+}

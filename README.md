@@ -36,7 +36,12 @@ cd functions ; npm i ; cd ..
 **Install `firebase-tools`:**
 
 ```sh
-npm install -g firebase-tools
+sudo npm install -g firebase-tools
+```
+
+**Install the Redis UI to view the cache in real time:**
+```sh
+sudo npm install -g redis-commander
 ```
 
 **NOTE**: all scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
@@ -80,6 +85,15 @@ docker exec -it confesi-db psql -U postgres confesi
 export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
 go run ./scripts/main.go --seed-schools
 ```
+
+## Redis cache
+
+**Start the web UI:**
+```sh
+redis-commander
+```
+
+This should open the viewer, usually at [http://127.0.0.1:8081/](http://127.0.0.1:8081/) (address specified after running the command).
 
 ## Testing Firebase functionality locally
 

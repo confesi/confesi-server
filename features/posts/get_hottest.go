@@ -4,15 +4,10 @@ import (
 	"confesi/config"
 	"confesi/db"
 	"confesi/lib/response"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-)
-
-var (
-	serverError = errors.New("server error")
 )
 
 func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, error) {
