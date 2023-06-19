@@ -27,16 +27,9 @@ func (h *handler) handleUserStanding(c *gin.Context) {
 
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusInternalServerError).Err("server error 1").Send(c)
 		return
 	}
-
-	// var userData db.User
-	// err = h.db.Select("id").Where("id = ?", token.UID).First(&userData).Error
-	// if err != nil {
-	// 	response.New(http.StatusInternalServerError).Err("server error").Send(c)
-	// 	return
-	// }
 
 	var stance int
 	switch req.Standing {
@@ -49,12 +42,14 @@ func (h *handler) handleUserStanding(c *gin.Context) {
 	default:
 		//! Should Never Get Here
 		response.New(http.StatusBadRequest).Err("invalid standing").Send(c)
+		return
 	}
 
 	// update the user's standing to the new standing
+
 	err = h.db.Model(&db.User{}).Where("id = ?", token.UID).Update("ModID", stance).Error
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusInternalServerError).Err("server error 2").Send(c)
 		return
 	}
 
