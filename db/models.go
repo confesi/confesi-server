@@ -65,12 +65,13 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID     uint    `json:"id"`
-	Name   string  `json:"name"`
-	Abbr   string  `json:"abbr"`
-	Lat    float32 `json:"lat"`
-	Lon    float32 `json:"lon"`
-	Domain string  `json:"domain"`
+	ID            uint    `json:"id"`
+	Name          string  `json:"name"`
+	Abbr          string  `json:"abbr"`
+	Lat           float32 `json:"lat"`
+	Lon           float32 `json:"lon"`
+	DailyHottests int     `json:"daily_hottests"`
+	Domain        string  `json:"domain"`
 }
 
 type Faculty struct {
@@ -80,6 +81,14 @@ type Faculty struct {
 
 func (Faculty) TableName() string {
 	return "faculties"
+}
+
+func (Post) TableName() string {
+	return "posts"
+}
+
+func (School) TableName() string {
+	return "schools"
 }
 
 type User struct {
@@ -168,4 +177,13 @@ type Report struct {
 	ReportType  string `gorm:"type"`
 	Result      string
 	UserAlerted bool
+}
+
+type DailyHottestCron struct {
+	ID              uint           `gorm:"primaryKey"`
+	SuccessfullyRan datatypes.Date `gorm:"column:successfully_ran"`
+}
+
+func (DailyHottestCron) TableName() string {
+	return "daily_hottest_cron_jobs"
 }

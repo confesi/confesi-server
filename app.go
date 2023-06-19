@@ -5,6 +5,7 @@ import (
 	"confesi/features/posts"
 	"confesi/features/schools"
 	"confesi/features/votes"
+	"confesi/lib/cron"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -38,6 +39,8 @@ func main() {
 	posts.Router(api.Group("/posts"))
 	votes.Router(api.Group("/votes"))
 	schools.Router(api.Group("/schools"))
+
+	cron.StartDailyHottestPostsCronJob()
 
 	r.Run(fmt.Sprintf(":%s", port))
 }

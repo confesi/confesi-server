@@ -18,7 +18,7 @@ import (
 
 const (
 	postPageSize    = 5
-	cacheExpiration = 1 * time.Minute
+	cacheExpiration = 24 * time.Hour
 )
 
 func (h *handler) handleGetPosts(c *gin.Context) {
