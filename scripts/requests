@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# script must include a new token value as an arg
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <new_token_value>"
+  exit 1
+fi
+
+new_token="$1"
+
+dirs=$(find . -type f -name "requests.http" -exec dirname {} \; | sort -u)
+
+# replace token values in files
+for dir in ${dirs[@]}; do
+  find "$dir" -name "requests.http" -exec sed -E -i '' "s@(Authorization: Bearer )[^[:space:]]+@\1$new_token@g" {} +
+done
+
+echo "Token values updated successfully!"

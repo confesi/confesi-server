@@ -49,6 +49,14 @@ npm install -g firebase-tools
 docker compose up --build app
 ```
 
+## Scripts
+
+**Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour. Run from project root.**
+
+```sh
+./scripts/requests <my_new_token>
+```
+
 ## PostgreSQL
 
 - [DB Diagram](https://dbdiagram.io/d/64727d587764f72fcff5bc9a).
