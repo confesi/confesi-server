@@ -153,9 +153,10 @@ type SavedComment struct {
 }
 
 type Feedback struct {
-	meta
-	UserID  string
-	Content string
+	ID        int       `gorm:"primary_key;column:id"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UserID    string
+	Content   string
 }
 
 type Report struct {

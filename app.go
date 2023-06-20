@@ -3,6 +3,7 @@ package main
 import (
 	"confesi/features/admin"
 	"confesi/features/auth"
+	"confesi/features/feedback"
 	"confesi/features/posts"
 	"confesi/features/schools"
 	"confesi/features/votes"
@@ -40,6 +41,7 @@ func main() {
 	votes.Router(api.Group("/votes"))
 	schools.Router(api.Group("/schools"))
 	admin.Router(api.Group("/admin"))
+	feedback.Router(api.Group("/feedback"))
 
 	r.Run(fmt.Sprintf(":%s", port))
 }

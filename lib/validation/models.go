@@ -31,3 +31,10 @@ type UserStanding struct {
 	// [required] user standing must be one of "limited", "banned", or "enabled"
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
 }
+
+type FeedbackDetails struct {
+	// [required] feedback message
+	Message string `json:"message" validate:"required"`
+	// [required] feedback type must be one of "bug", "feature", or "other"
+	Type string `json:"type" validate:"required,oneof=bug feature other"`
+}
