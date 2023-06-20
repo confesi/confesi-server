@@ -19,5 +19,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers) //TODO: transition to the middleware auth such that only admins can hit this
 	})
-	mux.PUT("/user-standing", h.handleUserStanding)
+	mux.PATCH("/user-standing", h.handleUserStanding)
 }

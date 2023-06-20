@@ -5,32 +5,28 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func (h *handler) handleUserStanding(c *gin.Context) {
 
 	//Validate request
 	var req validation.UserStanding
-	binding := &validation.DefaultBinding{
-		Validator: validator.New(),
-	}
-	if err := binding.Bind(c.Request, &req); err != nil {
-		fmt.Println(err)
-		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
+	err := utils.New(c).Validate(&req)
+	if err != nil {
 		return
 	}
 
+	// get the user's token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error 1").Send(c)
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
+	// convert the standing to a stance variable number
 	var stance int
 	switch req.Standing {
 	case "enabled":
@@ -46,10 +42,9 @@ func (h *handler) handleUserStanding(c *gin.Context) {
 	}
 
 	// update the user's standing to the new standing
-
-	err = h.db.Model(&db.User{}).Where("id = ?", token.UID).Update("ModID", stance).Error
+	err = h.db.Model(&db.User{}).Where("id = ?", token.UID).Update("mod_id", stance).Error
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error 2").Send(c)
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
