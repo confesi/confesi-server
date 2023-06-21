@@ -33,3 +33,8 @@ type PostQuery struct {
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
 }
+
+type UserStanding struct {
+	// [required] user standing must be one of "limited", "banned", or "enabled"
+	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
+}

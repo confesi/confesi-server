@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -o pipefail
+
+# handle script termination
+abort() {
+  echo "Script aborted. Couldn't get token." >&2
+  exit 1
+}
+
+trap 'abort' ERR
+
+# get the absolute path of the script's directory
+script_dir="$(dirname "$(readlink -f "$0")")"
+
+# read environment variables from .env file (comments ignored via grep)
+export $(grep -v '^#' "$script_dir/../.env" | xargs)
+
+# show how to use if user can't bash properly
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <email> <password>"
+    exit 1
+fi
+
+# extract vars
+email="$1"
+password="$2"
+
+# make the authentication request
+response=$(curl -s -X POST \
+    -H "Content-Type: application/json" \
+    -d '{
+        "email": "'"$email"'",
+        "password": "'"$password"'",
+        "returnSecureToken": true
+    }' "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_API_KEY}")
+
+# extract the token from the response
+token=$(echo "$response" | grep -o '"idToken": *"[^"]*' | grep -o '[^"]*$')
+
+# check if the token exists
+if [ -n "$token" ]; then
+    echo "$token"
+    exit 0
+else
+    echo "Login failed. Check your credentials."
+    exit 1
+fi
