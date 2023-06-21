@@ -17,7 +17,7 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, er
 		Limit(config.HottestPostsSize).
 		Preload("School").
 		Preload("Faculty").
-		Order("vote_score DESC"). // fetches the hottest X posts for the day, and comparatively between them, ranks them by `vote_score`
+		Order("trending_score DESC"). // fetches the hottest X posts for the day, and comparatively between them, ranks them by `vote_score`
 		Find(&posts).
 		Error
 	if err != nil {

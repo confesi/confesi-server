@@ -21,7 +21,12 @@ func (h *handler) handlePurgePostsCache(c *gin.Context) {
 		return
 	}
 
-	cacheKey := utils.CreateCacheKey("posts", token.UID, sessionKey)
+	cacheKey, err := utils.CreateCacheKey("posts", token.UID, sessionKey)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
+		return
+	}
+
 	err = h.redis.Del(c, cacheKey).Err()
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

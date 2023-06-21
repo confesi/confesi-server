@@ -18,7 +18,7 @@ import (
 
 // TODO: admin route to inspect all the most recent successfully run jobs
 
-// TODO: add std info logging to see when the job runs, errors, infos, etc.
+// TODO: ensure session key is a valid uuid
 
 const (
 	// when to run the cron job daily in UTC
