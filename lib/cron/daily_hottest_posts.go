@@ -18,8 +18,6 @@ import (
 
 // TODO: admin route to inspect all the most recent successfully run jobs
 
-// TODO: ensure session key is a valid uuid
-
 const (
 	// when to run the cron job daily in UTC
 	runJobDailyAtTime = "23:55" // 11:55 PM
@@ -40,40 +38,48 @@ const (
 // If it fails after all those attempts, it will print to STDERR and give up.
 func StartDailyHottestPostsCronJob() {
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Day().At(runJobDailyAtTime).Do(func() {
-		logger.StdInfo("starting daily hottest posts cron job")
-		dateTime := time.Now().UTC()
-		baseDelayMs := 1000
-		for attempt := 0; attempt < maxRetries; attempt++ {
-			err := executeJob(dateTime)
-			if err != nil {
-				// job failed, so retry
-				logger.StdErr(errors.New("daily hottest posts cron job errored on attempt (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
-				delay := time.Duration(baseDelayMs) * time.Millisecond
-				if time.Since(dateTime)+delay > time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour {
-					time.Sleep(time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour - time.Since(dateTime))
-				} else {
-					time.Sleep(delay)
-				}
-				baseDelayMs += additionalDelayPerAttemptMs
-				// if we're past a certain preset number of hours, or are passed our maxRetries, then give up
-				if time.Since(dateTime).Hours() > hoursAfterOriginalAttemptToRetryFor || attempt > maxRetries {
-					// job failed
-					logger.StdErr(errors.New("daily hottest posts cron job failed and exited (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
-					break
-				}
-			} else {
-				// job done successfully!
-				logger.StdInfo("daily hottest posts cron job done successfully")
-				break
-			}
-		}
-	})
+	s.Every(1).Day().At(runJobDailyAtTime).Do(cronRetryLoop)
 	logger.StdInfo("started scheduler for daily hottest posts cron job")
 	s.StartAsync()
 }
 
-func executeJob(dateTime time.Time) error {
+func cronRetryLoop() {
+	logger.StdInfo("starting daily hottest posts cron job")
+	dateTime := time.Now().UTC()
+	baseDelayMs := 1000
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err := ExecuteCronJob(dateTime)
+		if err != nil {
+			// job failed, so retry
+			logger.StdErr(errors.New("daily hottest posts cron job errored on attempt (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
+			delay := time.Duration(baseDelayMs) * time.Millisecond
+			if time.Since(dateTime)+delay > time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour {
+				time.Sleep(time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour - time.Since(dateTime))
+			} else {
+				time.Sleep(delay)
+			}
+			baseDelayMs += additionalDelayPerAttemptMs
+			// if we're past a certain preset number of hours, or are passed our maxRetries, then give up
+			if time.Since(dateTime).Hours() > hoursAfterOriginalAttemptToRetryFor || attempt > maxRetries {
+				// job failed
+				logger.StdErr(errors.New("daily hottest posts cron job failed and exited (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
+				break
+			}
+		} else {
+			// job done successfully!
+			logger.StdInfo("daily hottest posts cron job done successfully")
+			break
+		}
+	}
+}
+
+func ExecuteCronJob(dateTime time.Time) error {
+
+	// if trying to run in the future, don't allow
+	if dateTime.After(time.Now().UTC()) {
+		return errors.New("cannot run cron job in the future")
+	}
+
 	// declare date types needed in query
 	dateParsed := dateTime.Format("2006-01-02") // an arbitrary date must exist just to say "format kind of like this"
 	date := datatypes.Date(dateTime)

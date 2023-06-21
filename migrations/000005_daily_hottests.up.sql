@@ -8,4 +8,7 @@ BEGIN;
 
     ALTER TABLE schools ADD COLUMN daily_hottests INTEGER DEFAULT 0;
 
+    CREATE INDEX idx_posts_hottest_on ON posts (hottest_on);
+    CREATE INDEX idx_posts_trending_score ON posts (trending_score);
+
 END;
