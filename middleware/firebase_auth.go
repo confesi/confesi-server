@@ -52,14 +52,13 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 			return
 		} else if profileCreated {
 			// registered user with postgres profile, now we check if they have the required roles
-			rolesClaim, ok := token.Claims["roles"]
-			if !ok {
+			var rolesClaim interface{}
+			if rolesClaim, ok = token.Claims["roles"]; !ok {
 				response.New(http.StatusUnauthorized).Err("roles field doesn't exist in claims").Send(c)
 				return
 			}
-
-			rolesInterfaceSlice, ok := rolesClaim.([]interface{})
-			if !ok {
+			var rolesInterfaceSlice []interface{}
+			if rolesInterfaceSlice, ok = rolesClaim.([]interface{}); !ok {
 				response.New(http.StatusUnauthorized).Err("invalid roles field in claims").Send(c)
 				return
 			}
