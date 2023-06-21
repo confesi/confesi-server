@@ -3,6 +3,10 @@
 ![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
 ![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
 
+## Notes
+
+- All scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
+
 ## Requirements
 
 - Go 1.20.
@@ -25,7 +29,7 @@ Open the `.env` file and follow the [link](https://generate-random.org/api-token
 
 **Add the Firebase api key:**
 
-This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY`.
+This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY` in the `.env` file.
 
 **Add the `firebase-secrets.json` file to the root of the project:**
 
@@ -42,8 +46,6 @@ cd functions ; npm i ; cd ..
 ```sh
 npm install -g firebase-tools
 ```
-
-**NOTE**: all scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
 
 ## Running the project
 
