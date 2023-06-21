@@ -103,16 +103,3 @@ func paginate(value interface{}, pagination *Pagination, db *gorm.DB) func(db *g
 		return db.Offset(pagination.GetOffset()).Limit(pagination.GetLimit()).Order(pagination.GetSort())
 	}
 }
-
-// type CategoryGorm struct {
-// 	db *gorm.DB
-// }
-
-// func (cg *CategoryGorm) List(pagination Pagination) (*Pagination, error) {
-// 	var categories []*Category
-
-// 	cg.db.Scopes(paginate(categories, &pagination, cg.db)).Find(&categories)
-// 	pagination.Rows = categories
-
-// 	return &pagination, nil
-// }
