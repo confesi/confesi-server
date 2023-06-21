@@ -22,14 +22,14 @@ const (
 )
 
 const (
-	ModEnable   = "enabled"
 	ModEnableID = 1
+	ModEnable   = "enabled"
 
-	ModBannedID = 2
-	ModBanned   = "banned"
-
-	ModLimitedID = 3
+	ModLimitedID = 2
 	ModLimited   = "limited"
+
+	ModBannedID = 3
+	ModBanned   = "banned"
 )
 
 const (
