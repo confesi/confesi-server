@@ -4,9 +4,14 @@ import (
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+)
+
+var (
+	serverError = errors.New("server error")
 )
 
 type handler struct {
@@ -21,4 +26,5 @@ func Router(mux *gin.RouterGroup) {
 	})
 	mux.PATCH("/user-standing", h.handleUserStanding)
 	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
+	mux.GET("/daily-hottest-crons", h.handleGetDailyHottestCrons)
 }

@@ -14,13 +14,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: admin route to manually force this job to run
-
 // TODO: admin route to inspect all the most recent successfully run jobs
 
 const (
 	// when to run the cron job daily in UTC
-	runJobDailyAtTime = "23:55" // 11:55 PM
+	runJobDailyAtTime = "09:42" // 11:55 PM
 
 	// delay factor multiplier value
 	additionalDelayPerAttemptMs = 1000 * 60 // 1 minute
