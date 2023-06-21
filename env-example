@@ -13,3 +13,6 @@ CIPHER_KEY="7571DFF385A22617"
 # to generate a new nonce for production:
 # go run ./scripts/main.go --new-nonce
 CIPHER_NONCE="47363bcf91a1545668f0fd7a"
+
+# Api key for firebase, add instructions in README.md
+FB_API_KEY=""

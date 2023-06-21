@@ -23,6 +23,10 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
+**Add the Firebase api key:**
+
+This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY`.
+
 **Add the `firebase-secrets.json` file to the root of the project:**
 
 This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Service accounts > Generate new private key. _Ensure this file is not checked into version control_.
@@ -51,10 +55,22 @@ docker compose up --build app
 
 ## Scripts
 
-**Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour. Run from project root.**
+**Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour.**
 
 ```sh
 ./scripts/requests <my_new_token>
+```
+
+**Get an access token for a user:**
+
+```sh
+./scripts/token <email> <password>
+```
+
+**Fetch new token for user and update it for all `requests.http` files at once:**
+
+```sh
+./scripts/token <email> <password> | ./scripts/requests
 ```
 
 ## PostgreSQL

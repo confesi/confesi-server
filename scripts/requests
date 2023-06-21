@@ -1,18 +1,26 @@
 #!/bin/bash
 
-# script must include a new token value as an arg
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <new_token_value>"
+# check if token value is provided as a command-line argument
+if [ $# -eq 1 ]; then
+  new_token="$1"
+elif [ -p /dev/stdin ]; then
+  # read the token value from standard input
+  read -r new_token
+else
+  echo "Usage: $0 <token_value> or provide token value through standard input"
   exit 1
 fi
 
-new_token="$1"
+# check if the first script failed
+if [ $? -eq 0 ]; then
+  dirs=$(find . -type f -name "requests.http" -exec dirname {} \; | sort -u)
 
-dirs=$(find . -type f -name "requests.http" -exec dirname {} \; | sort -u)
-
-# replace token values in files
-for dir in ${dirs[@]}; do
-  find "$dir" -name "requests.http" -exec sed -E -i '' "s@(Authorization: Bearer )[^[:space:]]+@\1$new_token@g" {} +
-done
-
-echo "Token values updated successfully!"
+  # replace token values in files
+  for dir in ${dirs[@]}; do
+    find "$dir" -name "requests.http" -exec sed -E -i '' "s@(Authorization: Bearer )[^[:space:]]+.*@\1$new_token@" {} +
+  done
+  echo "Token values updated successfully!"
+else
+  echo "Failed to obtain token. Aborting script."
+  exit 1
+fi
