@@ -19,8 +19,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-
 	mux.POST("/create", h.handleCreate)
 }
