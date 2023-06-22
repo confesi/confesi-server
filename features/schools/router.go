@@ -28,7 +28,7 @@ func Router(r *gin.RouterGroup) {
 	// protected route
 	protectedRoutes := r.Group("")
 	protectedRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	protectedRoutes.POST("/watch", h.handleWatchSchool)
 	protectedRoutes.DELETE("/unwatch", h.handleUnwatchSchool)

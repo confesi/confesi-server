@@ -1,4 +1,4 @@
-package posts
+package admin
 
 import (
 	"confesi/db"
@@ -16,10 +16,8 @@ type handler struct {
 
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
-
-	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-	mux.POST("/create", h.handleCreate)
+	mux.PATCH("/user-standing", h.handleUserStanding)
 }

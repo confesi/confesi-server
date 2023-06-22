@@ -93,6 +93,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
 	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
 		"profile_created": true,
+		"roles":           []string{}, // default users have no roles
 	})
 	if err != nil {
 		// If firebase account creation succeeds, but postgres profile save fails

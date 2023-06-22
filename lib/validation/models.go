@@ -31,3 +31,8 @@ type WatchSchool struct {
 	// [required] school id to watch
 	SchoolID uint `json:"school_id" validate:"required"`
 }
+
+type UserStanding struct {
+	// [required] user standing must be one of "limited", "banned", or "enabled"
+	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
+}
