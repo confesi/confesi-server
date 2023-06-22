@@ -16,7 +16,6 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 const (
@@ -26,13 +25,8 @@ const (
 func (h *handler) handleGetPosts(c *gin.Context) {
 	// extract request
 	var req validation.PostQuery
-
-	// bind to validator
-	binding := &validation.DefaultBinding{
-		Validator: validator.New(),
-	}
-	if err := binding.Bind(c.Request, &req); err != nil {
-		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
+	err := utils.New(c).Validate(&req)
+	if err != nil {
 		return
 	}
 

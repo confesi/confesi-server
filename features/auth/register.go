@@ -3,15 +3,14 @@ package auth
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 // TODO: add email verification, and route to enable checking if email is verified to pass through the middleware
@@ -20,13 +19,8 @@ func (h *handler) handleRegister(c *gin.Context) {
 
 	// extract request body
 	var req validation.CreateAccountDetails
-
-	// create a binding instance with the validator, check if json valid, if so, deserialize into req
-	binding := &validation.DefaultBinding{
-		Validator: validator.New(),
-	}
-	if err := binding.Bind(c.Request, &req); err != nil {
-		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
+	err := utils.New(c).Validate(&req)
+	if err != nil {
 		return
 	}
 

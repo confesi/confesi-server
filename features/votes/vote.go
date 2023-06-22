@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -153,13 +152,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 func (h *handler) handleVote(c *gin.Context) {
 	// extract request
 	var req validation.VoteDetail
-
-	// validator
-	binding := &validation.DefaultBinding{
-		Validator: validator.New(),
-	}
-	if err := binding.Bind(c.Request, &req); err != nil {
-		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
+	err := utils.New(c).Validate(&req)
+	if err != nil {
 		return
 	}
 
