@@ -33,7 +33,7 @@ func Router(mux *gin.RouterGroup) {
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers)
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
 	anyFirebaseUserRoutes.GET("/posts", h.handleGetPosts)
 	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgePostsCache)
@@ -41,7 +41,7 @@ func Router(mux *gin.RouterGroup) {
 	// only registered firebase users
 	registeredFirebaseUserRoutes := mux.Group("")
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers)
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
 }
