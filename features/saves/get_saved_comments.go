@@ -19,7 +19,7 @@ type FetchedComments struct {
 	Next     *int64       `json:"next"`
 }
 
-func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (FetchedComments, error) {
+func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedComments, error) {
 	fetchResult := FetchedComments{}
 	next := time.UnixMilli(int64(req.Next))
 
@@ -35,7 +35,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		Find(&fetchResult.Comments).Error
 
 	if err != nil {
-		return fetchResult, err
+		return nil, err
 	}
 
 	if len(fetchResult.Comments) > 0 {
@@ -43,7 +43,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		fetchResult.Next = &timeMillis
 	}
 
-	return fetchResult, nil
+	return &fetchResult, nil
 }
 
 func (h *handler) handleGetComments(c *gin.Context) {

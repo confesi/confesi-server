@@ -19,7 +19,7 @@ type FetchedPosts struct {
 	Next  *int64    `json:"next"`
 }
 
-func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (FetchedPosts, error) {
+func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedPosts, error) {
 	fetchResult := FetchedPosts{}
 	next := time.UnixMilli(int64(req.Next))
 
@@ -37,7 +37,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 		Find(&fetchResult.Posts).Error
 
 	if err != nil {
-		return fetchResult, err
+		return nil, err
 	}
 
 	if len(fetchResult.Posts) > 0 {
@@ -45,7 +45,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 		fetchResult.Next = &timeMillis
 	}
 
-	return fetchResult, nil
+	return &fetchResult, nil
 }
 
 func (h *handler) handleGetPosts(c *gin.Context) {
