@@ -4,6 +4,7 @@ import (
 	"confesi/features/admin"
 	"confesi/features/auth"
 	"confesi/features/posts"
+	"confesi/features/saves"
 	"confesi/features/schools"
 	"confesi/features/votes"
 	"confesi/lib/cron"
@@ -40,6 +41,7 @@ func main() {
 	posts.Router(api.Group("/posts"))
 	votes.Router(api.Group("/votes"))
 	schools.Router(api.Group("/schools"))
+	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
 
 	cron.StartDailyHottestPostsCronJob()

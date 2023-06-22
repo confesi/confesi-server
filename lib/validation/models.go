@@ -18,6 +18,18 @@ type CreatePostDetails struct {
 	Body string `json:"body" validate:"max=2000,required_without=Title"`
 }
 
+type SaveContentDetails struct {
+	// [required] content id to save/unsave
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+}
+
+type SaveContentCursor struct {
+	// [required] timestamp of last saved content (ms since epoch)
+	Next uint `json:"next" validate:"required"`
+}
+
 type VoteDetail struct {
 	// [required] content id to vote on
 	ContentID uint `json:"content_id" validate:"required"`
@@ -32,6 +44,11 @@ type PostQuery struct {
 	School     uint   `json:"school" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
+}
+
+type WatchSchool struct {
+	// [required] school id to watch
+	SchoolID uint `json:"school_id" validate:"required"`
 }
 
 type UserStanding struct {

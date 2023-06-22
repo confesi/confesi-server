@@ -92,9 +92,9 @@ func (School) TableName() string {
 }
 
 type User struct {
-	ID          string `gorm:"primaryKey"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string    `gorm:"primaryKey"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	Email       string
 	YearOfStudy uint8
 	FacultyID   uint
@@ -102,12 +102,16 @@ type User struct {
 	ModID       uint
 }
 
+// ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
-	ID       uint
-	UserID   uint
-	SchoolID uint
+	ID        uint      `gorm:"primary_key;column:id" json:"-"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID    string    `gorm:"column:user_id" json:"-"`
+	SchoolID  uint
 }
 
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
 	ID            int             `gorm:"primary_key;column:id" json:"-"`
 	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
@@ -127,6 +131,7 @@ type Post struct {
 	VoteScore     int             `gorm:"column:vote_score"`
 }
 
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	meta
 	UserID    string `gorm:"column:user_id" json:"-"`
@@ -153,13 +158,15 @@ type Vote struct {
 }
 
 type SavedPost struct {
-	meta
-	UserID string
-	PostID string
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	UserID    string
+	PostID    uint
 }
 
 type SavedComment struct {
-	meta
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	UserID    string
 	CommentID uint
 }

@@ -19,7 +19,7 @@ services:
     container_name: confesi-api
     build:
       context: .
-      dockerfile: Dockerdev
+      dockerfile: development.Dockerfile
     ports:
       - 8080:8080
     links:
