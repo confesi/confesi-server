@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE school_follows
+    ADD COLUMN created_at TIMESTAMPTZ NOT NULL,
+    ADD COLUMN updated_at TIMESTAMPTZ;
+
+END;

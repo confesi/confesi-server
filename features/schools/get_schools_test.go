@@ -2,6 +2,7 @@ package schools
 
 import (
 	"confesi/db"
+	"confesi/lib/fire"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var h handler = handler{db.New()}
+var h handler = handler{db.New(), fire.New()}
 
 func routerSetup() *gin.Engine {
 	mux := gin.Default()
