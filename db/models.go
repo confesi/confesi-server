@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // Table names
@@ -123,10 +125,11 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	meta
-	UserID    string `json:"-"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID    string    `json:"-"`
 	PostID    uint
-	Ancestors []uint
+	Ancestors pq.Int64Array `gorm:"type:integer[]"`
 	Content   string
 	Downvote  uint
 	Upvote    uint
