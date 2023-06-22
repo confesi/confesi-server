@@ -101,33 +101,37 @@ type SchoolFollow struct {
 	SchoolID  uint
 }
 
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
+	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID        string       `gorm:"column:user_id" json:"-"`
 	ID            int          `gorm:"primary_key;column:id"`
-	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime"`
-	UserID        string       `gorm:"column:user_id"`
-	SchoolID      uint         `gorm:"column:school_id"`
-	FacultyID     uint         `gorm:"column:faculty_id"`
+	SchoolID      uint         `gorm:"column:school_id" json:"-"`
+	School        School       `gorm:"foreignKey:SchoolID"`
+	FacultyID     uint         `gorm:"column:faculty_id" json:"-"`
+	Faculty       Faculty      `gorm:"foreignKey:FacultyID"`
 	Title         string       `gorm:"column:title"`
 	Content       string       `gorm:"column:content"`
 	Downvote      uint         `gorm:"column:downvote"`
 	Upvote        uint         `gorm:"column:upvote"`
-	TrendingScore uint64       `gorm:"column:trending_score"`
-	HottestOn     sql.NullTime `gorm:"column:hottest_on"`
-	Hidden        bool         `gorm:"column:hidden"`
+	TrendingScore float64      `gorm:"column:trending_score"`
+	HottestOn     sql.NullTime `gorm:"column:hottest_on" json:"-"`
+	Hidden        bool         `gorm:"column:hidden" json:"-"`
 	VoteScore     int          `gorm:"column:vote_score"`
 }
 
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	meta
-	UserID    string
+	UserID    string `json:"-"`
 	PostID    string
 	CommentID *uint
 	Content   string
 	Downvote  uint
 	Upvote    uint
 	Score     int
-	Hidden    bool
+	Hidden    bool `json:"-"`
 }
 
 const (
@@ -144,13 +148,15 @@ type Vote struct {
 }
 
 type SavedPost struct {
-	meta
-	UserID string
-	PostID string
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	UserID    string
+	PostID    uint
 }
 
 type SavedComment struct {
-	meta
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	UserID    string
 	CommentID uint
 }

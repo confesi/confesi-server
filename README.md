@@ -1,4 +1,4 @@
-# Confesi
+# [Confesi](https://confesi.com)
 
 ![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
 ![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
@@ -102,7 +102,7 @@ docker exec -it confesi-db psql -U postgres confesi
 # generate a new `confesi.dbml`
 ./scripts/database dbml
 
-# seed data
+# seed data (use the POSTGRES_DSN found in `/scripts/test` not `.env`)
 export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
 go run ./scripts/main.go --seed-schools
 ```
