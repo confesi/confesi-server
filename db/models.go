@@ -22,14 +22,14 @@ const (
 )
 
 const (
-	ModEnable   = "enabled"
 	ModEnableID = 1
+	ModEnable   = "enabled"
 
-	ModBannedID = 2
-	ModBanned   = "banned"
-
-	ModLimitedID = 3
+	ModLimitedID = 2
 	ModLimited   = "limited"
+
+	ModBannedID = 3
+	ModBanned   = "banned"
 )
 
 const (
@@ -82,9 +82,9 @@ func (Faculty) TableName() string {
 }
 
 type User struct {
-	ID          string `gorm:"primaryKey"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          string    `gorm:"primaryKey"`
+	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
 	Email       string
 	YearOfStudy uint8
 	FacultyID   uint
@@ -92,10 +92,13 @@ type User struct {
 	ModID       uint
 }
 
+// ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
-	ID       uint
-	UserID   uint
-	SchoolID uint
+	ID        uint      `gorm:"primary_key;column:id" json:"-"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID    string    `gorm:"column:user_id" json:"-"`
+	SchoolID  uint
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")

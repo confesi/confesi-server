@@ -19,7 +19,9 @@ const (
 //
 // Sets the authenticated Firebase user id to the context as `user`
 // iff the user is anon or registered.
-func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
+//
+// Allows for additional checks to see if a user possess some specified roles.
+func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles []string) {
 	idToken := c.GetHeader("Authorization")
 	if len(idToken) < 8 || idToken[:7] != "Bearer " {
 		response.New(http.StatusUnauthorized).Err("malformed Authorization header").Send(c)
@@ -44,14 +46,48 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 	}
 
 	if token.Firebase.SignInProvider == "password" {
-		var profileCreated bool
-		var ok bool
-		if profileCreated, ok = token.Claims["profile_created"].(bool); !ok {
+		if profileCreated, ok := token.Claims["profile_created"].(bool); !ok {
 			// registered user without postgres profile since the claim isn't created till after their account gets saved to postgres
 			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
 		} else if profileCreated {
-			// registered user with postgres profile
+			// registered user with postgres profile, now we check if they have the required roles
+			var rolesClaim interface{}
+			if rolesClaim, ok = token.Claims["roles"]; !ok {
+				response.New(http.StatusUnauthorized).Err("roles field doesn't exist in claims").Send(c)
+				return
+			}
+			var rolesInterfaceSlice []interface{}
+			if rolesInterfaceSlice, ok = rolesClaim.([]interface{}); !ok {
+				response.New(http.StatusUnauthorized).Err("invalid roles field in claims").Send(c)
+				return
+			}
+
+			parsedRoles := make([]string, len(rolesInterfaceSlice))
+			for i, role := range rolesInterfaceSlice {
+				if strRole, ok := role.(string); ok {
+					parsedRoles[i] = strRole
+				} else {
+					response.New(http.StatusUnauthorized).Err("invalid role value in roles field").Send(c)
+					return
+				}
+			}
+
+			// check if all the required roles exist in the parsed roles
+			for _, requiredRole := range roles {
+				found := false
+				for _, role := range parsedRoles {
+					if requiredRole == role {
+						found = true
+						break
+					}
+				}
+				if !found {
+					response.New(http.StatusUnauthorized).Err("invalid role").Send(c)
+					return
+				}
+			}
+
 			c.Set("user", token)
 			c.Next()
 			return
@@ -60,13 +96,8 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser) {
 			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
 		}
-
 	} else {
 		// anon user (but resource requires registered user)
 		response.New(http.StatusUnauthorized).Err("registered users only").Send(c)
 	}
-
 }
-
-// Example token. See how it looks on jwt.io.
-// eyJhbGciOiJSUzI1NiIsImtpZCI6IjJkM2E0YTllYjY0OTk0YzUxM2YyYzhlMGMwMTY1MzEzN2U5NTg3Y2EiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vY29uZmVzaS1zZXJ2ZXItZGV2IiwiYXVkIjoiY29uZmVzaS1zZXJ2ZXItZGV2IiwiYXV0aF90aW1lIjoxNjg1MjUwNTI4LCJ1c2VyX2lkIjoiVXhHUTZkc2ZnN1k3NkVJcTNUaG55YU45cVlFMyIsInN1YiI6IlV4R1E2ZHNmZzdZNzZFSXEzVGhueWFOOXFZRTMiLCJpYXQiOjE2ODUyNTA1MjgsImV4cCI6MTY4NTI1NDEyOCwiZW1haWwiOiJjbGllbnQzQGV4YW1wbGUuY29tIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7ImVtYWlsIjpbImNsaWVudDNAZXhhbXBsZS5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.pDahYSHsT8W_H_x6sle_Yb7HZt4mwqggT_2JWuOjny2M05isbcNghIBLnKnvbzU8hqkGvqz5sZs021AQL9pzA0JDWhkNjvzCKwNi06cYPyosfcoDiG3izg6P4NxJSbLYzKdgEU1jyKaKX3EfsQ5EZo5Ag_ErHfELLKMPhHlwvbV4Cf-KdlWSBKsi1Bt9vzr5LdXbhvwmsg35jpajUI-PvsWu8yS8k0-gqn9hub4yZhslPRZgs8Xr0VRjrMwVyQ13fFNVfGUmIT3CBZ1foMJ7Y3csBhrDl-qF4SrHSoo6uMFg-7lpz_jX_x7XntL3cB4NEno6trTSy7NIduNLwgdpnw
