@@ -78,7 +78,7 @@ type Faculty struct {
 }
 
 func (Faculty) TableName() string {
-	return "faculties"
+	return Faculties
 }
 
 type User struct {
@@ -125,8 +125,8 @@ type Post struct {
 type Comment struct {
 	meta
 	UserID    string `json:"-"`
-	PostID    string
-	CommentID *uint
+	PostID    uint
+	Ancestors []uint
 	Content   string
 	Downvote  uint
 	Upvote    uint

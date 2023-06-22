@@ -3,6 +3,7 @@ package main
 import (
 	"confesi/features/admin"
 	"confesi/features/auth"
+	"confesi/features/comments"
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
@@ -36,6 +37,7 @@ func main() {
 	api.Use(gin.Recovery())
 
 	// Separate handler groups
+	comments.Router(api.Group("/comments"))
 	auth.Router(api.Group("/auth"))
 	posts.Router(api.Group("/posts"))
 	votes.Router(api.Group("/votes"))
