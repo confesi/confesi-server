@@ -3,73 +3,57 @@ package admin
 import (
 	"confesi/db"
 	"confesi/lib/response"
-	"confesi/lib/utils"
-	"confesi/lib/validation"
 	"net/http"
+	"strconv"
 	"time"
 
-	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
 )
 
 const (
-	cursorSize = 10
+	cursorSize = 10 // load max 10 at a time
 )
-
-// todo: make work
 
 type FetchedDailyHottestCrons struct {
 	DailyHottestCrons []db.DailyHottestCron `json:"crons"`
-	Next              *datatypes.Date       `json:"next"`
-}
-
-func (h *handler) getDailyHottestCrons(c *gin.Context, token *auth.Token, req validation.DailyHottestCronsCursor) (FetchedDailyHottestCrons, error) {
-	fetchResult := FetchedDailyHottestCrons{}
-
-	next := req.Next
-	datetime := datatypes.Date(time.Unix(0, int64(next)*int64(time.Millisecond)))
-
-	err := h.db.
-		Table("daily_hottest_cron_jobs").
-		Where("daily_hottest_cron_jobs.successfully_ran < ?", datetime).
-		Order("daily_hottest_cron_jobs.successfully_ran DESC").
-		Limit(cursorSize).
-		Find(&fetchResult.DailyHottestCrons).Error
-
-	if err != nil {
-		return fetchResult, err
-	}
-
-	if len(fetchResult.DailyHottestCrons) > 0 {
-		date := &fetchResult.DailyHottestCrons[len(fetchResult.DailyHottestCrons)-1].SuccessfullyRan
-		fetchResult.Next = date
-	}
-
-	return fetchResult, nil
+	Next              *uint                 `json:"next"`
 }
 
 func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
+	next := c.Query("next")
+	var datetime datatypes.Date
+	dbQuery := h.db.
+		Table("daily_hottest_cron_jobs")
 
-	var req validation.DailyHottestCronsCursor
-	err := utils.New(c).Validate(&req)
+	nextInt, err := strconv.ParseInt(next, 10, 64)
 	if err != nil {
+		response.New(http.StatusInternalServerError).Err("error parsing next curser").Send(c)
 		return
 	}
 
-	token, err := utils.UserTokenFromContext(c)
+	datetime = datatypes.Date(time.Unix(0, nextInt*int64(time.Millisecond)))
+	dbQuery = dbQuery.Where("daily_hottest_cron_jobs.successfully_ran <= ?", datetime)
+
+	fetchResult := FetchedDailyHottestCrons{}
+
+	err = dbQuery.Order("daily_hottest_cron_jobs.successfully_ran DESC").
+		Limit(cursorSize).Find(&fetchResult.DailyHottestCrons).Error
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
-	results, err := h.getDailyHottestCrons(c, token, req)
-	if err != nil {
-		// all returned errors are just general client-facing "server errors"
-		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
-		return
+	if len(fetchResult.DailyHottestCrons) > 0 && len(fetchResult.DailyHottestCrons) == cursorSize {
+		// retrieve the last item's timestamp for the next query
+		date := fetchResult.DailyHottestCrons[len(fetchResult.DailyHottestCrons)-1].SuccessfullyRan
+		timeValue := time.Time(date)
+		// calculate the milliseconds since Unix epoch
+		milliseconds := timeValue.UnixNano() / int64(time.Millisecond)
+		// assign the milliseconds value to fetchResult.Next
+		t := uint(milliseconds - 86400000) // minus a day for the curser
+		fetchResult.Next = &t
 	}
 
-	// if all goes well, send 200
-	response.New(http.StatusOK).Val(results).Send(c)
+	response.New(http.StatusOK).Val(fetchResult).Send(c)
 }

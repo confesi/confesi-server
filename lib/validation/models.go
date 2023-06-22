@@ -55,8 +55,3 @@ type UserStanding struct {
 	// [required] user standing must be one of "limited", "banned", or "enabled"
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
 }
-
-type DailyHottestCronsCursor struct {
-	// [required] timestamp of last daily hottest cron seen (ms since epoch)
-	Next uint `json:"next" validate:"required"`
-}
