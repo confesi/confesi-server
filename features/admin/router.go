@@ -22,7 +22,8 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT.
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
 	})
 	mux.PATCH("/user-standing", h.handleUserStanding)
 	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
