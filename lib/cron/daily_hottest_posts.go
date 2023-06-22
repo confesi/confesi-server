@@ -14,11 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: admin route to inspect all the most recent successfully run jobs
-
 const (
 	// when to run the cron job daily in UTC
-	runJobDailyAtTime = "09:42" // 11:55 PM
+	runJobDailyAtTime = "23:55" // 11:55 PM
 
 	// delay factor multiplier value
 	additionalDelayPerAttemptMs = 1000 * 60 // 1 minute
@@ -144,7 +142,7 @@ func ExecuteCronJob(dateTime time.Time) error {
 		`
 
 	// execute the raw SQL query which adds +1 to every school that has a hottest post, and updates the hottest_on date for all of the hottest posts
-	err = tx.Exec(query, dateParsed, time.Now().UTC(), config.HottestPostsSize).Error
+	err = tx.Exec(query, dateParsed, time.Now().UTC(), config.HottestPostsPageSize).Error
 	if err != nil {
 		tx.Rollback()
 		return err

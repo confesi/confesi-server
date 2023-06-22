@@ -1,10 +1,13 @@
 package posts
 
 import (
+	"confesi/config"
 	"confesi/db"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"errors"
 
 	"fmt"
 	"net/http"
@@ -17,8 +20,7 @@ import (
 )
 
 const (
-	postPageSize    = 5
-	cacheExpiration = 24 * time.Hour // one day
+	seenPostsCacheExpiry = 24 * time.Hour // one day
 )
 
 func (h *handler) handleGetPosts(c *gin.Context) {
@@ -75,6 +77,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		sortField = "vote_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %s", req.Sort)))
 		response.New(http.StatusBadRequest).Err("invalid sort field").Send(c)
 		return
 	}
@@ -85,7 +88,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		Preload("School").
 		Preload("Faculty").
 		Order(sortField).
-		Limit(postPageSize).
+		Limit(config.FeedPostsPageSize).
 		Where("hidden = ?", false).
 		Where("school_id = ?", req.School)
 
@@ -104,16 +107,16 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		id := fmt.Sprint(post.ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {
-			fmt.Println("error: ", err)
+			logger.StdErr(err)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
 		}
 	}
 
 	// set the expiration for the cache
-	err = h.redis.Expire(c, idSessionKey, cacheExpiration).Err()
+	err = h.redis.Expire(c, idSessionKey, seenPostsCacheExpiry).Err()
 	if err != nil {
-		fmt.Println("error: ", err)
+		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}

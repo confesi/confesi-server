@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"confesi/config"
 	"confesi/db"
 	"confesi/lib/response"
 	"net/http"
@@ -9,10 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
-)
-
-const (
-	cursorSize = 10 // load max 10 at a time
 )
 
 type FetchedDailyHottestCrons struct {
@@ -38,13 +35,13 @@ func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
 	fetchResult := FetchedDailyHottestCrons{}
 
 	err = dbQuery.Order("daily_hottest_cron_jobs.successfully_ran DESC").
-		Limit(cursorSize).Find(&fetchResult.DailyHottestCrons).Error
+		Limit(config.DailyHottestCronJobResultsPageSize).Find(&fetchResult.DailyHottestCrons).Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return
 	}
 
-	if len(fetchResult.DailyHottestCrons) > 0 && len(fetchResult.DailyHottestCrons) == cursorSize {
+	if len(fetchResult.DailyHottestCrons) > 0 && len(fetchResult.DailyHottestCrons) == config.DailyHottestCronJobResultsPageSize {
 		// retrieve the last item's timestamp for the next query
 		date := fetchResult.DailyHottestCrons[len(fetchResult.DailyHottestCrons)-1].SuccessfullyRan
 		timeValue := time.Time(date)

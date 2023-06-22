@@ -26,7 +26,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 		Validator: validator.New(),
 	}
 	if err := binding.Bind(c.Request, &req); err != nil {
-		fmt.Println(err)
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
 		return
 	}

@@ -14,7 +14,7 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, er
 	var posts []db.Post
 	err := h.db.
 		Where("hottest_on = ?", date).
-		Limit(config.HottestPostsSize).
+		Limit(config.HottestPostsPageSize).
 		Preload("School").
 		Preload("Faculty").
 		Order("trending_score DESC"). // fetches the hottest X posts for the day, and comparatively between them, ranks them by `vote_score`

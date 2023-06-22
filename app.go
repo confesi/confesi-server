@@ -44,6 +44,7 @@ func main() {
 	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
 
+	// Start the CRON job scheduler
 	cron.StartDailyHottestPostsCronJob()
 
 	r.Run(fmt.Sprintf(":%s", port))
