@@ -6,44 +6,16 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"hash"
 	"io"
-	"os"
 
 	"golang.org/x/crypto/hkdf"
-)
-
-const (
-	MasterKeyLen = 16
-)
-
-var (
-	ErrInvalidMasterKey = errors.New("invalid master key length")
-	hkdf_secret         string
 )
 
 // Key deviration function
 type KDF struct {
 	algo func() hash.Hash
 	salt []byte
-}
-
-type Serializer interface {
-	// returns master key
-	// `[]byte` slice with length = 16
-	// either truncate, or pad.
-	MasterKey() []byte
-
-	// Write to struct the key derived from master key
-	Mask(key []byte)
-}
-
-func init() {
-	hkdf_secret = os.Getenv("HKDF_SECRET")
-	if hkdf_secret == "" {
-		panic("`HKDF_SECRET` not set")
-	}
 }
 
 func NewKDF() (*KDF, error) {
@@ -69,7 +41,7 @@ func (kdf *KDF) Salt() string {
 
 func (kdf *KDF) GenKey(data Serializer) ([]byte, error) {
 	p := data.MasterKey()
-	if len(p) != 16 {
+	if len(p) < 16 {
 		return nil, ErrInvalidMasterKey
 	}
 
