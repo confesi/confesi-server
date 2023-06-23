@@ -57,3 +57,8 @@ type CreateComment struct {
 	// [required] the actual text content of the comment
 	Content string `json:"content" validate:"required,min=1,max=500" gorm:"not null"`
 }
+
+type HideComment struct {
+	// [required] the id of comment to delete
+	CommentID uint `json:"comment_id" validate:"required"`
+}

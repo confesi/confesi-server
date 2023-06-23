@@ -14,8 +14,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// todo: make transaction
-
 func (h *handler) handleCreate(c *gin.Context) {
 
 	// validate the json body from request
@@ -28,7 +26,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// get user token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 

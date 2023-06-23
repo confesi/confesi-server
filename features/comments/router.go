@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// todo: for deleted comments, they should STILL GET RETURNED so they don't screw up the tree-structure, but just have their `content` set to "[removed]"
+
 var (
 	serverError      = errors.New("server error")
 	threadDepthError = errors.New("thread depth error")
@@ -28,4 +30,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	mux.POST("/create", h.handleCreate)
+	mux.PATCH("/hide", h.handleHideComment)
 }
