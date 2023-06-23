@@ -51,9 +51,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// they are trying to create a threaded comment
 	parentComment := db.Comment{}
 	if req.ParentCommentID != nil {
-		err = tx.Where("id = ?", req.ParentCommentID).First(&parentComment).Error
+		err = tx.Where("id = ?", req.ParentCommentID).
+			First(&parentComment).
+			UpdateColumn("children_count", gorm.Expr("children_count + ?", 1)).
+			Error
 		if err != nil {
-			// parent comment not found, but wanted
+			// parent comment not found
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				tx.Rollback()
 				response.New(http.StatusBadRequest).Err("parent comment doesn't exist").Send(c)

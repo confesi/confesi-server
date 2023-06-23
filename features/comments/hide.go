@@ -26,8 +26,6 @@ func (h *handler) handleHideComment(c *gin.Context) {
 		return
 	}
 
-	// TODO: fix
-
 	// Update the "hidden" field on a comment.
 	result := h.db.
 		Model(&db.Comment{}).

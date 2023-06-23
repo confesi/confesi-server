@@ -125,16 +125,17 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
-	UserID    string    `json:"-"`
-	PostID    uint
-	Ancestors pq.Int64Array `gorm:"type:integer[]"`
-	Content   string
-	Downvote  uint
-	Upvote    uint
-	Score     int
-	Hidden    bool `json:"-"`
+	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID        string    `json:"-"`
+	PostID        uint
+	Ancestors     pq.Int64Array `gorm:"type:integer[]"`
+	ChildrenCount uint
+	Content       string
+	Downvote      uint
+	Upvote        uint
+	Score         int
+	Hidden        bool `json:"-"`
 }
 
 const (
