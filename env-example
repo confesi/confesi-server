@@ -8,7 +8,7 @@ APPCHECK_TOKEN="kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
 
 # generate key from https://numbergenerator.org/hex-code-generator
 # either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256
-CIPHER_KEY="7571DFF385A22617"
+HKDF_SECRET="some-secret-string"
 
 # to generate a new nonce for production:
 # go run ./scripts/main.go --new-nonce
