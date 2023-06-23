@@ -6,34 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testUser struct {
-	email string
-	id    string
-}
-
-func (user *testUser) Mask(key []byte) {
-	user.id = string(key)
-}
-
-func (user *testUser) MasterKey() []byte {
-	keyLen := len(user.email)
-	if keyLen > MasterKeyLen {
-		return []byte(user.email)[:MasterKeyLen]
-	}
-
-	if keyLen < MasterKeyLen {
-		offset := MasterKeyLen - keyLen
-		for i := 0; i < offset; i++ {
-			user.email += " "
-		}
-	}
-	return []byte(user.email)
-}
-
-func testInit() *testUser {
-	return &testUser{"foo@bar.com", "foobarbaz"}
-}
-
 func TestKDFKeyGen(t *testing.T) {
 	kdf, err := NewKDF()
 	assert.Nil(t, err)
