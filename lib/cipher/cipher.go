@@ -12,12 +12,13 @@ const (
 var (
 	ErrInvalidMasterKey = errors.New("invalid master key length")
 	ErrInvalidKey       = errors.New("illegal key")
+	ErrInvalidSalt      = errors.New("invalid salt")
 	hkdf_secret         string
 )
 
 type Serializer interface {
 	// returns master key
-	// `[]byte` slice with length = 16
+	// `[]byte` slice with length >= 16
 	// either truncate, or pad.
 	// use something unique, but not the masking data itself
 	// ie: for masking user id, `MasterKey` can return `[]byte(userEmail)`

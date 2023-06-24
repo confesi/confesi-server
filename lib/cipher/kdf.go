@@ -40,16 +40,18 @@ func (kdf *KDF) Salt() string {
 }
 
 func (kdf *KDF) GenKey(data Serializer) ([]byte, error) {
-	p := data.MasterKey()
-	if len(p) < 16 {
+	masterKey := data.MasterKey()
+	if len(masterKey) < MasterKeyLen {
 		return nil, ErrInvalidMasterKey
 	}
+	if kdf.salt == nil {
+		return nil, ErrInvalidSalt
+	}
 
-	secret := []byte(hkdf_secret)
-	p = append(p, secret...)
+	masterKey = append(masterKey, []byte(hkdf_secret)...)
 
-	result := hkdf.New(kdf.algo, []byte(p), kdf.salt, nil)
-	key := make([]byte, len(p))
+	result := hkdf.New(kdf.algo, []byte(masterKey), kdf.salt, nil)
+	key := make([]byte, len(masterKey))
 	if _, err := result.Read(key); err != nil {
 		return nil, err
 	}
