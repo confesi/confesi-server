@@ -62,3 +62,7 @@ type HideComment struct {
 	// [required] the id of comment to delete
 	CommentID uint `json:"comment_id" validate:"required"`
 }
+
+type FetchComments struct {
+	// todo: create model
+}
