@@ -48,3 +48,10 @@ type UserStanding struct {
 	// [required] user standing must be one of "limited", "banned", or "enabled"
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
 }
+
+type FeedbackDetails struct {
+	// [required] feedback message
+	Message string `json:"message" validate:"required"`
+	// [required] feedback type
+	Type string `json:"type" validate:"required"`
+}

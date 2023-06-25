@@ -20,4 +20,6 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	mux.PATCH("/user-standing", h.handleUserStanding)
+	mux.GET("/feedback", h.handleListFeedback)
+	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
 }

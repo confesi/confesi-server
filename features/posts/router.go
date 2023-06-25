@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -14,6 +15,10 @@ type handler struct {
 	fb *fire.FirebaseApp
 }
 
+var (
+	serverError = errors.New("server error")
+)
+
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
@@ -22,4 +27,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	mux.POST("/create", h.handleCreate)
+	mux.GET("/sentiment", h.sentimentAnaylsis)
 }
