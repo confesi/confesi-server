@@ -10,7 +10,7 @@ import (
 )
 
 func (h *handler) handleFeedbackID(c *gin.Context) {
-	feedbackID := c.Param("feedbackID")
+	feedbackID := c.Param("id")
 
 	_, err := strconv.ParseInt(feedbackID, 10, 64)
 	if err != nil {

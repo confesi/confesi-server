@@ -14,18 +14,18 @@ import (
 func (h *handler) handleListFeedback(c *gin.Context) {
 
 	// get query params
-	page_str := c.Query("page")
-	page_size_str := c.Query("limit")
-	// direction := c.Query("direction")
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("limit")
+
 	// Error Check
-	page, err := strconv.Atoi(page_str)
+	page, err := strconv.Atoi(pageStr)
 
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid page").Send(c)
 		return
 	}
 
-	pageSize, err := strconv.Atoi(page_size_str)
+	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid limit").Send(c)
 		return
@@ -36,6 +36,8 @@ func (h *handler) handleListFeedback(c *gin.Context) {
 		pageSize = 10
 	case page <= 0:
 		page = 1
+	case pageSize > 999:
+		page = 10
 	}
 
 	pagination := Pagination{
@@ -44,11 +46,14 @@ func (h *handler) handleListFeedback(c *gin.Context) {
 		Sort:  "id desc",
 	}
 
-	// feedback := db.Feedback
 	var feedback []db.Feedback
 
 	h.db.Scopes(paginate(feedback, &pagination, h.db)).Find(&feedback)
 	pagination.Rows = feedback
+	if len(feedback) == 0 {
+		response.New(http.StatusNotFound).Err("no feedback found").Send(c)
+		return
+	}
 
 	// if all goes well, send 200
 	response.New(http.StatusOK).Val(pagination).Send(c)
@@ -86,7 +91,7 @@ func (p *Pagination) GetPage() int {
 
 func (p *Pagination) GetSort() string {
 	if p.Sort == "" {
-		p.Sort = "Id desc"
+		p.Sort = "id desc"
 	}
 	return p.Sort
 }
