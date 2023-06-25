@@ -4,9 +4,15 @@ import (
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+)
+
+var (
+	serverError             = errors.New("server error")
+	feedbackTypeDoesntExist = errors.New("feedback type doesn't exist")
 )
 
 type handler struct {

@@ -19,6 +19,7 @@ const (
 	Schools       = "schools"
 	Users         = "users"
 	Votes         = "votes"
+	FeedbackTypes = "feedback_types"
 )
 
 const (
@@ -157,6 +158,16 @@ type Feedback struct {
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 	UserID    string
 	Content   string
+	TypeID    uint // references the feedback_type table
+}
+
+type FeedbackType struct {
+	ID   int `gorm:"primary_key;column:id"`
+	Type string
+}
+
+func (FeedbackType) TableName() string {
+	return FeedbackTypes
 }
 
 type Report struct {

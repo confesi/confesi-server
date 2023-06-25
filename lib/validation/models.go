@@ -35,6 +35,6 @@ type UserStanding struct {
 type FeedbackDetails struct {
 	// [required] feedback message
 	Message string `json:"message" validate:"required"`
-	// [required] feedback type must be one of "bug", "feature", or "other"
-	Type string `json:"type" validate:"required,oneof=bug feature other"`
+	// [required] feedback type
+	Type string `json:"type" validate:"required"`
 }
