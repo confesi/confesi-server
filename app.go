@@ -4,10 +4,12 @@ import (
 	"confesi/features/admin"
 	"confesi/features/auth"
 	"confesi/features/comments"
+	"confesi/features/feedback"
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
 	"confesi/features/votes"
+	"confesi/lib/cron"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -44,6 +46,10 @@ func main() {
 	schools.Router(api.Group("/schools"))
 	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
+	feedback.Router(api.Group("/feedback"))
+
+	// Start the CRON job scheduler
+	cron.StartDailyHottestPostsCronJob()
 
 	r.Run(fmt.Sprintf(":%s", port))
 }

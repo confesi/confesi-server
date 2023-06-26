@@ -1,7 +1,8 @@
 package db
 
 import (
-	"database/sql"
+	"gorm.io/datatypes"
+
 	"time"
 
 	"github.com/lib/pq"
@@ -21,6 +22,7 @@ const (
 	Schools       = "schools"
 	Users         = "users"
 	Votes         = "votes"
+	FeedbackTypes = "feedback_types"
 )
 
 const (
@@ -66,12 +68,13 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID     uint    `json:"id"`
-	Name   string  `json:"name"`
-	Abbr   string  `json:"abbr"`
-	Lat    float32 `json:"lat"`
-	Lon    float32 `json:"lon"`
-	Domain string  `json:"domain"`
+	ID            uint    `json:"id"`
+	Name          string  `json:"name"`
+	Abbr          string  `json:"abbr"`
+	Lat           float32 `json:"lat"`
+	Lon           float32 `json:"lon"`
+	DailyHottests int     `json:"daily_hottests"`
+	Domain        string  `json:"domain"`
 }
 
 type Faculty struct {
@@ -81,6 +84,14 @@ type Faculty struct {
 
 func (Faculty) TableName() string {
 	return Faculties
+}
+
+func (Post) TableName() string {
+	return "posts"
+}
+
+func (School) TableName() string {
+	return "schools"
 }
 
 type User struct {
@@ -105,37 +116,39 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	CreatedAt     time.Time    `gorm:"column:created_at;autoCreateTime" json:"-"`
-	UpdatedAt     time.Time    `gorm:"column:updated_at;autoUpdateTime" json:"-"`
-	UserID        string       `gorm:"column:user_id" json:"-"`
-	ID            int          `gorm:"primary_key;column:id"`
-	SchoolID      uint         `gorm:"column:school_id" json:"-"`
-	School        School       `gorm:"foreignKey:SchoolID"`
-	FacultyID     uint         `gorm:"column:faculty_id" json:"-"`
-	Faculty       Faculty      `gorm:"foreignKey:FacultyID"`
-	Title         string       `gorm:"column:title"`
-	Content       string       `gorm:"column:content"`
-	Downvote      uint         `gorm:"column:downvote"`
-	Upvote        uint         `gorm:"column:upvote"`
-	TrendingScore float64      `gorm:"column:trending_score"`
-	HottestOn     sql.NullTime `gorm:"column:hottest_on" json:"-"`
-	Hidden        bool         `gorm:"column:hidden" json:"-"`
-	VoteScore     int          `gorm:"column:vote_score"`
+	ID            int             `gorm:"primary_key;column:id" json:"-"`
+	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
+	UserID        string          `gorm:"column:user_id" json:"-"`
+	SchoolID      uint            `gorm:"column:school_id" json:"-"`
+	School        School          `gorm:"foreignKey:SchoolID"`
+	FacultyID     uint            `gorm:"column:faculty_id" json:"-"`
+	Faculty       Faculty         `gorm:"foreignKey:FacultyID"`
+	Title         string          `gorm:"column:title"`
+	Content       string          `gorm:"column:content"`
+	Downvote      uint            `gorm:"column:downvote"`
+	Upvote        uint            `gorm:"column:upvote"`
+	TrendingScore uint64          `gorm:"column:trending_score"`
+	HottestOn     *datatypes.Date `gorm:"column:hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
+	Hidden        bool            `gorm:"column:hidden" json:"-"`
+	VoteScore     int             `gorm:"column:vote_score"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
 	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
-	UserID        string    `json:"-"`
 	PostID        uint
 	Ancestors     pq.Int64Array `gorm:"type:integer[]"`
 	ChildrenCount uint
-	Content       string
-	Downvote      uint
-	Upvote        uint
-	Score         int
-	Hidden        bool `json:"-"`
+	meta
+	UserID    string `gorm:"column:user_id" json:"-"`
+	CommentID *uint
+	Content   string
+	Downvote  uint
+	Upvote    uint
+	Score     int
+	Hidden    bool `gorm:"column:hidden" json:"-"`
 }
 
 const (
@@ -166,9 +179,20 @@ type SavedComment struct {
 }
 
 type Feedback struct {
-	meta
-	UserID  string
-	Content string
+	ID        int       `gorm:"primary_key;column:id"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	UserID    string
+	Content   string
+	TypeID    uint // references the feedback_type table
+}
+
+type FeedbackType struct {
+	ID   int `gorm:"primary_key;column:id"`
+	Type string
+}
+
+func (FeedbackType) TableName() string {
+	return FeedbackTypes
 }
 
 type Report struct {
@@ -178,4 +202,13 @@ type Report struct {
 	ReportType  string `gorm:"type"`
 	Result      string
 	UserAlerted bool
+}
+
+type DailyHottestCron struct {
+	ID              uint           `gorm:"primaryKey"`
+	SuccessfullyRan datatypes.Date `gorm:"column:successfully_ran"`
+}
+
+func (DailyHottestCron) TableName() string {
+	return "daily_hottest_cron_jobs"
 }

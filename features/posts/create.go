@@ -6,15 +6,11 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
-	"database/sql"
-
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token) error {
@@ -48,7 +44,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
-		HottestOn:     sql.NullTime{}, // default to a null time, aka, it hasn't yet been hottest on any day
+		// `HottestOn` not included so that it defaults to NULL
 	}
 
 	// save user to postgres
@@ -67,19 +63,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	// extract request
 	var req validation.CreatePostDetails
-
-	// create validator
-	validator := validator.New()
-
-	// register custom tag to ensure that at minimum either the title or body is present
-	validator.RegisterValidation("required_without", validation.RequiredWithout)
-
-	// create a binding instance with the validator, check if json valid, if so, deserialize into req
-	binding := &validation.DefaultBinding{
-		Validator: validator,
-	}
-	if err := binding.Bind(c.Request, &req); err != nil {
-		response.New(http.StatusBadRequest).Err(fmt.Sprintf("failed validation: %v", err)).Send(c)
+	err := utils.New(c).ForceCustomTag("required_without", validation.RequiredWithout).Validate(&req)
+	if err != nil {
 		return
 	}
 

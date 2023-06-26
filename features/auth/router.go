@@ -16,7 +16,5 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
-	mux.POST("/register", func(c *gin.Context) {
-		h.handleRegister(c)
-	})
+	mux.POST("/register", h.handleRegister)
 }
