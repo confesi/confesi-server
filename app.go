@@ -3,6 +3,7 @@ package main
 import (
 	"confesi/features/admin"
 	"confesi/features/auth"
+	"confesi/features/feedback"
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
@@ -43,6 +44,7 @@ func main() {
 	schools.Router(api.Group("/schools"))
 	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
+	feedback.Router(api.Group("/feedback"))
 
 	// Start the CRON job scheduler
 	cron.StartDailyHottestPostsCronJob()
