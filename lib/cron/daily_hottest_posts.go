@@ -20,6 +20,8 @@ const (
 
 	// delay factor multiplier value
 	additionalDelayPerAttemptMs = 1000 * 60 // 1 minute
+	// initial delay duration
+	initialDelayMs = 1000 // 1 second
 
 	// whichever limit hits first, we stop
 	hoursAfterOriginalAttemptToRetryFor = 6.0
@@ -42,7 +44,7 @@ func StartDailyHottestPostsCronJob() {
 func cronRetryLoop() {
 	logger.StdInfo("starting daily hottest posts cron job")
 	dateTime := time.Now().UTC()
-	baseDelayMs := 1000
+	baseDelayMs := initialDelayMs
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		err := ExecuteCronJob(dateTime)
 		if err != nil {

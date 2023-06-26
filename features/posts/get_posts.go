@@ -71,7 +71,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		sortField = "vote_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
-		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %s", req.Sort)))
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)))
 		response.New(http.StatusBadRequest).Err("invalid sort field").Send(c)
 		return
 	}

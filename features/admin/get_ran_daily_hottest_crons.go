@@ -18,12 +18,12 @@ type FetchedDailyHottestCrons struct {
 }
 
 func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
-	next := c.Query("next")
+	nextStr := c.Query("next")
 	var datetime datatypes.Date
 	dbQuery := h.db.
 		Table("daily_hottest_cron_jobs")
 
-	nextInt, err := strconv.ParseInt(next, 10, 64)
+	nextInt, err := strconv.ParseInt(nextStr, 10, 64)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("error parsing next curser").Send(c)
 		return
@@ -41,7 +41,7 @@ func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
 		return
 	}
 
-	if len(fetchResult.DailyHottestCrons) > 0 && len(fetchResult.DailyHottestCrons) == config.DailyHottestCronJobResultsPageSize {
+	if len(fetchResult.DailyHottestCrons) == config.DailyHottestCronJobResultsPageSize {
 		// retrieve the last item's timestamp for the next query
 		date := fetchResult.DailyHottestCrons[len(fetchResult.DailyHottestCrons)-1].SuccessfullyRan
 		timeValue := time.Time(date)
