@@ -23,7 +23,7 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers) //TODO: transition to the middleware auth such that only admins can hit this
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 
 	mux.POST("/create", h.handleFeedback)

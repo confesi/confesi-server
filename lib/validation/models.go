@@ -39,6 +39,13 @@ type VoteDetail struct {
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
 
+type PostQuery struct {
+	Sort       string `json:"sort" validate:"oneof=trending new"`
+	School     uint   `json:"school" validate:"required"`
+	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey string `json:"session_key" validate:"required"`
+}
+
 type WatchSchool struct {
 	// [required] school id to watch
 	SchoolID uint `json:"school_id" validate:"required"`

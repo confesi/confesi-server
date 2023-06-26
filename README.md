@@ -44,17 +44,29 @@ cd functions ; npm i ; cd ..
 **Install `firebase-tools`:**
 
 ```sh
-npm install -g firebase-tools
+sudo npm install -g firebase-tools
+```
+
+**Install the Redis UI to view the cache in real time:**
+```sh
+sudo npm install -g redis-commander
 ```
 
 ## Running the project
 
-**Start the Docker container (with the Docker daemon running):**
+For both steps below, ensure the Docker daemon is running.
+
+**Run/build the Docker container (first time running the project):**
 
 ```sh
 docker compose up --build app
 ```
 
+**Run the Docker container (after you've built it the first time):**
+
+```sh
+docker-compose up
+```
 ## Scripts
 
 **Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour.**
@@ -106,6 +118,15 @@ docker exec -it confesi-db psql -U postgres confesi
 export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
 go run ./scripts/main.go --seed-schools
 ```
+
+## Redis cache
+
+**Start the web UI:**
+```sh
+redis-commander
+```
+
+This should open the viewer, usually at [http://127.0.0.1:8081/](http://127.0.0.1:8081/) (address specified after running the command).
 
 ## Testing Firebase functionality locally
 
