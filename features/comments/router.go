@@ -25,6 +25,9 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
+	// any user
+	mux.GET("/comments", h.handleGetComments)
+
 	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
