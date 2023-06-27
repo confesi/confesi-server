@@ -159,3 +159,32 @@ FROM "comments" c
 WHERE COALESCE(ancestors, '{}') = '{}'
 ORDER BY score
 LIMIT 3;
+
+------
+
+SELECT *
+FROM "comments"
+WHERE ARRAY_LENGTH(ancestors, 1) = 1
+AND ancestors[1] = 34
+ORDER BY score DESC
+
+------
+
+WITH RECURSIVE comment_hierarchy AS (
+  -- Anchor query: Fetch the root comments
+  SELECT *
+  FROM comments
+  WHERE ancestors[1] = 34
+  
+  UNION
+  
+  -- Recursive query: Fetch the child comments for each parent
+  SELECT c.*
+  FROM comments c
+  INNER JOIN comment_hierarchy ch ON ch.id = ANY(c.ancestors)
+  WHERE ARRAY_LENGTH(c.ancestors, 1) = ARRAY_LENGTH(ch.ancestors, 1) + 1
+)
+SELECT *
+FROM comment_hierarchy
+ORDER BY score DESC
+LIMIT 2;

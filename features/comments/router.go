@@ -2,11 +2,13 @@ package comments
 
 import (
 	"confesi/db"
+	"confesi/lib/cache"
 	"confesi/lib/fire"
 	"confesi/middleware"
 	"errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
@@ -18,15 +20,20 @@ var (
 )
 
 type handler struct {
-	db *gorm.DB
-	fb *fire.FirebaseApp
+	db    *gorm.DB
+	fb    *fire.FirebaseApp
+	redis *redis.Client
 }
 
 func Router(mux *gin.RouterGroup) {
-	h := handler{db: db.New(), fb: fire.New()}
+	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
-	// any user
-	mux.GET("/comments", h.handleGetComments)
+	// any firebase user
+	anyFirebaseUserRoutes := mux.Group("")
+	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+	})
+	anyFirebaseUserRoutes.GET("/comments", h.handleGetComments)
 
 	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {

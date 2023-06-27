@@ -142,13 +142,12 @@ type Comment struct {
 	Ancestors     pq.Int64Array `gorm:"type:integer[]"`
 	ChildrenCount uint
 	meta
-	UserID    string `gorm:"column:user_id" json:"-"`
-	CommentID *uint
-	Content   string
-	Downvote  uint
-	Upvote    uint
-	Score     int
-	Hidden    bool `gorm:"column:hidden" json:"-"`
+	UserID   string `gorm:"column:user_id" json:"-"`
+	Content  string
+	Downvote uint
+	Upvote   uint
+	Score    int
+	Hidden   bool `gorm:"column:hidden" json:"-"`
 }
 
 const (
