@@ -3,6 +3,8 @@ package middleware
 import (
 	"confesi/config"
 	"confesi/lib/response"
+	"fmt"
+	"math"
 	"net/http"
 	"time"
 
@@ -19,6 +21,8 @@ const (
 //
 // Limits the amount of times a user can access a resource in a given time window.
 // Returns a 429 error if the user has exceeded the limit.
+//
+// Includes headers to let the user know how many requests they have left and when the next refill is. Unit: seconds.
 func RateLimit(c *gin.Context) {
 	refillFreq := unit // refill tokens every unit, aka, you have n tokens per unit to use
 
@@ -54,6 +58,11 @@ func RateLimit(c *gin.Context) {
 		bucket.Tokens = tokensPerUnit
 		bucket.LastRefill = time.Now()
 	}
+
+	// set headers to let the user know know metadata about their rate limit
+	c.Header("X-RateLimit-Limit", fmt.Sprint(tokensPerUnit))
+	c.Header("X-RateLimit-Remaining", fmt.Sprint(bucket.Tokens))
+	c.Header("X-RateLimit-Reset", fmt.Sprint(math.Round((refillFreq - time.Since(bucket.LastRefill)).Seconds()))) // seconds until next refill
 
 	if bucket.Tokens >= 1 {
 		bucket.Tokens--
