@@ -136,6 +136,7 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
+	ID            int       `gorm:"primary_key;column:id"`
 	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
 	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
 	PostID        uint

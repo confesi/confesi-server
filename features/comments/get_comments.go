@@ -1,7 +1,6 @@
 package comments
 
 import (
-	"confesi/config"
 	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
@@ -19,8 +18,12 @@ import (
 )
 
 const (
-	seenPostsCacheExpiry = 24 * time.Hour // one day
+	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
+
+func fetchComments(c *gin.Context) ([]db.Comment, error) {
+	return nil, nil
+}
 
 func (h *handler) handleGetComments(c *gin.Context) {
 	// extract request
@@ -43,17 +46,20 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
+	// session key (posts:userid+uuid_session) -> post id -> comment ids seen for that post
+	postSpecificKey := idSessionKey + ":" + fmt.Sprint(req.PostID)
+
 	if req.PurgeCache {
 		// purge the cache
-		err := h.redis.Del(c, idSessionKey).Err()
+		err := h.redis.Del(c, postSpecificKey).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}
 
-	// retrieve the seen comment IDs from the cache // todo: make it so that it's another layer of hash map so I can map post IDs to a bunch of comment IDs
-	ids, err := h.redis.SMembers(c, idSessionKey).Result()
+	// retrieve the seen comment IDs from the cache
+	ids, err := h.redis.SMembers(c, postSpecificKey).Result()
 	if err != nil {
 		if err == redis.Nil {
 			ids = []string{} // assigns an empty slice
@@ -76,30 +82,27 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
-	// select all posts that are not in the retrieved post IDs
-	var posts []db.Post
+	// select all comments that are not in the retrieved comments IDs
+	var comments []db.Comment
 	query := h.db.
-		Preload("School").
-		Preload("Faculty").
 		Order(sortField).
-		Limit(config.FeedPostsPageSize).
+		Limit(5).
 		Where("hidden = ?", false).
 		Where("post_id = ?", req.PostID)
 
 	if len(ids) > 0 {
-		query = query.Where("posts.id NOT IN (?)", ids)
+		query = query.Where("comments.id NOT IN (?)", ids)
 	}
 
-	err = query.Find(&posts).Error
+	err = query.Find(&comments).Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
 	// update the cache with the retrieved post IDs
-	for _, post := range posts {
-		id := fmt.Sprint(post.ID)
-		err := h.redis.SAdd(c, idSessionKey, id).Err()
+	for _, comment := range comments {
+		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.ID)).Err()
 		if err != nil {
 			logger.StdErr(err)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
@@ -108,7 +111,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// set the expiration for the cache
-	err = h.redis.Expire(c, idSessionKey, seenPostsCacheExpiry).Err()
+	err = h.redis.Expire(c, postSpecificKey, seenCommentsCacheExpiry).Err()
 	if err != nil {
 		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
@@ -116,5 +119,5 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// Send response
-	response.New(http.StatusOK).Val(posts).Send(c)
+	response.New(http.StatusOK).Val(comments).Send(c)
 }
