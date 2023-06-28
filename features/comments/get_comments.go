@@ -6,23 +6,55 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"errors"
-
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
 
-func fetchComments(c *gin.Context) ([]db.Comment, error) {
-	return nil, nil
+func fetchComments(postID int64, limit int, gm *gorm.DB, excludedIDs []string) ([]db.Comment, error) {
+	var comments []db.Comment
+
+	excludedIDQuery := ""
+	if len(excludedIDs) > 0 {
+		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
+	}
+
+	query := gm.
+		Raw(`
+			WITH RECURSIVE comment_hierarchy AS (
+				SELECT *
+				FROM comments
+				WHERE ancestors[1] = ?
+				AND comments.post_id = ?
+				`+excludedIDQuery+`
+				
+				UNION
+				
+				SELECT c.*
+				FROM comments c
+				INNER JOIN comment_hierarchy ch ON ch.id = ANY(c.ancestors)
+				WHERE ARRAY_LENGTH(c.ancestors, 1) = ARRAY_LENGTH(ch.ancestors, 1) + 1
+			)
+			SELECT *
+			FROM comment_hierarchy
+			ORDER BY score DESC
+			LIMIT ?;
+		`, 34, postID, limit).Find(&comments)
+
+	if query.Error != nil {
+		return nil, query.Error
+	}
+
+	return comments, nil
 }
 
 func (h *handler) handleGetComments(c *gin.Context) {
@@ -69,32 +101,8 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		}
 	}
 
-	var sortField string
-	switch req.Sort {
-	case "new":
-		sortField = "created_at DESC"
-	case "trending":
-		sortField = "vote_score DESC"
-	default:
-		// should never happen with validated struct, but to be defensive
-		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)))
-		response.New(http.StatusBadRequest).Err("invalid sort field").Send(c)
-		return
-	}
-
-	// select all comments that are not in the retrieved comments IDs
-	var comments []db.Comment
-	query := h.db.
-		Order(sortField).
-		Limit(5).
-		Where("hidden = ?", false).
-		Where("post_id = ?", req.PostID)
-
-	if len(ids) > 0 {
-		query = query.Where("comments.id NOT IN (?)", ids)
-	}
-
-	err = query.Find(&comments).Error
+	// fetch comments using the translated SQL query
+	comments, err := fetchComments(int64(req.PostID), 3, h.db, ids)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
