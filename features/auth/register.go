@@ -68,7 +68,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 		// UTC times in milliseconds of when the user was created and last updated (both "default" to when user was created initially)
 		CreatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
 		UpdatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
-		Email:       req.Email,
 		SchoolID:    school.ID,
 		YearOfStudy: req.YearOfStudy,
 		FacultyID:   uint(faculty.ID),
