@@ -96,7 +96,6 @@ type User struct {
 	ID          string    `gorm:"primaryKey"`
 	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
-	Email       string
 	YearOfStudy uint8
 	FacultyID   uint
 	SchoolID    uint
