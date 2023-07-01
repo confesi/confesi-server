@@ -909,3 +909,29 @@ SELECT
 FROM row_numbered_comments
 WHERE sibling_order <= 1 -- Limit the number of rows per sibling group
 ORDER BY path, sibling_order;
+
+
+------ flat comments
+
+WITH top_root_comments AS (
+  SELECT id, score, content, ancestors, created_at
+  FROM comments
+  WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = 1 -- [input] post id
+  ORDER BY score DESC
+  LIMIT 3
+), ranked_replies AS (
+  SELECT c.id, c.score, c.content, c.ancestors, c.created_at,
+    ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
+  FROM comments c
+  JOIN top_root_comments tr ON c.ancestors[1] = tr.id
+)
+SELECT id, score, content, ancestors, created_at
+FROM (
+  SELECT id, score, content, ancestors, created_at FROM top_root_comments
+  UNION ALL
+  SELECT id, score, content, ancestors, created_at
+  FROM ranked_replies
+  WHERE reply_num <= 2
+) AS combined_comments
+ORDER BY (CASE WHEN cardinality(ancestors) = 0 THEN score END) DESC,
+         (CASE WHEN cardinality(ancestors) > 0 THEN created_at END) ASC;

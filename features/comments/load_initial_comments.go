@@ -1,11 +1,13 @@
 package comments
 
 import (
+	"confesi/config"
 	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,7 +22,7 @@ const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
 
-func fetchComments(postID int64, limit int, gm *gorm.DB, excludedIDs []string) ([]db.Comment, error) {
+func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string) ([]db.Comment, error) {
 	var comments []db.Comment
 
 	excludedIDQuery := ""
@@ -28,27 +30,46 @@ func fetchComments(postID int64, limit int, gm *gorm.DB, excludedIDs []string) (
 		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
 	}
 
+	var sortField string
+	switch sort {
+	case "new":
+		sortField = "created_at DESC"
+	case "trending":
+		sortField = "score DESC" // todo: make trending_score
+	default:
+		// should never happen with validated struct, but to be defensive
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
+		return nil, errors.New("invalid sort field")
+	}
+
 	query := gm.
 		Raw(`
-			WITH RECURSIVE comment_hierarchy AS (
-				SELECT *
+			WITH top_root_comments AS (
+				SELECT id, score, content, ancestors, created_at
 				FROM comments
-				WHERE ancestors[1] = ?
-				AND comments.post_id = ?
+				WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = ?
 				`+excludedIDQuery+`
-				
-				UNION
-				
-				SELECT c.*
+				ORDER BY `+sortField+`
+				LIMIT ?
+			), ranked_replies AS (
+				SELECT c.id, c.score, c.content, c.ancestors, c.created_at,
+				ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
 				FROM comments c
-				INNER JOIN comment_hierarchy ch ON ch.id = ANY(c.ancestors)
-				WHERE ARRAY_LENGTH(c.ancestors, 1) = ARRAY_LENGTH(ch.ancestors, 1) + 1
+				JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 			)
-			SELECT *
-			FROM comment_hierarchy
-			ORDER BY score DESC
-			LIMIT ?;
-		`, 34, postID, limit).Find(&comments)
+			SELECT id, score, content, ancestors, created_at
+			FROM (
+				SELECT id, score, content, ancestors, created_at FROM top_root_comments
+				UNION ALL
+				SELECT id, score, content, ancestors, created_at
+				FROM ranked_replies
+				WHERE reply_num <= ?
+			) AS combined_comments
+			ORDER BY (CASE WHEN cardinality(ancestors) = 0 THEN score END) DESC,
+					(CASE WHEN cardinality(ancestors) > 0 THEN created_at END) ASC;
+			
+		`, postID, config.RootsReturnedAtOnce, config.RepliesReturnedAtOnce).
+		Find(&comments)
 
 	if query.Error != nil {
 		return nil, query.Error
@@ -78,7 +99,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
-	// session key (posts:userid+uuid_session) -> post id -> comment ids seen for that post
+	// session key (posts:userid+uuid_session) -> post id -> root comment ids seen for that post
 	postSpecificKey := idSessionKey + ":" + fmt.Sprint(req.PostID)
 
 	if req.PurgeCache {
@@ -90,7 +111,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		}
 	}
 
-	// retrieve the seen comment IDs from the cache
+	// retrieve the seen root comment IDs from the cache
 	ids, err := h.redis.SMembers(c, postSpecificKey).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -102,7 +123,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// fetch comments using the translated SQL query
-	comments, err := fetchComments(int64(req.PostID), 3, h.db, ids)
+	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return

@@ -5,11 +5,7 @@ Content-Type: application/json
 X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
 
 {
-<<<<<<< HEAD
-    "email": "matt2@uvic.ca",
-=======
     "email": "matt@uvic.ca",
->>>>>>> main
     "password": "mysecurepw$",
     "year_of_study": 1,
     "faculty": "ENG"

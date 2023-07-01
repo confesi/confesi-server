@@ -38,7 +38,7 @@ func (h *handler) handleHideComment(c *gin.Context) {
 	}
 
 	if result.RowsAffected == 0 {
-		response.New(http.StatusBadRequest).Err("No comment found with this ID").Send(c)
+		response.New(http.StatusBadRequest).Err("no comment found with this ID").Send(c)
 		return
 	}
 
