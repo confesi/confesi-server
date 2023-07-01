@@ -670,3 +670,242 @@ FROM
   bfs_comments
 ORDER BY
   path;
+
+
+---- pretty close! (best so far)
+
+WITH RECURSIVE bfs_comments AS (
+  -- Anchor member
+  SELECT
+    id,
+    score,
+    0 AS level,
+    ARRAY[id] AS path,
+    0::bigint AS sibling_order,
+    children_count,
+    ancestors,
+    content
+  FROM
+    comments
+  WHERE
+    COALESCE(ancestors, '{}') = '{}'
+
+  UNION ALL
+
+  -- Recursive member
+  SELECT
+    c.id,
+    c.score,
+    bc.level + 1,
+    bc.path || c.id,
+    ROW_NUMBER() OVER (PARTITION BY bc.path ORDER BY c.id)::bigint AS sibling_order,
+    c.children_count,
+    c.ancestors,
+    c.content
+  FROM
+    comments c
+  INNER JOIN bfs_comments bc ON c.ancestors[1] = bc.id
+)
+SELECT
+  id,
+  score,
+  level,
+  path,
+  sibling_order,
+  children_count,
+  ancestors,
+  content,
+  group_order,
+  level_order
+FROM (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1], sibling_order <= 2 ORDER BY sibling_order) AS group_order,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY level) AS level_order
+  FROM bfs_comments
+) grouped_comments
+WHERE
+  group_order <= 4 -- Limit the number of siblings included per sibling group
+ -- AND level_order <= 15 -- Limit the total number of results
+ORDER BY path
+LIMIT 10;
+
+
+--- AHHHHH IT WORKS (excluding sorts and already-seen results)
+
+WITH RECURSIVE bfs_comments AS (
+  -- Anchor member
+  SELECT
+    id,
+    score,
+    0 AS level,
+    ARRAY[id] AS path,
+    0::bigint AS sibling_order,
+    children_count,
+    ancestors,
+    content,
+    1::bigint AS recursion_count
+  FROM
+    comments
+  WHERE
+    COALESCE(ancestors, '{}') = '{}'
+
+  UNION ALL
+
+  -- Recursive member
+  SELECT
+    c.id,
+    c.score,
+    bc.level + 1,
+    bc.path || c.id,
+    ROW_NUMBER() OVER (PARTITION BY bc.path ORDER BY c.id)::bigint AS sibling_order,
+    c.children_count,
+    c.ancestors,
+    c.content,
+    bc.recursion_count + 1
+  FROM
+    comments c
+  INNER JOIN bfs_comments bc ON c.ancestors[array_length(bc.path, 1)] = bc.id
+),
+grouped_comments AS (
+  SELECT
+    id,
+    score,
+    level,
+    path,
+    sibling_order,
+    children_count,
+    ancestors,
+    content,
+    recursion_count,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY sibling_order) AS sibling_group_order,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY level) AS level_order
+  FROM bfs_comments
+),
+deduplicated_comments AS (
+  SELECT DISTINCT ON (id)
+    id,
+    score,
+    level,
+    path,
+    sibling_order,
+    children_count,
+    ancestors,
+    content,
+    recursion_count,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY sibling_order) AS sibling_group_order
+  FROM grouped_comments
+  ORDER BY id, sibling_order -- Ensure lowest sibling_order within each duplicate ID
+),
+row_numbered_comments AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY level) AS level_order
+  FROM deduplicated_comments
+)
+SELECT
+  id,
+  score,
+  level,
+  path,
+  sibling_order,
+  children_count,
+  ancestors,
+  content,
+  recursion_count,
+  CASE
+    WHEN level_order = 1 THEN sibling_group_order
+    ELSE sibling_group_order - LAG(sibling_group_order, 1, 0) OVER (PARTITION BY path[1:cardinality(path) - 1], level ORDER BY sibling_order)
+  END AS group_order,
+  level_order
+FROM row_numbered_comments
+--WHERE group_order <= 2 -- Limit the number of rows per sibling group
+ORDER BY path, sibling_order;
+
+----- CORRECT SCORING ORDERING, BUT INVAILD TREES
+
+WITH RECURSIVE bfs_comments AS (
+  -- Anchor member
+  SELECT
+    id,
+    score,
+    0 AS level,
+    ARRAY[id] AS path,
+    0::bigint AS sibling_order,
+    children_count,
+    ancestors,
+    content,
+    1::bigint AS recursion_count
+  FROM
+    comments
+  WHERE
+    COALESCE(ancestors, '{}') = '{}'
+    
+  UNION ALL
+  
+  -- Recursive member
+  SELECT
+    c.id,
+    c.score,
+    bc.level + 1,
+    bc.path || c.id,
+    ROW_NUMBER() OVER (PARTITION BY bc.path ORDER BY c.score DESC, c.id)::bigint AS sibling_order,
+    c.children_count,
+    c.ancestors,
+    c.content,
+    bc.recursion_count + 1
+  FROM
+    comments c
+  INNER JOIN bfs_comments bc ON c.ancestors[array_length(bc.path, 1)] = bc.id
+),
+grouped_comments AS (
+  SELECT
+    id,
+    score,
+    level,
+    path,
+    sibling_order,
+    children_count,
+    ancestors,
+    content,
+    recursion_count,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY sibling_order) AS sibling_group_order,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY level) AS level_order
+  FROM bfs_comments
+),
+deduplicated_comments AS (
+  SELECT DISTINCT ON (id)
+    id,
+    score,
+    level,
+    path,
+    sibling_order,
+    children_count,
+    ancestors,
+    content,
+    recursion_count,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY sibling_order) AS sibling_group_order
+  FROM grouped_comments
+  ORDER BY id, sibling_order -- Ensure lowest sibling_order within each duplicate ID
+),
+row_numbered_comments AS (
+  SELECT *,
+    ROW_NUMBER() OVER (PARTITION BY path[1:cardinality(path) - 1] ORDER BY level) AS level_order
+  FROM deduplicated_comments
+)
+SELECT
+  id,
+  score,
+  level,
+  path,
+  sibling_order,
+  children_count,
+  ancestors,
+  content,
+  recursion_count,
+  CASE
+    WHEN level_order = 1 THEN sibling_group_order
+    ELSE sibling_group_order - LAG(sibling_group_order, 1, 0) OVER (PARTITION BY path[1:cardinality(path) - 1], level ORDER BY sibling_order)
+  END AS group_order,
+  level_order
+FROM row_numbered_comments
+WHERE sibling_order <= 1 -- Limit the number of rows per sibling group
+ORDER BY path, sibling_order;
