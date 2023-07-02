@@ -1,0 +1,8 @@
+BEGIN;
+
+ALTER TABLE votes
+    ALTER COLUMN post_id DROP NOT NULL;
+
+ALTER TYPE vote_score_value ADD VALUE '0';
+
+END;

@@ -935,3 +935,62 @@ FROM (
 ) AS combined_comments
 ORDER BY (CASE WHEN cardinality(ancestors) = 0 THEN score END) DESC,
          (CASE WHEN cardinality(ancestors) > 0 THEN created_at END) ASC;
+
+
+-------- flat comments with all columns
+
+WITH top_root_comments AS (
+    SELECT *
+    FROM comments
+    WHERE COALESCE(ancestors, ' {}') = '{}' AND post_id = 1
+    LIMIT 2
+), ranked_replies AS (
+    SELECT c.id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+           ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
+    FROM comments c
+    JOIN top_root_comments tr ON c.ancestors[1] = tr.id
+)
+SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, children_count, user_id, downvote, upvote
+FROM (
+    SELECT id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+    UNION ALL
+    SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+    FROM ranked_replies
+    WHERE reply_num <= 2
+) AS combined_comment
+
+---- savepoint
+
+
+
+WITH top_root_comments AS (
+    SELECT *
+    FROM comments
+    WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = 1
+    LIMIT 2
+), ranked_replies AS (
+    SELECT c.id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+           ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
+    FROM comments c
+    JOIN top_root_comments tr ON c.ancestors[1] = tr.id
+)
+SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, children_count, user_id, downvote, upvote, (SELECT votes.vote FROM votes LIMIT 1) AS user_vote
+FROM (
+    SELECT id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+    UNION ALL
+    SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+    FROM ranked_replies
+    WHERE reply_num <= 2
+) AS combined_comments
+
+
+---- temp
+
+SELECT COALESCE(
+    (SELECT votes.vote
+    FROM votes
+    WHERE votes.comment_id = 50
+    AND votes.user_id = '4Xg6usFzaJasCBuv6Dx2mrwSsZt1'
+    LIMIT 1),
+    '0'::vote_score_value
+) AS vote;
