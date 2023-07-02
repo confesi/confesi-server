@@ -1,8 +1,9 @@
 package comments
 
+// TODO: add `next` to each reply comment
+
 import (
 	"confesi/config"
-	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -17,11 +18,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
-
-type CommentDetail struct {
-	db.Comment `json:"comment"`
-	UserVote   int `json:"user_vote"`
-}
 
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
@@ -81,7 +77,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 			) AS combined_comments
 		) AS t;
 		
-    `, postID, config.RootsReturnedAtOnce, config.RepliesReturnedAtOnce).
+    `, postID, config.RootCommentsLoadedInitially, config.RepliesLoadedInitially).
 		Find(&comments)
 
 	if query.Error != nil {

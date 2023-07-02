@@ -19,6 +19,11 @@ var (
 	threadDepthError = errors.New("thread depth error")
 )
 
+type CommentDetail struct {
+	db.Comment `json:"comment"`
+	UserVote   int `json:"user_vote"`
+}
+
 type handler struct {
 	db    *gorm.DB
 	fb    *fire.FirebaseApp
@@ -33,7 +38,8 @@ func Router(mux *gin.RouterGroup) {
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
-	anyFirebaseUserRoutes.GET("/comments", h.handleGetComments)
+	anyFirebaseUserRoutes.GET("/roots", h.handleGetComments)
+	anyFirebaseUserRoutes.GET("/replies", h.handleGetReplies)
 
 	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {
