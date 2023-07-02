@@ -53,7 +53,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 			LIMIT ?
 		), ranked_replies AS (
 			SELECT c.id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
-				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
+				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 		)
@@ -149,7 +149,11 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		if comment.Comment.Hidden {
 			comment.Comment.Content = "[removed]"
 		}
+
 		if len(comment.Comment.Ancestors) != 0 {
+			// if it's a reply, set the next curser to the created_at time
+			timeMillis := comment.Comment.CreatedAt.UnixMilli()
+			comment.Next = &timeMillis
 			// don't cache replies since they can be paginated
 			// via next cursors on static created_at times, and subsequent
 			// load_initial_comments will only fetch replies from uncached root comments
