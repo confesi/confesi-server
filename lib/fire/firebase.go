@@ -22,7 +22,7 @@ type FirebaseApp struct {
 
 func init() {
 	// Init Firebase app
-	err := InitFirebase("firebase-secrets.json")
+	err := InitFirebase("../../firebase-secrets.json")
 	if err != nil {
 		// if we can't init firebase, we have an unrecoverable error
 		log.Fatal("Error initializing Firebase app: ", err)
