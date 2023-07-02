@@ -70,11 +70,16 @@ type HideComment struct {
 	CommentID uint `json:"comment_id" validate:"required"`
 }
 
-type CommentQuery struct {
+type InitialCommentQuery struct {
 	Sort       string `json:"sort" validate:"oneof=trending new"`
 	PostID     uint   `json:"post_id" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
+}
+
+type RepliesCommentQuery struct {
+	// [required] timestamp of last seen replied comment (ms since epoch)
+	Next uint `json:"next" validate:"required"`
 }
 
 type FeedbackDetails struct {

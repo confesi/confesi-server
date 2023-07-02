@@ -41,34 +41,32 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
 		return nil, errors.New("invalid sort field")
 	}
-
 	query := gm.
 		Raw(`
-			WITH top_root_comments AS (
-				SELECT id, score, content, ancestors, created_at
-				FROM comments
-				WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = ?
-				`+excludedIDQuery+`
-				ORDER BY `+sortField+`
-				LIMIT ?
-			), ranked_replies AS (
-				SELECT c.id, c.score, c.content, c.ancestors, c.created_at,
-				ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
-				FROM comments c
-				JOIN top_root_comments tr ON c.ancestors[1] = tr.id
-			)
-			SELECT id, score, content, ancestors, created_at
-			FROM (
-				SELECT id, score, content, ancestors, created_at FROM top_root_comments
-				UNION ALL
-				SELECT id, score, content, ancestors, created_at
-				FROM ranked_replies
-				WHERE reply_num <= ?
-			) AS combined_comments
-			ORDER BY (CASE WHEN cardinality(ancestors) = 0 THEN score END) DESC,
-					(CASE WHEN cardinality(ancestors) > 0 THEN created_at END) ASC;
-			
-		`, postID, config.RootsReturnedAtOnce, config.RepliesReturnedAtOnce).
+        WITH top_root_comments AS (
+            SELECT *
+            FROM comments
+            WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = ?
+            `+excludedIDQuery+`
+            ORDER BY `+sortField+`
+            LIMIT ?
+        ), ranked_replies AS (
+            SELECT c.id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+            ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at) AS reply_num
+            FROM comments c
+            JOIN top_root_comments tr ON c.ancestors[1] = tr.id
+        )
+        SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, children_count, user_id, downvote, upvote
+        FROM (
+            SELECT id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+            UNION ALL
+            SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+            FROM ranked_replies
+            WHERE reply_num <= ?
+        ) AS combined_comments
+        ORDER BY (CASE WHEN cardinality(ancestors) = 0 THEN score END) DESC,
+                 (CASE WHEN cardinality(ancestors) > 0 THEN created_at END) ASC;
+    `, postID, config.RootsReturnedAtOnce, config.RepliesReturnedAtOnce).
 		Find(&comments)
 
 	if query.Error != nil {
@@ -80,7 +78,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 
 func (h *handler) handleGetComments(c *gin.Context) {
 	// extract request
-	var req validation.CommentQuery
+	var req validation.InitialCommentQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -130,7 +128,22 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// update the cache with the retrieved post IDs
-	for _, comment := range comments {
+	for i := range comments {
+		// access the comment using the index i (so I can change it
+		// because loops are pass by value not reference)
+		comment := &comments[i]
+
+		// Rest of the code inside the loop
+		fmt.Println(comment.Hidden)
+		if comment.Hidden {
+			comment.Content = "[removed]"
+		}
+		if len(comment.Ancestors) != 0 {
+			// don't cache replies since they can be paginated
+			// via next cursors on static created_at times, and subsequent
+			// load_initial_comments will only fetch replies from uncached root comments
+			continue
+		}
 		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.ID)).Err()
 		if err != nil {
 			logger.StdErr(err)
