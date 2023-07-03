@@ -14,6 +14,7 @@ CREATE TABLE comment_identifiers (
     );
 
 ALTER TABLE comments
-    ADD COLUMN identifier_id INTEGER REFERENCES comment_identifiers (id);
+    ADD COLUMN identifier_id INTEGER REFERENCES comment_identifiers (id),
+    CONSTRAINT fk_comment_identifiers FOREIGN KEY (identifier_id) REFERENCES comment_identifiers (id);
 
 END;
