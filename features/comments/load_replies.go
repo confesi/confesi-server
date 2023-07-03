@@ -24,6 +24,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 	next := time.UnixMilli(int64(req.Next))
 
 	err = h.db.
+		Preload("Identifier").
 		Table("comments").
 		Where("ancestors[1] = ?", req.ParentComment).
 		Where("created_at < ?", next).

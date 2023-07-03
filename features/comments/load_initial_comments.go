@@ -41,6 +41,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 		return nil, errors.New("invalid sort field")
 	}
 	query := gm.
+		Preload("Identifiers").
 		Raw(`
 		WITH top_root_comments AS (
 			SELECT *
