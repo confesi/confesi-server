@@ -40,25 +40,26 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
 		return nil, errors.New("invalid sort field")
 	}
+	// query written in raw SQL over pure Gorm because... well this would be a nightmare otherwise and likely impossible
 	query := gm.
-		Preload("Identifiers").
+		Preload("Identifier").
 		Raw(`
 		WITH top_root_comments AS (
 			SELECT *
 			FROM comments
 			WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = ?
-			`+excludedIDQuery+`
-			ORDER BY `+sortField+`
+            `+excludedIDQuery+`
+            ORDER BY `+sortField+`
 			LIMIT ?
 		), ranked_replies AS (
-			SELECT c.id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+			SELECT c.id, c.identifier_id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
 				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 		)
-		SELECT t.id, t.post_id, t.score, t.content, t.ancestors, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
+		SELECT t.id, t.identifier_id, t.post_id, t.score, t.content, t.ancestors, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
 		FROM (
-			SELECT combined_comments.id, combined_comments.post_id, combined_comments.score, combined_comments.content, combined_comments.ancestors, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.upvote,
+			SELECT combined_comments.id, combined_comments.post_id, combined_comments.score, combined_comments.content, combined_comments.ancestors, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.identifier_id, combined_comments.upvote,
 				   COALESCE(
 					   (SELECT votes.vote
 						FROM votes
@@ -68,14 +69,14 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 					   '0'::vote_score_value
 				   ) AS user_vote
 			FROM (
-				SELECT id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+				SELECT id, identifier_id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
 				UNION ALL
-				SELECT id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+				SELECT id, identifier_id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
 				FROM ranked_replies
 				WHERE reply_num <= ?
 			) AS combined_comments
-		) AS t;
-		
+		) AS t
+	LEFT JOIN comment_identifiers ON comment_identifiers.id = t.identifier_id;
     `, postID, config.RootCommentsLoadedInitially, config.RepliesLoadedInitially).
 		Find(&comments)
 
@@ -143,9 +144,10 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		// because loops are pass by value not reference)
 		comment := &comments[i]
 
-		// if comment is hidden, set its content to "[removed]"
+		// if comment is hidden, set its content to "[removed]" and its identifier to nil ("null")
 		if comment.Comment.Hidden {
 			comment.Comment.Content = "[removed]"
+			comment.Comment.Identifier = nil
 		}
 
 		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()

@@ -126,9 +126,9 @@ type Comment struct {
 	CreatedAt     TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID        uint
-	IdentifierID  uint              `gorm:"column:identifier_id" json:"-"`
-	Identifier    CommentIdentifier `gorm:"foreignKey:IdentifierID"`
-	Ancestors     pq.Int64Array     `gorm:"type:integer[]"`
+	IdentifierID  uint               `gorm:"column:identifier_id" json:"-"`
+	Identifier    *CommentIdentifier `gorm:"foreignKey:IdentifierID"`
+	Ancestors     pq.Int64Array      `gorm:"type:integer[]"`
 	ChildrenCount uint
 	UserID        string `gorm:"column:user_id" json:"-"`
 	Content       string

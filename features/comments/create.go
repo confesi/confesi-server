@@ -7,7 +7,6 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -97,7 +96,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			First(&post).
 			Error
 		if err != nil {
-			fmt.Println("ERRROR 1")
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				response.New(http.StatusBadRequest).Err("referenced post not found").Send(c)
 			}
@@ -106,8 +104,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			return
 		}
 		if post.UserID == token.UID {
-			fmt.Println("OP COMMENT")
-			fmt.Println(post.UserID, token.UID)
 			// user is OP
 			newOpCommentIdentifier := db.CommentIdentifier{
 				UserID: token.UID,
@@ -122,8 +118,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			}
 			comment.IdentifierID = newOpCommentIdentifier.ID
 		} else {
-			fmt.Println("NON-OP COMMENT")
-			fmt.Println(post.UserID, token.UID)
 			// user is not OP
 			// list all the already existing comment identifiers and get the one with the highest "identifier" column, then save one with that + 1
 			var highestIdentifierSoFar db.CommentIdentifier
@@ -142,7 +136,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				newIdentifier = 1
 			} else {
-				fmt.Println(highestIdentifierSoFar)
 				if highestIdentifierSoFar.Identifier == nil {
 					newIdentifier = 1
 				} else {

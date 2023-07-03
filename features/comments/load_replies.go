@@ -33,6 +33,15 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		Find(&commentDetails).
 		Error
 
+	for i := range commentDetails {
+		// create reference to comment
+		comment := &commentDetails[i]
+		if comment.Hidden {
+			comment.Comment.Content = "[removed]"
+			comment.Comment.Identifier = nil
+		}
+	}
+
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
