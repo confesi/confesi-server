@@ -11,11 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type FetchedComments struct {
-	Comments []CommentDetail `json:"comments"`
-	Next     *int64          `json:"next"`
-}
-
 func (h *handler) handleGetReplies(c *gin.Context) {
 	// extract request
 	var req validation.RepliesCommentQuery
@@ -24,7 +19,6 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
-	fetchResult := FetchedComments{}
 	var commentDetails []CommentDetail
 
 	next := time.UnixMilli(int64(req.Next))
@@ -43,13 +37,6 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
-	if len(commentDetails) > 0 {
-		timeMillis := commentDetails[len(commentDetails)-1].Comment.CreatedAt.UnixMilli()
-		fetchResult.Next = &timeMillis
-	}
-
-	fetchResult.Comments = commentDetails
-
 	// if all good, send 200
-	response.New(http.StatusOK).Val(fetchResult).Send(c)
+	response.New(http.StatusOK).Val(commentDetails).Send(c)
 }

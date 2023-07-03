@@ -37,7 +37,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	}
 
 	if len(fetchResult.Comments) > 0 {
-		timeMillis := fetchResult.Comments[len(fetchResult.Comments)-1].UpdatedAt.UnixMilli()
+		timeMillis := utils.UnixMs(fetchResult.Comments[len(fetchResult.Comments)-1].UpdatedAt.Time)
 		fetchResult.Next = &timeMillis
 	}
 

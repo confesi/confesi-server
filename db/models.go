@@ -1,6 +1,10 @@
 package db
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+
 	"gorm.io/datatypes"
 
 	"time"
@@ -58,8 +62,8 @@ const (
 
 type meta struct {
 	ID        uint `gorm:"primaryKey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt TimeMillis
+	UpdatedAt TimeMillis
 }
 
 type ModLevel struct {
@@ -95,9 +99,9 @@ func (School) TableName() string {
 }
 
 type User struct {
-	ID          string    `gorm:"primaryKey"`
-	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	ID          string     `gorm:"primaryKey"`
+	CreatedAt   TimeMillis `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   TimeMillis `gorm:"column:updated_at;autoUpdateTime"`
 	Email       string
 	YearOfStudy uint8
 	FacultyID   uint
@@ -107,18 +111,18 @@ type User struct {
 
 // ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
-	ID        uint      `gorm:"primary_key;column:id" json:"-"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
-	UserID    string    `gorm:"column:user_id" json:"-"`
+	ID        uint       `gorm:"primary_key;column:id" json:"-"`
+	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
 	SchoolID  uint
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
 	ID            int             `gorm:"primary_key;column:id" json:"-"`
-	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime"`
+	CreatedAt     TimeMillis      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMillis      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
 	SchoolID      uint            `gorm:"column:school_id" json:"-"`
 	School        School          `gorm:"foreignKey:SchoolID"`
@@ -136,9 +140,9 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	ID            int       `gorm:"primary_key;column:id"`
-	CreatedAt     time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
-	UpdatedAt     time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	ID            int        `gorm:"primary_key;column:id"`
+	CreatedAt     TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID        uint
 	Ancestors     pq.Int64Array `gorm:"type:integer[]"`
 	ChildrenCount uint
@@ -150,9 +154,58 @@ type Comment struct {
 	Hidden        bool `gorm:"column:hidden" json:"-"`
 }
 
+// This will store as a `time.Time` in the database,
+// and as a unix ms time for json serialization
+type TimeMillis struct {
+	time.Time
+}
+
+func (t TimeMillis) MarshalJSON() ([]byte, error) {
+	millis := t.UnixMilli()
+	return json.Marshal(millis)
+}
+
+func (t *TimeMillis) UnmarshalJSON(data []byte) error {
+	var millis int64
+	err := json.Unmarshal(data, &millis)
+	if err != nil {
+		return err
+	}
+	t.Time = time.Unix(0, millis*int64(time.Millisecond))
+	return nil
+}
+
+func (t TimeMillis) Value() (driver.Value, error) {
+	return t.Time, nil
+}
+
+func (t *TimeMillis) Scan(value interface{}) error {
+	if value == nil {
+		t.Time = time.Time{}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case time.Time:
+		t.Time = v
+	case []byte:
+		var millis int64
+		err := json.Unmarshal(v, &millis)
+		if err != nil {
+			return err
+		}
+		t.Time = time.Unix(0, millis*int64(time.Millisecond))
+	default:
+		return fmt.Errorf("unsupported scan value type: %T", value)
+	}
+
+	return nil
+}
+
 const (
-	Upvote   = 1
-	Downvote = -1
+	Neutralvote = 0
+	Upvote      = 1
+	Downvote    = -1
 )
 
 type Vote struct {
@@ -164,22 +217,22 @@ type Vote struct {
 }
 
 type SavedPost struct {
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime"`
 	UserID    string
 	PostID    uint
 }
 
 type SavedComment struct {
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime"`
 	UserID    string
 	CommentID uint
 }
 
 type Feedback struct {
-	ID        int       `gorm:"primary_key;column:id"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
+	ID        int        `gorm:"primary_key;column:id"`
+	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime"`
 	UserID    string
 	Content   string
 	TypeID    uint // references the feedback_type table

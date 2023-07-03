@@ -1,7 +1,5 @@
 package comments
 
-// TODO: add `next` to each reply comment
-
 import (
 	"confesi/config"
 	"confesi/lib/logger"
@@ -36,7 +34,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 	case "new":
 		sortField = "created_at DESC"
 	case "trending":
-		sortField = "score DESC" // todo: make trending_score
+		sortField = "score DESC" // todo: make trending_score eventually once voting is added to comments
 	default:
 		// should never happen with validated struct, but to be defensive
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
@@ -108,8 +106,8 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
-	// session key (posts:userid+uuid_session) -> post id -> root comment ids seen for that post
-	postSpecificKey := idSessionKey + ":" + fmt.Sprint(req.PostID)
+	// session key ("comments" + ":" + "userid" + "+" + "[uuid_session]") -> root comment ids seen
+	postSpecificKey := idSessionKey
 
 	if req.PurgeCache {
 		// purge the cache
@@ -144,21 +142,11 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		// because loops are pass by value not reference)
 		comment := &comments[i]
 
-		// Rest of the code inside the loop
-		fmt.Println(comment.Comment.Hidden)
+		// if comment is hidden, set its content to "[removed]"
 		if comment.Comment.Hidden {
 			comment.Comment.Content = "[removed]"
 		}
 
-		if len(comment.Comment.Ancestors) != 0 {
-			// if it's a reply, set the next curser to the created_at time
-			timeMillis := comment.Comment.CreatedAt.UnixMilli()
-			comment.Next = &timeMillis
-			// don't cache replies since they can be paginated
-			// via next cursors on static created_at times, and subsequent
-			// load_initial_comments will only fetch replies from uncached root comments
-			continue
-		}
 		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()
 		if err != nil {
 			logger.StdErr(err)

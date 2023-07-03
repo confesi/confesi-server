@@ -12,8 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// todo: for deleted comments, they should STILL GET RETURNED so they don't screw up the tree-structure, but just have their `content` set to "[removed]"
-
 var (
 	serverError      = errors.New("server error")
 	threadDepthError = errors.New("thread depth error")
@@ -21,8 +19,7 @@ var (
 
 type CommentDetail struct {
 	db.Comment `json:"comment"`
-	UserVote   int    `json:"user_vote"`
-	Next       *int64 `json:"next,omitempty"`
+	UserVote   int `json:"user_vote"`
 }
 
 type handler struct {
@@ -34,6 +31,9 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
+	// any user
+	mux.GET("/comment", h.handleGetCommentById)
+
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
@@ -41,6 +41,7 @@ func Router(mux *gin.RouterGroup) {
 	})
 	anyFirebaseUserRoutes.GET("/roots", h.handleGetComments)
 	anyFirebaseUserRoutes.GET("/replies", h.handleGetReplies)
+	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgeCommentsCache)
 
 	// only allow registered users to create a post
 	mux.Use(func(c *gin.Context) {
