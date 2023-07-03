@@ -7,6 +7,7 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -77,6 +78,96 @@ func (h *handler) handleCreate(c *gin.Context) {
 	} else {
 		// its a root comment
 		comment.Ancestors = pq.Int64Array{}
+	}
+
+	// check if there already exists a comment identifier
+	commentIdentifier := db.CommentIdentifier{}
+	err = tx.
+		Where("user_id = ?", token.UID).
+		Where("post_id = ?", req.PostID).
+		First(&commentIdentifier).
+		Error
+
+	// check if identifier record already exists
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		// if not, create a new one
+		var post db.Post
+		err = tx.
+			Where("id = ?", req.PostID).
+			First(&post).
+			Error
+		if err != nil {
+			fmt.Println("ERRROR 1")
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				response.New(http.StatusBadRequest).Err("referenced post not found").Send(c)
+			}
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			tx.Rollback()
+			return
+		}
+		if post.UserID == token.UID {
+			fmt.Println("OP COMMENT")
+			fmt.Println(post.UserID, token.UID)
+			// user is OP
+			newOpCommentIdentifier := db.CommentIdentifier{
+				UserID: token.UID,
+				PostID: req.PostID,
+				IsOp:   true,
+			}
+			err = tx.Create(&newOpCommentIdentifier).Error
+			if err != nil {
+				tx.Rollback()
+				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+				return
+			}
+			comment.IdentifierID = newOpCommentIdentifier.ID
+		} else {
+			fmt.Println("NON-OP COMMENT")
+			fmt.Println(post.UserID, token.UID)
+			// user is not OP
+			// list all the already existing comment identifiers and get the one with the highest "identifier" column, then save one with that + 1
+			var highestIdentifierSoFar db.CommentIdentifier
+			err = tx.
+				Where("post_id = ?", req.PostID).
+				Order("identifier ASC").
+				Find(&highestIdentifierSoFar).
+				Limit(1).
+				Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				tx.Rollback()
+				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+				return
+			}
+			var newIdentifier int64
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				newIdentifier = 1
+			} else {
+				fmt.Println(highestIdentifierSoFar)
+				if highestIdentifierSoFar.Identifier == nil {
+					newIdentifier = 1
+				} else {
+					newIdentifier = *highestIdentifierSoFar.Identifier + 1
+				}
+			}
+			// save new comment identifier
+			newNotOpCommentIdentifier := db.CommentIdentifier{
+				UserID:     token.UID,
+				PostID:     req.PostID,
+				Identifier: &newIdentifier,
+				IsOp:       false,
+			}
+			err = tx.Create(&newNotOpCommentIdentifier).
+				Error
+			if err != nil {
+				tx.Rollback()
+				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+				return
+			}
+			comment.IdentifierID = newNotOpCommentIdentifier.ID
+		}
+	} else {
+		// if it already exists, set it for the soon-to-be-created comment
+		comment.IdentifierID = commentIdentifier.ID
 	}
 
 	// save the comment

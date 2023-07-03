@@ -188,7 +188,7 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 }
 
 func (h *handler) getAllSchools(schools *[]School) error {
-	return h.Table(db.Schools).Scan(schools).Error
+	return h.Table("schools").Scan(schools).Error
 }
 
 func (h *handler) getBySchoolName(
@@ -198,7 +198,7 @@ func (h *handler) getBySchoolName(
 ) error {
 	schoolSql := "%" + strings.ToUpper(schoolName) + "%"
 	err := h.DB.
-		Table(db.Schools).
+		Table("schools").
 		Where("name LIKE ? OR abbr LIKE ?", schoolName, schoolSql).
 		Offset(pag.Offset).
 		Limit(pag.Limit).

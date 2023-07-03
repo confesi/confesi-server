@@ -12,23 +12,6 @@ import (
 	"github.com/lib/pq"
 )
 
-// Table names
-const (
-	Comments      = "comments"
-	Faculties     = "faculties"
-	Feedbacks     = "feedbacks"
-	ModLevels     = "mod_levels"
-	Posts         = "posts"
-	Reports       = "reports"
-	SavedComments = "saved_comments"
-	SavedPosts    = "saved_posts"
-	SchoolFollows = "school_follows"
-	Schools       = "schools"
-	Users         = "users"
-	Votes         = "votes"
-	FeedbackTypes = "feedback_types"
-)
-
 const (
 	ModEnableID = 1
 	ModEnable   = "enabled"
@@ -87,7 +70,7 @@ type Faculty struct {
 }
 
 func (Faculty) TableName() string {
-	return Faculties
+	return "faculties"
 }
 
 func (Post) TableName() string {
@@ -131,7 +114,7 @@ type Post struct {
 	Content       string          `gorm:"column:content"`
 	Downvote      uint            `gorm:"column:downvote"`
 	Upvote        uint            `gorm:"column:upvote"`
-	TrendingScore uint64          `gorm:"column:trending_score"`
+	TrendingScore float64         `gorm:"column:trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
 	Hidden        bool            `gorm:"column:hidden" json:"-"`
 	VoteScore     int             `gorm:"column:vote_score"`
@@ -143,6 +126,7 @@ type Comment struct {
 	CreatedAt     TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID        uint
+	IdentifierID  uint
 	Ancestors     pq.Int64Array `gorm:"type:integer[]"`
 	ChildrenCount uint
 	UserID        string `gorm:"column:user_id" json:"-"`
@@ -243,7 +227,7 @@ type FeedbackType struct {
 }
 
 func (FeedbackType) TableName() string {
-	return FeedbackTypes
+	return "feedback_types"
 }
 
 type Report struct {
@@ -262,4 +246,20 @@ type DailyHottestCron struct {
 
 func (DailyHottestCron) TableName() string {
 	return "daily_hottest_cron_jobs"
+}
+
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
+// only serialize the fields that are needed for the client (if OP or identifier)
+type CommentIdentifier struct {
+	ID         uint       `gorm:"primaryKey" json:"-"`
+	CreatedAt  TimeMillis `gorm:"column:created_at;autoCreateTime" json:"-"`
+	UpdatedAt  TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"-"`
+	UserID     string     `gorm:"column:user_id" json:"-"`
+	PostID     uint       `gorm:"column:post_id" json:"-"`
+	IsOp       bool       `gorm:"column:is_op"`
+	Identifier *int64     `gorm:"column:identifier"` // pointer so it can be nullable
+}
+
+func (CommentIdentifier) TableName() string {
+	return "comment_identifiers"
 }
