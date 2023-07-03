@@ -19,18 +19,35 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
 	var commentDetails []CommentDetail
 
 	next := time.UnixMilli(int64(req.Next))
 
 	err = h.db.
 		Preload("Identifier").
-		Table("comments").
-		Where("ancestors[1] = ?", req.ParentComment).
-		Where("created_at < ?", next).
-		Order("created_at DESC").
-		Limit(config.RepliesLoadedManually).
-		Find(&commentDetails).
+		Raw(`
+			SELECT comments.*, 
+				COALESCE(
+					(SELECT votes.vote
+					FROM votes
+					WHERE votes.comment_id = comments.id
+						AND votes.user_id = ?
+					LIMIT 1),
+					'0'::vote_score_value
+				) AS user_vote
+			FROM comments
+			WHERE ancestors[1] = ?
+				AND created_at < ?
+			ORDER BY created_at DESC
+			LIMIT ?
+		`, token.UID, req.ParentComment, next, config.RepliesLoadedManually).
+		First(&commentDetails).
 		Error
 
 	for i := range commentDetails {

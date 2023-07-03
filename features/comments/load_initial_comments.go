@@ -21,7 +21,7 @@ const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
 
-func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string) ([]CommentDetail, error) {
+func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string) ([]CommentDetail, error) {
 	var comments []CommentDetail
 
 	excludedIDQuery := ""
@@ -52,32 +52,32 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
             ORDER BY `+sortField+`
 			LIMIT ?
 		), ranked_replies AS (
-			SELECT c.id, c.identifier_id, c.post_id, c.score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+			SELECT c.id, c.identifier_id, c.post_id, c.vote_score, c.trending_score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
 				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 		)
-		SELECT t.id, t.identifier_id, t.post_id, t.score, t.content, t.ancestors, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
+		SELECT t.id, t.identifier_id, t.post_id, t.vote_score, t.trending_score, t.content, t.ancestors, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
 		FROM (
-			SELECT combined_comments.id, combined_comments.post_id, combined_comments.score, combined_comments.content, combined_comments.ancestors, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.identifier_id, combined_comments.upvote,
+			SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.trending_score, combined_comments.content, combined_comments.ancestors, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.identifier_id, combined_comments.upvote,
 				   COALESCE(
 					   (SELECT votes.vote
 						FROM votes
 						WHERE votes.comment_id = combined_comments.id
-						  AND votes.user_id = combined_comments.user_id
+						  AND votes.user_id = ?
 						LIMIT 1),
 					   '0'::vote_score_value
 				   ) AS user_vote
 			FROM (
-				SELECT id, identifier_id, post_id, score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+				SELECT id, identifier_id, post_id, vote_score, trending_score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
 				UNION ALL
-				SELECT id, identifier_id, post_id, score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+				SELECT id, identifier_id, post_id, vote_score, trending_score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
 				FROM ranked_replies
 				WHERE reply_num <= ?
 			) AS combined_comments
 		) AS t
 	LEFT JOIN comment_identifiers ON comment_identifiers.id = t.identifier_id;
-    `, postID, config.RootCommentsLoadedInitially, config.RepliesLoadedInitially).
+    `, postID, config.RootCommentsLoadedInitially, uid, config.RepliesLoadedInitially).
 		Find(&comments)
 
 	if query.Error != nil {
@@ -132,7 +132,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// fetch comments using the translated SQL query
-	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort)
+	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return

@@ -35,7 +35,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 				WHERE comments.id = ?
 				LIMIT 1
 			`, token.UID, commentID).
-		Find(&comment).
+		First(&comment).
 		Error
 
 	if err != nil {
@@ -52,5 +52,4 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		return
 	}
 	response.New(http.StatusOK).Val(comment).Send(c)
-	return
 }
