@@ -34,7 +34,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string)
 	case "new":
 		sortField = "created_at DESC"
 	case "trending":
-		sortField = "score DESC" // todo: make trending_score eventually once voting is added to comments
+		sortField = "trending_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))

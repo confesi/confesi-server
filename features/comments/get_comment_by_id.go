@@ -1,8 +1,8 @@
 package comments
 
 import (
-	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"errors"
 	"net/http"
 
@@ -12,8 +12,32 @@ import (
 
 func (h *handler) handleGetCommentById(c *gin.Context) {
 	commentID := c.Query("id")
-	var comment db.Comment
-	err := h.db.Preload("Identifier").First(&comment, commentID).Error
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+	var comment CommentDetail
+
+	err = h.db.
+		Preload("Identifier").
+		Raw(`
+				SELECT comments.*, 
+					COALESCE(
+						(SELECT votes.vote
+						FROM votes
+						WHERE votes.comment_id = comments.id
+							AND votes.user_id = ?
+						LIMIT 1),
+						'0'::vote_score_value
+					) AS user_vote
+				FROM comments
+				WHERE comments.id = ?
+				LIMIT 1
+			`, token.UID, commentID).
+		Find(&comment).
+		Error
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("comment not found").Send(c)
@@ -22,6 +46,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
 	if comment.Hidden {
 		response.New(http.StatusGone).Err("comment removed").Send(c)
 		return

@@ -114,10 +114,10 @@ type Post struct {
 	Content       string          `gorm:"column:content"`
 	Downvote      uint            `gorm:"column:downvote"`
 	Upvote        uint            `gorm:"column:upvote"`
+	VoteScore     int             `gorm:"column:vote_score"`
 	TrendingScore float64         `gorm:"column:trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
 	Hidden        bool            `gorm:"column:hidden" json:"-"`
-	VoteScore     int             `gorm:"column:vote_score"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
@@ -134,8 +134,9 @@ type Comment struct {
 	Content       string
 	Downvote      uint
 	Upvote        uint
-	Score         int
-	Hidden        bool `gorm:"column:hidden" json:"-"`
+	VoteScore     int     `gorm:"column:vote_score"`
+	TrendingScore float64 `gorm:"column:trending_score"`
+	Hidden        bool    `gorm:"column:hidden" json:"-"`
 }
 
 // This will store as a `time.Time` in the database,

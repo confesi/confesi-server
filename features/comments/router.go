@@ -31,9 +31,6 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
-	// any user
-	mux.GET("/comment", h.handleGetCommentById)
-
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
@@ -41,6 +38,7 @@ func Router(mux *gin.RouterGroup) {
 	})
 	anyFirebaseUserRoutes.GET("/roots", h.handleGetComments)
 	anyFirebaseUserRoutes.GET("/replies", h.handleGetReplies)
+	anyFirebaseUserRoutes.GET("/comment", h.handleGetCommentById)
 	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgeCommentsCache)
 
 	// only allow registered users to create a post
