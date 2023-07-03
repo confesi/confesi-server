@@ -65,7 +65,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 
 	user := db.User{
 		ID:          firebaseUser.UID,
-		Email:       req.Email,
 		SchoolID:    school.ID,
 		YearOfStudy: req.YearOfStudy,
 		FacultyID:   uint(faculty.ID),
