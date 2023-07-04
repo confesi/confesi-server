@@ -17,7 +17,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	
+
 	var comment CommentDetail
 
 	err = h.db.
@@ -51,6 +51,10 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 	if comment.Hidden {
 		response.New(http.StatusGone).Err("comment removed").Send(c)
 		return
+	}
+	// check if user is owner
+	if comment.UserID == token.UID {
+		comment.Owner = true
 	}
 	response.New(http.StatusOK).Val(comment).Send(c)
 }
