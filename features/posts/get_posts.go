@@ -109,7 +109,15 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	}
 
 	// update the cache with the retrieved post IDs
-	for _, post := range posts {
+	for i := range posts {
+
+		post := &posts[i]
+
+		// check if the post belongs to the user
+		if post.UserID == token.UID {
+			post.Owner = true
+		}
+
 		id := fmt.Sprint(post.ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {

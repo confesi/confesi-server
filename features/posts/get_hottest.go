@@ -14,6 +14,7 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time, userID string)
 	var posts []PostDetail
 	err := h.db.
 		Where("hottest_on = ?", date).
+		Where("hidden = ?", false).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").
 		Preload("Faculty").
@@ -61,5 +62,13 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
 	}
+
+	for i := range posts {
+		// check if the user is the owner of each post
+		if posts[i].UserID == token.UID {
+			posts[i].Owner = true
+		}
+	}
+
 	response.New(http.StatusOK).Val(posts).Send(c)
 }

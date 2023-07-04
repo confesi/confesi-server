@@ -39,6 +39,12 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 			`, token.UID, postID).
 		First(&post).
 		Error
+
+	// check if the user is the owner of the post
+	if post.UserID == token.UID {
+		post.Owner = true
+	}
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)

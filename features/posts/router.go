@@ -19,7 +19,8 @@ var (
 
 type PostDetail struct {
 	db.Post  `json:"post"`
-	UserVote int `json:"user_vote"`
+	UserVote int  `json:"user_vote"`
+	Owner    bool `json:"owner"`
 }
 
 type handler struct {
