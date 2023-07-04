@@ -38,6 +38,43 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		return
 	}
 
+	// Parse the date string into a time.Time value
+	date, err := time.Parse("2006-01-02", req.StartViewDate) // this basically says YYYY-MM-DD, not sure why, but it only works with a dummy date example?
+	nextDate := date.AddDate(0, 0, 1)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid date format").Send(c)
+		return
+	}
+
+	// start a transaction
+	tx := h.DB.Begin()
+
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
+	var found bool
+
+	err = tx.Raw(`
+		SELECT EXISTS (
+			SELECT 1
+			FROM daily_hottest_cron_jobs
+			WHERE daily_hottest_cron_jobs.successfully_ran = ?
+		)
+	`, nextDate).
+		Scan(&found).
+		Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
 	idSessionKey, err := utils.CreateCacheKey(config.RedisSchoolsRankCache, token.UID, req.SessionKey)
 	if err != nil {
@@ -45,13 +82,19 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		return
 	}
 
-	if req.PurgeCache {
+	// if found, it means the cron job has already run for the next day meaning our data is now invalid
+	// so we need to return an error and clear the user's seen id cache
+	if req.PurgeCache || found {
 		// purge the cache
 		err := h.redis.Del(c, idSessionKey).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+	}
+	if found {
+		response.New(http.StatusGone).Err("data is invalid, please refresh").Send(c)
+		return
 	}
 
 	// retrieve the school IDs from the cache
@@ -66,18 +109,6 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	}
 
 	schoolResult := rankedSchoolsResult{}
-
-	// start a transaction
-	tx := h.DB.Begin()
-
-	// if something goes ary, rollback
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-			return
-		}
-	}()
 
 	query := tx.
 		Order("daily_hottests DESC").
