@@ -17,6 +17,11 @@ var (
 	serverError = errors.New("server error")
 )
 
+type PostDetail struct {
+	db.Post  `json:"post"`
+	UserVote int `json:"user_vote"`
+}
+
 type handler struct {
 	db    *gorm.DB
 	fb    *fire.FirebaseApp
@@ -27,8 +32,6 @@ func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
 	// anybody
-	mux.GET("/hottest", h.handleGetHottest)
-	mux.GET("/post", h.handleGetPostById)
 	mux.GET("/sentiment", h.sentimentAnaylsis)
 
 	// any firebase user
@@ -38,6 +41,8 @@ func Router(mux *gin.RouterGroup) {
 	})
 	anyFirebaseUserRoutes.GET("/posts", h.handleGetPosts)
 	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgePostsCache)
+	anyFirebaseUserRoutes.GET("/hottest", h.handleGetHottest)
+	anyFirebaseUserRoutes.GET("/post", h.handleGetPostById)
 
 	// only registered firebase users
 	registeredFirebaseUserRoutes := mux.Group("")

@@ -1,8 +1,8 @@
 package posts
 
 import (
-	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"errors"
 	"net/http"
 
@@ -12,8 +12,33 @@ import (
 
 func (h *handler) handleGetPostById(c *gin.Context) {
 	postID := c.Query("id")
-	var post db.Post
-	err := h.db.Preload("School").Preload("Faculty").First(&post, postID).Error
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	var post PostDetail
+
+	err = h.db.
+		Preload("School").
+		Preload("Faculty").
+		Raw(`
+				SELECT posts.*, 
+					COALESCE(
+						(SELECT votes.vote
+						FROM votes
+						WHERE votes.post_id = posts.id
+							AND votes.user_id = ?
+						LIMIT 1),
+						'0'::vote_score_value
+					) AS user_vote
+				FROM posts
+				WHERE posts.id = ?
+				LIMIT 1
+			`, token.UID, postID).
+		First(&post).
+		Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)

@@ -17,6 +17,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+	
 	var comment CommentDetail
 
 	err = h.db.
