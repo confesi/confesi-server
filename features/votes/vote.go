@@ -158,7 +158,11 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 	}
 
 	// commit the transaction
-	tx.Commit()
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return serverError
+	}
 	return nil
 }
 

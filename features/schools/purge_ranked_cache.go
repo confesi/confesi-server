@@ -1,4 +1,4 @@
-package comments
+package schools
 
 import (
 	"confesi/config"
@@ -9,12 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Deletes the cache for the comments of a user based on their session.
-//
-// Useful to prevent storing the comments of a user if they don't need it stored.
-//
-// Only root comments are stored in cache (dynamic sort criteria), because replies are paginated through by stable `created_at` sort key.
-func (h *handler) handlePurgeCommentsCache(c *gin.Context) {
+func (h *handler) handlePurgeRankedSchoolsCache(c *gin.Context) {
 	// get the session key
 	sessionKey := c.Query("session-key")
 
@@ -24,7 +19,7 @@ func (h *handler) handlePurgeCommentsCache(c *gin.Context) {
 		return
 	}
 
-	cacheKey, err := utils.CreateCacheKey(config.RedisCommentsCache, token.UID, sessionKey)
+	cacheKey, err := utils.CreateCacheKey(config.RedisSchoolsRankCache, token.UID, sessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return

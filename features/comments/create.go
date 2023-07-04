@@ -174,6 +174,11 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	// if all goes well, respond with a 201 & commit the transaction
-	tx.Commit()
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
 	response.New(http.StatusCreated).Send(c)
 }

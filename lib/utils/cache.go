@@ -6,11 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	Comments = "comments"
-	Posts    = "posts"
-)
-
 var (
 	UuidError = errors.New("invalid UUID")
 )

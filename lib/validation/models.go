@@ -90,3 +90,11 @@ type FeedbackDetails struct {
 	// [required] feedback type
 	Type string `json:"type" validate:"required"`
 }
+
+type SchoolRankQuery struct {
+	// [required] school id to get rank for
+	PurgeCache         bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey         string `json:"session_key" validate:"required"`
+	IncludeUsersSchool bool   `json:"include_users_school"`                // true or false, doesn't have "required" so that the zero-value is OK
+	StartViewDate      string `json:"start_view_date" validate:"required"` // format: "YYYY-MM-DD"
+}
