@@ -4,9 +4,15 @@ import (
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+)
+
+var (
+	serverError  = errors.New("server error")
+	invalidValue = errors.New("invalid value")
 )
 
 type handler struct {

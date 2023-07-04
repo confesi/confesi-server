@@ -57,6 +57,10 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 			comment.Comment.Content = "[removed]"
 			comment.Comment.Identifier = nil
 		}
+		// check if user is owner
+		if comment.UserID == token.UID {
+			comment.Owner = true
+		}
 	}
 
 	if err != nil {

@@ -1,7 +1,7 @@
 package saves
 
 import (
-	"confesi/db"
+	"confesi/features/posts"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -13,25 +13,37 @@ import (
 )
 
 type FetchedPosts struct {
-	Posts []db.Post `json:"posts"`
-	Next  *int64    `json:"next"`
+	Posts []posts.PostDetail `json:"posts"`
+	Next  *int64             `json:"next"`
 }
 
 func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedPosts, error) {
 	fetchResult := FetchedPosts{}
 	next := time.UnixMilli(int64(req.Next))
+	query := `
+	SELECT posts.*, saved_posts.updated_at,
+		COALESCE(
+			(
+				SELECT votes.vote
+				FROM votes
+				WHERE votes.post_id = posts.id
+					AND votes.user_id = ?
+				LIMIT 1
+			),
+			'0'::vote_score_value
+		) AS user_vote
+	FROM posts
+	JOIN saved_posts ON posts.id = saved_posts.post_id
+	WHERE saved_posts.updated_at < ?
+		AND saved_posts.user_id = ?
+		AND posts.hidden = false
+	ORDER BY saved_posts.updated_at DESC
+	LIMIT ?
+`
 
-	err := h.db.
-		Joins("JOIN saved_posts ON posts.id = saved_posts.post_id").
-		Table("posts").
-		Select("posts.*, saved_posts.updated_at").
-		Where("saved_posts.updated_at < ?", next).
-		Where("saved_posts.user_id = ?", token.UID).
-		Where("posts.hidden = ?", false).
-		Order("saved_posts.updated_at DESC").
+	err := h.db.Raw(query, token.UID, next, token.UID, cursorSize).
 		Preload("School").
 		Preload("Faculty").
-		Limit(cursorSize).
 		Find(&fetchResult.Posts).Error
 
 	if err != nil {
@@ -41,6 +53,17 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	if len(fetchResult.Posts) > 0 {
 		timeMillis := fetchResult.Posts[len(fetchResult.Posts)-1].UpdatedAt.UnixMilli()
 		fetchResult.Next = &timeMillis
+		for i := range fetchResult.Posts {
+			post := &fetchResult.Posts[i]
+			// keep content hidden if post is hidden
+			if post.Hidden {
+				post.Content = "[removed]"
+			}
+			// check if user is owner
+			if post.UserID == token.UID {
+				post.Owner = true
+			}
+		}
 	}
 
 	return &fetchResult, nil

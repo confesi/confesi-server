@@ -149,6 +149,10 @@ func (h *handler) handleGetComments(c *gin.Context) {
 			comment.Comment.Content = "[removed]"
 			comment.Comment.Identifier = nil
 		}
+		// check if user is owner
+		if comment.UserID == token.UID {
+			comment.Owner = true
+		}
 
 		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()
 		if err != nil {

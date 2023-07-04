@@ -12,13 +12,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-)
-
-var (
-	serverError  = errors.New("server error")
-	invalidValue = errors.New("invalid value")
 )
 
 type contentMatcher struct {
@@ -87,11 +83,28 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		err = tx.Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).Delete(&model).Error
 	} else {
 		// else, update/add the vote
-		err = tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).Update("vote", vote.Vote).FirstOrCreate(&vote).Error
+		err = tx.
+			Model(&model).
+			Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).
+			Update("vote", vote.Vote).
+			FirstOrCreate(&vote).
+			Error
 	}
 	if err != nil {
 		tx.Rollback()
-		return serverError
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle some errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(err, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			return serverError
+		}
+		switch pgErr.Code {
+		case "23503": // foreign key constraint violation
+			return invalidValue // aka, you provided an invalid post/comment id to try saving
+		default:
+			// some other postgreSQL error
+			return serverError
+		}
 	}
 
 	columnUpdates := make(map[string]interface{})
@@ -178,7 +191,12 @@ func (h *handler) handleVote(c *gin.Context) {
 
 	if err := h.doVote(c, vote, req.ContentType); err != nil {
 		// errors are always server error if they arise from here
-		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		switch err {
+		case invalidValue:
+			response.New(http.StatusBadRequest).Err("invalid value").Send(c)
+		default:
+			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		}
 		return
 	}
 
