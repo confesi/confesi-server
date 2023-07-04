@@ -36,7 +36,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	}
 
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
-	idSessionKey, err := utils.CreateCacheKey("posts", token.UID, req.SessionKey)
+	idSessionKey, err := utils.CreateCacheKey(config.RedisPostsCache, token.UID, req.SessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return

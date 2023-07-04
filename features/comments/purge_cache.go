@@ -1,6 +1,7 @@
 package comments
 
 import (
+	"confesi/config"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -23,7 +24,7 @@ func (h *handler) handlePurgeCommentsCache(c *gin.Context) {
 		return
 	}
 
-	cacheKey, err := utils.CreateCacheKey("comments", token.UID, sessionKey)
+	cacheKey, err := utils.CreateCacheKey(config.RedisCommentsCache, token.UID, sessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return

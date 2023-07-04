@@ -1,6 +1,7 @@
 package schools
 
 import (
+	"confesi/config"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -18,7 +19,7 @@ func (h *handler) handlePurgeRankedSchoolsCache(c *gin.Context) {
 		return
 	}
 
-	cacheKey, err := utils.CreateCacheKey("schools_rank", token.UID, sessionKey)
+	cacheKey, err := utils.CreateCacheKey(config.RedisSchoolsRankCache, token.UID, sessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return

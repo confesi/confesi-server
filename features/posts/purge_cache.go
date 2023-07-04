@@ -1,6 +1,7 @@
 package posts
 
 import (
+	"confesi/config"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -21,7 +22,7 @@ func (h *handler) handlePurgePostsCache(c *gin.Context) {
 		return
 	}
 
-	cacheKey, err := utils.CreateCacheKey("posts", token.UID, sessionKey)
+	cacheKey, err := utils.CreateCacheKey(config.RedisPostsCache, token.UID, sessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return
