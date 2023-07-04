@@ -2,11 +2,13 @@ package schools
 
 import (
 	"confesi/db"
+	"confesi/lib/cache"
 	"confesi/lib/fire"
 	"confesi/middleware"
 	"errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
@@ -17,20 +19,29 @@ var (
 
 type handler struct {
 	*gorm.DB
-	fb *fire.FirebaseApp
+	fb    *fire.FirebaseApp
+	redis *redis.Client
 }
 
 func Router(r *gin.RouterGroup) {
-	h := handler{db.New(), fire.New()}
+	h := handler{db.New(), fire.New(), cache.New()}
 
+	// any user
 	r.GET("/", h.getSchools)
 
-	// protected route
-	protectedRoutes := r.Group("")
-	protectedRoutes.Use(func(c *gin.Context) {
+	// any firebase user
+	anyFirebaseUser := r.Group("")
+	anyFirebaseUser.Use(func(c *gin.Context) {
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+	})
+	anyFirebaseUser.GET("/rank", h.handleGetRankedSchools)
+
+	// only registered firebase users
+	registeredFirebaseUsersOnly := r.Group("")
+	registeredFirebaseUsersOnly.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-	protectedRoutes.POST("/watch", h.handleWatchSchool)
-	protectedRoutes.DELETE("/unwatch", h.handleUnwatchSchool)
-	protectedRoutes.GET("/watched", h.handleGetWatchedSchools)
+	registeredFirebaseUsersOnly.POST("/watch", h.handleWatchSchool)
+	registeredFirebaseUsersOnly.DELETE("/unwatch", h.handleUnwatchSchool)
+	registeredFirebaseUsersOnly.GET("/watched", h.handleGetWatchedSchools)
 }
