@@ -56,6 +56,34 @@ type UserStanding struct {
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
 }
 
+type CreateComment struct {
+	// [required] the post this comment is associated with
+	PostID uint `json:"post_id" validate:"required"`
+	// the comment this comment is threaded under. Left empty to indicate this is a "root-level" comment
+	ParentCommentID *int64 `json:"parent_comment_id"`
+	// [required] the actual text content of the comment
+	Content string `json:"content" validate:"required,min=1,max=500" gorm:"not null"`
+}
+
+type HideComment struct {
+	// [required] the id of comment to delete
+	CommentID uint `json:"comment_id" validate:"required"`
+}
+
+type InitialCommentQuery struct {
+	Sort       string `json:"sort" validate:"oneof=trending new"`
+	PostID     uint   `json:"post_id" validate:"required"`
+	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey string `json:"session_key" validate:"required"`
+}
+
+type RepliesCommentQuery struct {
+	// [required] timestamp of last seen replied comment (ms since epoch)
+	Next uint `json:"next" validate:"required"`
+	// [required] the comment to load replies for
+	ParentComment uint `json:"parent_comment" validate:"required"`
+}
+
 type FeedbackDetails struct {
 	// [required] feedback message
 	Message string `json:"message" validate:"required"`

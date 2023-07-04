@@ -1,0 +1,171 @@
+package comments
+
+import (
+	"confesi/config"
+	"confesi/lib/logger"
+	"confesi/lib/response"
+	"confesi/lib/utils"
+	"confesi/lib/validation"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+)
+
+const (
+	seenCommentsCacheExpiry = 24 * time.Hour // one day
+)
+
+func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string) ([]CommentDetail, error) {
+	var comments []CommentDetail
+
+	excludedIDQuery := ""
+	if len(excludedIDs) > 0 {
+		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
+	}
+
+	var sortField string
+	switch sort {
+	case "new":
+		sortField = "created_at DESC"
+	case "trending":
+		sortField = "trending_score DESC"
+	default:
+		// should never happen with validated struct, but to be defensive
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
+		return nil, errors.New("invalid sort field")
+	}
+	// query written in raw SQL over pure Gorm because... well this would be a nightmare otherwise and likely impossible
+	query := gm.
+		Preload("Identifier").
+		Raw(`
+		WITH top_root_comments AS (
+			SELECT *
+			FROM comments
+			WHERE COALESCE(ancestors, '{}') = '{}' AND post_id = ?
+            `+excludedIDQuery+`
+            ORDER BY `+sortField+`
+			LIMIT ?
+		), ranked_replies AS (
+			SELECT c.id, c.identifier_id, c.post_id, c.vote_score, c.trending_score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
+			FROM comments c
+			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
+		)
+		SELECT t.id, t.identifier_id, t.post_id, t.vote_score, t.trending_score, t.content, t.ancestors, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
+		FROM (
+			SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.trending_score, combined_comments.content, combined_comments.ancestors, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.identifier_id, combined_comments.upvote,
+				   COALESCE(
+					   (SELECT votes.vote
+						FROM votes
+						WHERE votes.comment_id = combined_comments.id
+						  AND votes.user_id = ?
+						LIMIT 1),
+					   '0'::vote_score_value
+				   ) AS user_vote
+			FROM (
+				SELECT id, identifier_id, post_id, vote_score, trending_score, content, ancestors, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+				UNION ALL
+				SELECT id, identifier_id, post_id, vote_score, trending_score, content, ancestors, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+				FROM ranked_replies
+				WHERE reply_num <= ?
+			) AS combined_comments
+		) AS t
+	LEFT JOIN comment_identifiers ON comment_identifiers.id = t.identifier_id;
+    `, postID, config.RootCommentsLoadedInitially, uid, config.RepliesLoadedInitially).
+		Find(&comments)
+
+	if query.Error != nil {
+		return nil, query.Error
+	}
+
+	return comments, nil
+}
+
+func (h *handler) handleGetComments(c *gin.Context) {
+	// extract request
+	var req validation.InitialCommentQuery
+	err := utils.New(c).Validate(&req)
+	if err != nil {
+		return
+	}
+
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
+	idSessionKey, err := utils.CreateCacheKey("comments", token.UID, req.SessionKey)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
+		return
+	}
+
+	// session key ("comments" + ":" + "userid" + "+" + "[uuid_session]") -> root comment ids seen
+	postSpecificKey := idSessionKey
+
+	if req.PurgeCache {
+		// purge the cache
+		err := h.redis.Del(c, postSpecificKey).Err()
+		if err != nil {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}
+
+	// retrieve the seen root comment IDs from the cache
+	ids, err := h.redis.SMembers(c, postSpecificKey).Result()
+	if err != nil {
+		if err == redis.Nil {
+			ids = []string{} // assigns an empty slice
+		} else {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}
+
+	// fetch comments using the translated SQL query
+	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// update the cache with the retrieved post IDs
+	for i := range comments {
+		// access the comment using the index i (so I can change it
+		// because loops are pass by value not reference)
+		comment := &comments[i]
+
+		// if comment is hidden, set its content to "[removed]" and its identifier to nil ("null")
+		if comment.Comment.Hidden {
+			comment.Comment.Content = "[removed]"
+			comment.Comment.Identifier = nil
+		}
+
+		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()
+		if err != nil {
+			logger.StdErr(err)
+			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
+			return
+		}
+	}
+
+	// set the expiration for the cache
+	err = h.redis.Expire(c, postSpecificKey, seenCommentsCacheExpiry).Err()
+	if err != nil {
+		logger.StdErr(err)
+		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
+		return
+	}
+
+	// Send response
+	response.New(http.StatusOK).Val(comments).Send(c)
+}

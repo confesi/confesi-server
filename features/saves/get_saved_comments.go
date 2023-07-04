@@ -22,6 +22,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	next := time.UnixMilli(int64(req.Next))
 
 	err := h.db.
+		Preload("Identifier").
 		Joins("JOIN saved_comments ON comments.id = saved_comments.comment_id").
 		Table("comments").
 		Select("comments.*, saved_comments.updated_at").
@@ -37,7 +38,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	}
 
 	if len(fetchResult.Comments) > 0 {
-		timeMillis := fetchResult.Comments[len(fetchResult.Comments)-1].UpdatedAt.UnixMilli()
+		timeMillis := utils.UnixMs(fetchResult.Comments[len(fetchResult.Comments)-1].UpdatedAt.Time)
 		fetchResult.Next = &timeMillis
 	}
 

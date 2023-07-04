@@ -36,7 +36,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
-	// session key that can only be created by *this* user, so it can't be guessed to manipulate other's feeds
+	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
 	idSessionKey, err := utils.CreateCacheKey("posts", token.UID, req.SessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
@@ -68,7 +68,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	case "new":
 		sortField = "created_at DESC"
 	case "trending":
-		sortField = "vote_score DESC"
+		sortField = "trending_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)))

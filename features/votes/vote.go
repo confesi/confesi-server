@@ -132,12 +132,12 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		return err
 	}
 
-	// update the post with the modified vote values and the new trending score
+	// update the post/comment with the modified vote values and the new trending score
 	err = tx.Model(&content.model).
 		Where("id = ?", content.id).
 		Updates(map[string]interface{}{
-			"vote_score":     votes.Upvote - votes.Downvote,                                                        // new overall post score
-			"trending_score": algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new post trending score
+			"vote_score":     votes.Upvote - votes.Downvote,                                                        // new overall content score
+			"trending_score": algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new overall trending score
 		}).Error
 	if err != nil {
 		tx.Rollback()

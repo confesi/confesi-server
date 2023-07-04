@@ -1,0 +1,8 @@
+BEGIN;
+
+ALTER TABLE comments
+    DROP COLUMN score,
+    ADD COLUMN trending_score FLOAT4 DEFAULT 0.0 NOT NULL,
+    ADD COLUMN vote_score INTEGER NOT NULL DEFAULT 0;
+
+END;

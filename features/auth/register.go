@@ -5,9 +5,9 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
@@ -64,19 +64,17 @@ func (h *handler) handleRegister(c *gin.Context) {
 	}
 
 	user := db.User{
-		ID: firebaseUser.UID,
-		// UTC times in milliseconds of when the user was created and last updated (both "default" to when user was created initially)
-		CreatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
-		UpdatedAt:   time.UnixMilli(firebaseUser.UserMetadata.CreationTimestamp),
+		ID:          firebaseUser.UID,
 		SchoolID:    school.ID,
 		YearOfStudy: req.YearOfStudy,
 		FacultyID:   uint(faculty.ID),
-		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... that's another story
+		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... they'll get their account nerfed pretty quickly
 	}
 
 	// save user to postgres
 	err = h.db.Create(&user).Error
 	if err != nil {
+		fmt.Println(err)
 		// If firebase account creation succeeds, but postgres profile save fails
 		response.New(http.StatusCreated).Val("auth").Send(c)
 		return
