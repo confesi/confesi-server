@@ -2,7 +2,6 @@ package posts
 
 import (
 	"confesi/config"
-	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -77,8 +76,21 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	}
 
 	// select all posts that are not in the retrieved post IDs
-	var posts []db.Post
+	var posts []PostDetail
 	query := h.db.
+		Select(`
+		posts.*,
+		COALESCE(
+			(
+				SELECT votes.vote
+				FROM votes
+				WHERE votes.post_id = posts.id
+				AND votes.user_id = ?
+				LIMIT 1
+			),
+			'0'::vote_score_value
+		) AS user_vote
+		`, token.UID).
 		Preload("School").
 		Preload("Faculty").
 		Order(sortField).
