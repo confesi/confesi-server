@@ -2,22 +2,35 @@ package posts
 
 import (
 	"confesi/config"
-	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, error) {
-	var posts []db.Post
+func (h *handler) getHottestPosts(c *gin.Context, date time.Time, userID string) ([]PostDetail, error) {
+	var posts []PostDetail
 	err := h.db.
 		Where("hottest_on = ?", date).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").
 		Preload("Faculty").
-		Order("trending_score DESC"). // fetches the hottest X posts for the day, and comparatively between them, ranks them by `vote_score`
+		Order("trending_score DESC").
+		Select(`
+			posts.*,
+			COALESCE(
+				(
+					SELECT votes.vote
+					FROM votes
+					WHERE votes.post_id = posts.id
+					AND votes.user_id = ?
+					LIMIT 1
+				),
+				'0'::vote_score_value
+			) AS user_vote
+		`, userID).
 		Find(&posts).
 		Error
 	if err != nil {
@@ -27,6 +40,13 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time) ([]db.Post, er
 }
 
 func (h *handler) handleGetHottest(c *gin.Context) {
+
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
 	dateStr := c.Query("day")
 
 	// Parse the date string into a time.Time value
@@ -36,7 +56,7 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 		return
 	}
 
-	posts, err := h.getHottestPosts(c, date)
+	posts, err := h.getHottestPosts(c, date, token.UID)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
