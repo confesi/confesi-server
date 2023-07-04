@@ -58,22 +58,28 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		}
 	}()
 
-	var found bool
+	type doesExist struct {
+		Exists bool
+	}
+
+	var result doesExist
 
 	err = tx.Raw(`
 		SELECT EXISTS (
 			SELECT 1
 			FROM daily_hottest_cron_jobs
 			WHERE daily_hottest_cron_jobs.successfully_ran = ?
-		)
-	`, nextDate).
-		Scan(&found).
-		Error
+		) AS exists
+	`, nextDate).Scan(&result).Error
+
 	if err != nil {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	// if we found some records, then the cron job has already run for the next day
+	found := result.Exists
 
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
 	idSessionKey, err := utils.CreateCacheKey(config.RedisSchoolsRankCache, token.UID, req.SessionKey)
