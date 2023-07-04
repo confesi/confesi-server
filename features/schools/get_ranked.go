@@ -19,6 +19,11 @@ const (
 	seenSchoolsCacheExpiry = 24 * time.Hour // one day
 )
 
+type rankedSchoolsResult struct {
+	Schools    []db.School `json:"schools"`
+	UserSchool *db.School  `json:"user_school"`
+}
+
 func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	// extract request
 	var req validation.SchoolRankQuery
@@ -60,8 +65,21 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		}
 	}
 
-	var schools []db.School
-	query := h.DB.
+	schoolResult := rankedSchoolsResult{}
+
+	// start a transaction
+	tx := h.DB.Begin()
+
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
+	query := tx.
 		Order("daily_hottests DESC").
 		Limit(config.RankedSchoolsPageSize)
 
@@ -69,18 +87,35 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		query = query.Where("schools.id NOT IN (?)", ids)
 	}
 
-	err = query.Find(&schools).Error
+	err = query.Find(&schoolResult.Schools).Error
 	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
+	// retrieve the user's school if desired, but don't add to cache!
+	if req.IncludeUsersSchool {
+		err := tx.
+			Table("schools").
+			Joins("JOIN users ON schools.id = users.school_id").
+			Where("users.school_id = schools.id"). // redundant `where` clause?
+			First(&schoolResult.UserSchool).
+			Error
+		if err != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}
+
 	// update the cache with the retrieved schools IDs
-	for i := range schools {
-		id := fmt.Sprint(schools[i].ID)
+	for i := range schoolResult.Schools {
+		id := fmt.Sprint(schoolResult.Schools[i].ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {
 			logger.StdErr(err)
+			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
 		}
@@ -90,10 +125,19 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	err = h.redis.Expire(c, idSessionKey, seenSchoolsCacheExpiry).Err()
 	if err != nil {
 		logger.StdErr(err)
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}
 
-	// Send response
-	response.New(http.StatusOK).Val(schools).Send(c)
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// if all good, send 200
+	response.New(http.StatusOK).Val(schoolResult).Send(c)
 }

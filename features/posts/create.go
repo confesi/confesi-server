@@ -55,7 +55,11 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	}
 
 	// commit the transaction
-	tx.Commit()
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return serverError
+	}
 	return nil
 }
 

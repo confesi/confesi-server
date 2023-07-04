@@ -158,6 +158,10 @@ func ExecuteCronJob(dateTime time.Time) error {
 	}
 
 	// successfully commit transaction
-	tx.Commit()
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 	return nil
 }

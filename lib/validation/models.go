@@ -92,7 +92,7 @@ type FeedbackDetails struct {
 }
 
 type SchoolRankQuery struct {
-	PurgeCache     bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
-	SessionKey     string `json:"session_key" validate:"required"`
-	GetUsersSchool bool   `json:"get_users_school"` // true or false, doesn't have "required" so that the zero-value is OK
+	PurgeCache         bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey         string `json:"session_key" validate:"required"`
+	IncludeUsersSchool bool   `json:"include_users_school"` // true or false, doesn't have "required" so that the zero-value is OK
 }
