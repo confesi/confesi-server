@@ -2,6 +2,7 @@ package cipher
 
 import (
 	"errors"
+	"hash"
 	"os"
 )
 
@@ -17,24 +18,18 @@ var (
 )
 
 type Serializer interface {
-	// returns master key
-	// `[]byte` slice with length >= 16
-	// either truncate, or pad.
-	// use something unique, but not the masking data itself
-	// ie: for masking user id, `MasterKey` can return `[]byte(userEmail)`
-	MasterKey() []byte
+	// length of the key has to be 32 bytes
+	Key() []byte
+}
 
-	// Returns the masking data
-	// ie `[]byte(user.id)`
-	Mask() []byte
+type CipherResult struct {
+	Ciphertext []byte
+	Nonce      []byte
+}
 
-	// Write to struct
-	// data: ciphertext or plaintext
-	Serialize(data, nonce []byte)
-
-	// Returns ciphertext, nonce
-	// opposite of Serialize
-	Deserialize() ([]byte, []byte)
+type KDF struct {
+	algo func() hash.Hash
+	salt []byte
 }
 
 func init() {
