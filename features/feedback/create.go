@@ -12,6 +12,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// handleFeedback godoc
+// @Summary      Send feedback to users
+// @Description  Create a new feedback entry
+// @Tags         feedback
+// @Accept       json
+// @Produce      json
+// @Param        q    query     string  false  "Name search by q"  Format(email)
+// @Failure      500  {string}  "Server error"
+// @Router       /feedback [post]
 func (h *handler) handleFeedback(c *gin.Context) {
 
 	// validate request

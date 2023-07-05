@@ -1,0 +1,32 @@
+basePath: /api/v1
+externalDocs:
+  description: GitHub
+  url: https://github.com/mattrltrent/confesi-server
+host: localhost:8080
+info:
+  contact: {}
+  title: Confesi dev-only API docs
+  version: "1.0"
+paths:
+  /feedback:
+    post:
+      consumes:
+      - application/json
+      description: Create a new feedback entry
+      parameters:
+      - description: Name search by q
+        format: email
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "500":
+          description: Server error
+          schema:
+            type: string
+      summary: Send feedback to users
+      tags:
+      - feedback
+swagger: "2.0"
