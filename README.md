@@ -52,6 +52,7 @@ sudo npm install -g firebase-tools
 ```
 
 **Install the Redis UI to view the cache in real time:**
+
 ```sh
 sudo npm install -g redis-commander
 ```
@@ -80,61 +81,74 @@ docker compose up --build app
 ```sh
 docker-compose up
 ```
+
 ## Scripts
+
+- the `env.bash` has functions needed for development.
+
+```sh
+source env.bash
+```
+
+- The following scripts are now available
 
 **Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour.**
 
 ```sh
-./scripts/requests <my_new_token>
+requests <my_new_token>
 ```
 
 **Get an access token for a user:**
 
 ```sh
-./scripts/token <email> <password>
+token <email> <password>
 ```
 
 **Fetch new token for user and update it for all `requests.http` files at once:**
 
 ```sh
-./scripts/token <email> <password> | ./scripts/requests
+token <email> <password> | ./scripts/requests
 ```
 
 ## PostgreSQL
 
 - [DB Diagram](https://dbdiagram.io/d/64727d587764f72fcff5bc9a).
 
-- Scripts:
+- Scripts (These are also available in the `env.bash`):
 
 ```sh
 # accessing postgres
 docker exec -it confesi-db psql -U postgres confesi
 # OR
-./scripts/database psql
+db psql
 
 # new migrations
-./scripts/database migrate new "<version-name>"
+db migrate new "<version-name>"
 
 # deploy migration
-./scripts/database migrate up "<step>" # arg $step can be omitted to deploy just the next one
+# arg $step can be omitted to deploy just the next one
+db migrate up "<step>"
 
 # deploy rollback
-./scripts/database migrate down "<step>" # arg $step can be omitted to rollback just the prev one
+# arg $step can be omitted to rollback just the prev one
+db migrate down "<step>"
 
 # fix version
-./scripts/database migrate fix "<version-number>" # omit leading 0's
+# omit leading 0's
+db migrate fix "<version-number>"
+
+# seed/mock data
+# this will call `go run ./scripts/main.go`
+db seed "<seed-action>"
 
 # generate a new `confesi.dbml`
-./scripts/database dbml
-
-# seed data (use the POSTGRES_DSN found in `/scripts/test` not `.env`)
-export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
-go run ./scripts/main.go --seed-schools
+db dbml
 ```
 
 ## Redis cache
 
 **Start the web UI:**
+
 ```sh
 redis-commander
 ```
@@ -153,22 +167,25 @@ firebase emulators:start
 
 ## Test runner
 
+- These will also be available in `env.bash`
+- Note that since `test` is a UNix command, to invoke the testing function, call `gotest`
+
 **Run all tests:**
 
 ```sh
-./scripts/test ./...
+gotest ./...
 ```
 
 **Running tests to a specific package:**
 
 ```sh
-./scripts/test <./path/to/package>
+gotest <./path/to/package>
 ```
 
 ... for example, to run tests on the cipher package:
 
 ```sh
-./scripts/test ./lib/cipher
+gotest ./lib/cipher
 ```
 
 ## Documentation
