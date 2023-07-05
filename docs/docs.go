@@ -15,40 +15,7 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
-    "paths": {
-        "/feedback": {
-            "post": {
-                "description": "Create a new feedback entry",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "feedback"
-                ],
-                "summary": "Send feedback to users",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "email",
-                        "description": "Name search by q",
-                        "name": "q",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "500": {
-                        "description": "Server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
-    },
+    "paths": {},
     "externalDocs": {
         "description": "GitHub",
         "url": "https://github.com/mattrltrent/confesi-server"

@@ -15,29 +15,29 @@ import (
 //		Val(gin.H{"name": "John"}).
 //		Send(c)
 
-type apiResult struct {
+type ApiResult struct {
 	Code  int         `json:"-"`
 	Error interface{} `json:"error"`
 	Value interface{} `json:"value"`
 }
 
-func (r *apiResult) Err(err string) *apiResult {
+func (r *ApiResult) Err(err string) *ApiResult {
 	r.Error = err
 	return r
 }
 
-func (r *apiResult) Val(value interface{}) *apiResult {
+func (r *ApiResult) Val(value interface{}) *ApiResult {
 	r.Value = value
 	return r
 }
 
-func New(code int) *apiResult {
-	return &apiResult{
+func New(code int) *ApiResult {
+	return &ApiResult{
 		Code: code,
 	}
 }
 
-func (r *apiResult) Send(c *gin.Context) {
+func (r *ApiResult) Send(c *gin.Context) {
 	if r.Error != nil {
 		errString := fmt.Sprintf("[status_code: %d], %v", r.Code, r.Error)
 		logger.StdErr(errors.New(errString))
