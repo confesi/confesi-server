@@ -3,9 +3,7 @@ package main
 import (
 	"bytes"
 	"confesi/db"
-	"crypto/rand"
 	"encoding/csv"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -21,13 +19,11 @@ func main() {
 	}
 
 	switch os.Args[1] {
-	case "--new-nonce":
-		nonceGenerator()
 	case "--seed-schools":
 		seed_schools()
 	default:
 		fmt.Println("invalid argument")
-		fmt.Println("usage: [--new-nonce]")
+		fmt.Println("usage: [--seed-schools]")
 		os.Exit(0)
 	}
 }
@@ -86,15 +82,4 @@ func seed_schools() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("\t\t\tOK")
-}
-
-func nonceGenerator() {
-	nonce := make([]byte, 12)
-
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		log.Fatal(err)
-	}
-
-	nonceStr := hex.EncodeToString(nonce)
-	fmt.Println(nonceStr)
 }
