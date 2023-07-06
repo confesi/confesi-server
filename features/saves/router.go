@@ -18,7 +18,6 @@ type handler struct {
 var (
 	serverError = errors.New("server error")
 	invalidId   = errors.New("invalid id")
-	cursorSize  = 10 // how many saved posts/comments to fetch at a time
 )
 
 func Router(mux *gin.RouterGroup) {

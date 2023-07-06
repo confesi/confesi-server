@@ -77,8 +77,8 @@ func (School) TableName() string {
 
 type User struct {
 	ID          string     `gorm:"primaryKey" json:"id"`
-	CreatedAt   TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt   TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	YearOfStudy uint8      `gorm:"column:year_of_study" json:"year_of_study"`
 	FacultyID   uint       `gorm:"column:faculty_id" json:"faculty_id"`
 	SchoolID    uint       `gorm:"column:school_id" json:"school_id"`
@@ -88,8 +88,8 @@ type User struct {
 // ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
 	ID        uint       `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	SchoolID  uint       `gorm:"column:school_id" json:"-"`
 }
@@ -97,8 +97,8 @@ type SchoolFollow struct {
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
 	ID            int             `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt     TimeMillis      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt     TimeMillis      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
 	SchoolID      uint            `gorm:"column:school_id" json:"-"`
 	School        School          `gorm:"foreignKey:SchoolID" json:"school"`
@@ -117,8 +117,8 @@ type Post struct {
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	ID            int                `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt     TimeMillis         `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt     TimeMillis         `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt     TimeMicros         `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMicros         `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID        uint               `gorm:"column:post_id" json:"post_id"`
 	IdentifierID  uint               `gorm:"column:identifier_id" json:"-"`
 	Identifier    *CommentIdentifier `gorm:"foreignKey:IdentifierID" json:"identifier"`
@@ -135,30 +135,29 @@ type Comment struct {
 
 // This will store as a `time.Time` in the database,
 // and as a unix ms time for json serialization
-type TimeMillis struct {
+type TimeMicros struct {
 	time.Time
 }
 
-func (t TimeMillis) MarshalJSON() ([]byte, error) {
-	millis := t.UnixMilli()
-	return json.Marshal(millis)
+func (t TimeMicros) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.Time.UnixNano() / int64(time.Microsecond))
 }
 
-func (t *TimeMillis) UnmarshalJSON(data []byte) error {
-	var millis int64
-	err := json.Unmarshal(data, &millis)
+func (t *TimeMicros) UnmarshalJSON(data []byte) error {
+	var micros int64
+	err := json.Unmarshal(data, &micros)
 	if err != nil {
 		return err
 	}
-	t.Time = time.Unix(0, millis*int64(time.Millisecond))
+	t.Time = time.Unix(0, micros*int64(time.Microsecond))
 	return nil
 }
 
-func (t TimeMillis) Value() (driver.Value, error) {
+func (t TimeMicros) Value() (driver.Value, error) {
 	return t.Time, nil
 }
 
-func (t *TimeMillis) Scan(value interface{}) error {
+func (t *TimeMicros) Scan(value interface{}) error {
 	if value == nil {
 		t.Time = time.Time{}
 		return nil
@@ -168,12 +167,12 @@ func (t *TimeMillis) Scan(value interface{}) error {
 	case time.Time:
 		t.Time = v
 	case []byte:
-		var millis int64
-		err := json.Unmarshal(v, &millis)
+		var micros int64
+		err := json.Unmarshal(v, &micros)
 		if err != nil {
 			return err
 		}
-		t.Time = time.Unix(0, millis*int64(time.Millisecond))
+		t.Time = time.Unix(0, micros*int64(time.Microsecond))
 	default:
 		return fmt.Errorf("unsupported scan value type: %T", value)
 	}
@@ -198,16 +197,16 @@ type Vote struct {
 
 // ! Important not to serialize some fields!!
 type SavedPost struct {
-	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	PostID    uint       `gorm:"column:post_id" json:"post_id"`
 }
 
 // ! Important not to serialize some fields!!
 type SavedComment struct {
-	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	CommentID uint       `gorm:"column:comment_id" json:"comment_id"`
 }
@@ -215,7 +214,7 @@ type SavedComment struct {
 // ! Important not to serialize some fields!!
 type Feedback struct {
 	ID        int        `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	Content   string     `gorm:"column:content" json:"content"`
 	TypeID    uint       `gorm:"column:type_id" json:"type_id"` // references the feedback_type table
@@ -252,8 +251,8 @@ func (DailyHottestCron) TableName() string {
 // only serialize the fields that are needed for the client (if OP or identifier)
 type CommentIdentifier struct {
 	ID         uint       `gorm:"primaryKey" json:"-"`
-	CreatedAt  TimeMillis `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt  TimeMillis `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	CreatedAt  TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt  TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID     string     `gorm:"column:user_id" json:"-"`
 	PostID     uint       `gorm:"column:post_id" json:"-"`
 	IsOp       bool       `gorm:"column:is_op" json:"is_op"`

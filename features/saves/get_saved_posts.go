@@ -1,28 +1,28 @@
 package saves
 
 import (
+	"confesi/config"
 	"confesi/features/posts"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
-	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 )
 
 type FetchedPosts struct {
-	Posts []posts.PostDetail `json:"posts"`
-	Next  *int64             `json:"next"`
+	Posts []posts.PostDetail      `json:"posts"`
+	Next  validation.NullableNext `json:"next"`
 }
 
 func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedPosts, error) {
 	fetchResult := FetchedPosts{}
-	next := time.UnixMilli(int64(req.Next))
+
 	query := `
-	SELECT posts.*, saved_posts.updated_at,
+	SELECT posts.*, saved_posts.created_at,
 		COALESCE(
 			(
 				SELECT votes.vote
@@ -35,14 +35,14 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 		) AS user_vote
 	FROM posts
 	JOIN saved_posts ON posts.id = saved_posts.post_id
-	WHERE saved_posts.updated_at < ?
-		AND saved_posts.user_id = ?
+	WHERE saved_posts.user_id = ?
+		` + req.Next.Cursor("AND saved_posts.created_at >") + `
 		AND posts.hidden = false
-	ORDER BY saved_posts.updated_at DESC
+	ORDER BY saved_posts.created_at ASC
 	LIMIT ?
 `
 
-	err := h.db.Raw(query, token.UID, next, token.UID, cursorSize).
+	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
 		Preload("School").
 		Preload("Faculty").
 		Find(&fetchResult.Posts).Error
@@ -52,8 +52,8 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	}
 
 	if len(fetchResult.Posts) > 0 {
-		timeMillis := fetchResult.Posts[len(fetchResult.Posts)-1].UpdatedAt.UnixMilli()
-		fetchResult.Next = &timeMillis
+		timeMicros := fetchResult.Posts[len(fetchResult.Posts)-1].CreatedAt.UnixMicro()
+		fetchResult.Next.Set(timeMicros)
 		for i := range fetchResult.Posts {
 			post := &fetchResult.Posts[i]
 			// keep content hidden if post is hidden

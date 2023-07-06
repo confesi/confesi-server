@@ -26,7 +26,7 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 		return
 	}
 
-	next := time.UnixMilli(int64(req.Next))
+	next := time.UnixMicro(int64(req.Next))
 
 	posts := []PostDetail{}
 	err = h.db.

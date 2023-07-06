@@ -42,10 +42,11 @@ func Router(mux *gin.RouterGroup) {
 	anyFirebaseUserRoutes.GET("/comment", h.handleGetCommentById)
 	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgeCommentsCache)
 
-	// only allow registered users to create a post
+	// registered firebase users only
 	mux.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	mux.POST("/create", h.handleCreate)
 	mux.PATCH("/hide", h.handleHideComment)
+	mux.GET("/your-comments", h.handleGetYourComments)
 }

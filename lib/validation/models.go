@@ -26,8 +26,7 @@ type SaveContentDetails struct {
 }
 
 type SaveContentCursor struct {
-	// [required] timestamp of last saved content (ms since epoch)
-	Next uint `json:"next" validate:"required"`
+	Next NullableNext
 }
 
 type VoteDetail struct {
@@ -101,5 +100,10 @@ type SchoolRankQuery struct {
 
 type YourPostsQuery struct {
 	// [required] timestamp of last viewed post content (ms since epoch)
+	Next uint `json:"next" validate:"required"`
+}
+
+type YourCommentsQuery struct {
+	// [required] timestamp of last viewed comment content (ms since epoch)
 	Next uint `json:"next" validate:"required"`
 }

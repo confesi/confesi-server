@@ -1,12 +1,12 @@
 package saves
 
 import (
+	"confesi/config"
 	"confesi/features/comments"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
-	"time"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
@@ -14,15 +14,14 @@ import (
 
 type FetchedComments struct {
 	Comments []comments.CommentDetail `json:"comments"`
-	Next     *int64                   `json:"next"`
+	Next     validation.NullableNext  `json:"next"`
 }
 
 func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedComments, error) {
 	fetchResult := FetchedComments{}
-	next := time.UnixMilli(int64(req.Next))
 
 	query := `
-		SELECT comments.*, saved_comments.updated_at,
+		SELECT comments.*, saved_comments.created_at,
 			COALESCE(
 				(
 					SELECT votes.vote
@@ -35,14 +34,14 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 			) AS user_vote
 		FROM comments
 		JOIN saved_comments ON comments.id = saved_comments.comment_id
-		WHERE saved_comments.updated_at < ?
-			AND saved_comments.user_id = ?
+		WHERE saved_comments.user_id = ?
+			` + req.Next.Cursor("AND saved_comments.created_at >") + `
 			AND comments.hidden = false
-		ORDER BY saved_comments.updated_at DESC
+		ORDER BY saved_comments.created_at ASC
 		LIMIT ?
 		`
 
-	err := h.db.Raw(query, token.UID, next, token.UID, cursorSize).
+	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
 		Preload("Identifier").
 		Find(&fetchResult.Comments).Error
 
@@ -51,8 +50,8 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	}
 
 	if len(fetchResult.Comments) > 0 {
-		timeMillis := utils.UnixMs(fetchResult.Comments[len(fetchResult.Comments)-1].UpdatedAt.Time)
-		fetchResult.Next = &timeMillis
+		timeMicros := (fetchResult.Comments[len(fetchResult.Comments)-1].CreatedAt.Time).UnixMicro()
+		fetchResult.Next.Set(timeMicros)
 		for i := range fetchResult.Comments {
 			comment := &fetchResult.Comments[i]
 			// keep content hidden if post is hidden

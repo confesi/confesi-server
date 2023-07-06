@@ -53,7 +53,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 			LIMIT ?
 		), ranked_replies AS (
 			SELECT c.id, c.identifier_id, c.post_id, c.vote_score, c.trending_score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
-				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
+				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at ASC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 		)
