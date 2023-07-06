@@ -100,10 +100,10 @@ type SchoolRankQuery struct {
 
 type YourPostsQuery struct {
 	// [required] timestamp of last viewed post content (ms since epoch)
-	Next uint `json:"next" validate:"required"`
+	Next NullableNext
 }
 
 type YourCommentsQuery struct {
 	// [required] timestamp of last viewed comment content (ms since epoch)
-	Next uint `json:"next" validate:"required"`
+	Next NullableNext
 }

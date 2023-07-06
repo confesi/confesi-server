@@ -7,7 +7,6 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,16 +25,14 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 		return
 	}
 
-	next := time.UnixMicro(int64(req.Next))
-
 	posts := []PostDetail{}
 	err = h.db.
 		Preload("School").
 		Preload("Faculty").
 		Where("user_id = ?", token.UID).
-		Where("created_at < ?", next).
+		Raw(req.Next.Cursor("created_at >")).
 		Where("hidden = ?", false).
-		Order("created_at DESC").
+		Order("created_at ASC").
 		Find(&posts).
 		Limit(config.YourPostsPageSize).
 		Error

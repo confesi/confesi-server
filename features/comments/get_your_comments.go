@@ -6,7 +6,6 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,8 +24,6 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 		return
 	}
 
-	next := time.UnixMicro(int64(req.Next))
-
 	commentDetails := []CommentDetail{}
 	err = h.db.
 		Preload("Identifier").
@@ -41,11 +38,11 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 					'0'::vote_score_value
 				) AS user_vote
 			FROM comments
-			WHERE created_at < ?
-			AND user_id = ?
-			ORDER BY created_at DESC
+			WHERE user_id = ?
+			`+req.Next.Cursor("AND created_at >")+`
+			ORDER BY created_at ASC
 			LIMIT ?
-		`, token.UID, next, token.UID, config.YourCommentsPageSize).
+		`, token.UID, token.UID, config.YourCommentsPageSize).
 		Find(&commentDetails).
 		Error
 
