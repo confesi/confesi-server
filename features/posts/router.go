@@ -52,4 +52,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
+	registeredFirebaseUserRoutes.GET("/your-posts", h.handleGetYourPosts)
 }

@@ -12,6 +12,7 @@ const (
 	RedisPostsCache                    = "posts"        // redis key for posts cache
 	RedisSchoolsRankCache              = "schools_rank" // redis key for schools rank cache
 	RedisCommentsCache                 = "comments"     // redis key for comments cache
+	YourPostsPageSize                  = 10             // how many posts are returned in a page size in the your posts page
 )
 
 // Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go

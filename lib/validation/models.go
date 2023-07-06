@@ -98,3 +98,8 @@ type SchoolRankQuery struct {
 	IncludeUsersSchool bool   `json:"include_users_school"`                // true or false, doesn't have "required" so that the zero-value is OK
 	StartViewDate      string `json:"start_view_date" validate:"required"` // format: "YYYY-MM-DD"
 }
+
+type YourPostsQuery struct {
+	// [required] timestamp of last viewed post content (ms since epoch)
+	Next uint `json:"next" validate:"required"`
+}
