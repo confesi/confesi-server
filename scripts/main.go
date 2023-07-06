@@ -24,7 +24,7 @@ func main() {
 	default:
 		fmt.Println("invalid argument")
 		fmt.Println("usage: [--seed-schools]")
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
