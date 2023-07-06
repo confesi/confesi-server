@@ -32,6 +32,7 @@ services:
       POSTGRES_DSN:
       APPCHECK_TOKEN:
       REDIS_CONN:
+      PUBLIC_DOC_ACCESS:
 
   redis:
       image: redis:alpine

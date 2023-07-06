@@ -27,7 +27,7 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
-**Add the Firebase api key:**
+**Add the Firebase API key:**
 
 This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY` in the `.env` file.
 
@@ -51,6 +51,15 @@ sudo npm install -g firebase-tools
 ```sh
 sudo npm install -g redis-commander
 ```
+
+**Install `swag` for API doc website:**
+
+```sh
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+If you encounter problems with installation, check out the official installation docs [here](https://github.com/swaggo/swag) or [this](https://stackoverflow.com/questions/73387155/swag-the-term-swag-is-not-recognized-as-the-name-of-a-cmdlet-function-scri) helpful Stack Overflow question for troubleshooting.
+
 
 ## Running the project
 
@@ -126,7 +135,7 @@ go run ./scripts/main.go --seed-schools
 redis-commander
 ```
 
-This should open the viewer, usually at [http://127.0.0.1:8081/](http://127.0.0.1:8081/) (address specified after running the command).
+... this should open the viewer, usually at [http://127.0.0.1:8081/](http://127.0.0.1:8081/) (address specified after running the command).
 
 ## Testing Firebase functionality locally
 
@@ -136,7 +145,7 @@ This should open the viewer, usually at [http://127.0.0.1:8081/](http://127.0.0.
 firebase emulators:start
 ```
 
-This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command).
+... this should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http://127.0.0.1:4000/) (address specified after running command).
 
 ## Test runner
 
@@ -152,8 +161,28 @@ This should open the Emulator Suite UI, usually at [http://127.0.0.1:4000/](http
 ./scripts/test <./path/to/package>
 ```
 
-For example, to run tests on the cipher package:
+... for example, to run tests on the cipher package:
 
 ```sh
 ./scripts/test ./lib/cipher
 ```
+
+## Documentation
+
+**Viewing the docs:**
+
+[Start the API server via Docker](https://github.com/mattrltrent/confesi-server#running-the-project), then open [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) in a browser. The docs are automatically built every time the API server starts or hot reloads.
+
+**Editing the docs:**
+
+[Here](https://github.com/swaggo/swag#declarative-comments-format) is a good resource to learn how to properly annotate handler functions so they appear in the Swagger UI.
+
+**Rebuilding the docs:**
+
+Once the docs have been edited, run:
+
+```sh
+swag init
+```
+
+... this should rebuild the doc files under `/docs` to reflect the changes.

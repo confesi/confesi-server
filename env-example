@@ -19,3 +19,6 @@ REDIS_CONN="redis:6379"
 
 # Api key for firebase, add instructions in README.md
 FB_API_KEY=""
+
+# Enable public doc access or not, should be FALSE IN PRODUCTION!
+PUBLIC_DOC_ACCESS="true"
