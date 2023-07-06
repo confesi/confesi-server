@@ -60,7 +60,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 			if post.Hidden {
 				post.Content = "[removed]"
 			}
-			post.Tags = emojis.GetEmojis(&post.Post)
+			post.Emojis = emojis.GetEmojis(&post.Post)
 
 			// check if user is owner
 			if post.UserID == token.UID {

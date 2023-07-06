@@ -21,7 +21,7 @@ type PostDetail struct {
 	db.Post  `json:"post"`
 	UserVote int      `json:"user_vote"`
 	Owner    bool     `json:"owner"`
-	Tags     []string `json:"tags" gorm:"-"`
+	Emojis   []string `json:"emojis" gorm:"-"`
 }
 
 type handler struct {

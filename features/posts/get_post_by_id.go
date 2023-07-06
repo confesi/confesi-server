@@ -58,7 +58,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 		response.New(http.StatusGone).Err("post removed").Send(c)
 		return
 	}
-	post.Tags = tags.GetEmojis(&post.Post)
+	post.Emojis = tags.GetEmojis(&post.Post)
 	response.New(http.StatusOK).Val(post).Send(c)
 	return
 }

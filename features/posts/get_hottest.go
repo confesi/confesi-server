@@ -70,7 +70,7 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 		if post.UserID == token.UID {
 			post.Owner = true
 		}
-		post.Tags = tags.GetEmojis(&post.Post)
+		post.Emojis = tags.GetEmojis(&post.Post)
 	}
 
 	response.New(http.StatusOK).Val(posts).Send(c)
