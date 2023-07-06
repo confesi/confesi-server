@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/config"
+	tags "confesi/lib/emojis"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -117,6 +118,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		if post.UserID == token.UID {
 			post.Owner = true
 		}
+		post.Emojis = tags.GetEmojis(&post.Post)
 
 		id := fmt.Sprint(post.ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()

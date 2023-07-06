@@ -2,6 +2,7 @@ package saves
 
 import (
 	"confesi/features/posts"
+	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -59,6 +60,8 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 			if post.Hidden {
 				post.Content = "[removed]"
 			}
+			post.Emojis = emojis.GetEmojis(&post.Post)
+
 			// check if user is owner
 			if post.UserID == token.UID {
 				post.Owner = true

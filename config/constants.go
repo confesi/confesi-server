@@ -13,3 +13,5 @@ const (
 	RedisSchoolsRankCache              = "schools_rank" // redis key for schools rank cache
 	RedisCommentsCache                 = "comments"     // redis key for comments cache
 )
+
+// Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go
