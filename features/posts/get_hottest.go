@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/config"
+	tags "confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -64,10 +65,12 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 	}
 
 	for i := range posts {
+		post := &posts[i]
 		// check if the user is the owner of each post
-		if posts[i].UserID == token.UID {
-			posts[i].Owner = true
+		if post.UserID == token.UID {
+			post.Owner = true
 		}
+		post.Tags = tags.GetEmojis(&post.Post)
 	}
 
 	response.New(http.StatusOK).Val(posts).Send(c)
