@@ -5,12 +5,15 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+type ReplyComments struct {
+	Comments []CommentDetail `json:"comments"`
+	Next     *int64          `json:"next"`
+}
 
 func (h *handler) handleGetReplies(c *gin.Context) {
 	// extract request
@@ -26,10 +29,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
-	var commentDetails []CommentDetail
-
-	next := time.UnixMicro(int64(req.Next))
-	fmt.Println("next: ", next)
+	fetchResults := ReplyComments{}
 
 	err = h.db.
 		Preload("Identifier").
@@ -45,23 +45,27 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 				) AS user_vote
 			FROM comments
 			WHERE ancestors[1] = ?
-				AND created_at > ?
+			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC
 			LIMIT ?
-		`, token.UID, req.ParentComment, next, config.RepliesLoadedManually).
-		Find(&commentDetails).
+		`, token.UID, req.ParentComment, config.RepliesLoadedManually).
+		Find(&fetchResults.Comments).
 		Error
 
-	for i := range commentDetails {
-		// create reference to comment
-		comment := &commentDetails[i]
-		if comment.Hidden {
-			comment.Comment.Content = "[removed]"
-			comment.Comment.Identifier = nil
-		}
-		// check if user is owner
-		if comment.UserID == token.UID {
-			comment.Owner = true
+	if len(fetchResults.Comments) > 0 {
+		timeMicros := (fetchResults.Comments[len(fetchResults.Comments)-1].CreatedAt.Time).UnixMicro()
+		fetchResults.Next = &timeMicros
+		for i := range fetchResults.Comments {
+			// create reference to comment
+			comment := &fetchResults.Comments[i]
+			if comment.Hidden {
+				comment.Comment.Content = "[removed]"
+				comment.Comment.Identifier = nil
+			}
+			// check if user is owner
+			if comment.UserID == token.UID {
+				comment.Owner = true
+			}
 		}
 	}
 
@@ -71,5 +75,5 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 	}
 
 	// if all good, send 200
-	response.New(http.StatusOK).Val(commentDetails).Send(c)
+	response.New(http.StatusOK).Val(fetchResults).Send(c)
 }

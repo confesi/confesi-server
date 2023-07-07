@@ -10,6 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type FetchResults struct {
+	Comments []CommentDetail `json:"comments"`
+	Next     *int64          `json:"next"`
+}
+
 func (h *handler) handleGetYourComments(c *gin.Context) {
 	// extract request
 	var req validation.YourCommentsQuery
@@ -24,7 +29,8 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 		return
 	}
 
-	commentDetails := []CommentDetail{}
+	fetchResults := FetchResults{}
+
 	err = h.db.
 		Preload("Identifier").
 		Raw(`
@@ -43,7 +49,7 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 			ORDER BY created_at ASC
 			LIMIT ?
 		`, token.UID, token.UID, config.YourCommentsPageSize).
-		Find(&commentDetails).
+		Find(&fetchResults.Comments).
 		Error
 
 	if err != nil {
@@ -51,18 +57,22 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 		return
 	}
 
-	for i := range commentDetails {
-		// create ref to comment
-		comment := &commentDetails[i]
-		if comment.Hidden {
-			comment.Comment.Content = "[removed]"
-			comment.Comment.Identifier = nil
-		}
-		// check if user is owner
-		if comment.UserID == token.UID {
-			comment.Owner = true
+	if len(fetchResults.Comments) > 0 {
+		timeMicros := (fetchResults.Comments[len(fetchResults.Comments)-1].CreatedAt.Time).UnixMicro()
+		fetchResults.Next = &timeMicros
+		for i := range fetchResults.Comments {
+			// create ref to comment
+			comment := &fetchResults.Comments[i]
+			if comment.Hidden {
+				comment.Comment.Content = "[removed]"
+				comment.Comment.Identifier = nil
+			}
+			// check if user is owner
+			if comment.UserID == token.UID {
+				comment.Owner = true
+			}
 		}
 	}
 
-	response.New(http.StatusOK).Val(commentDetails).Send(c)
+	response.New(http.StatusOK).Val(fetchResults).Send(c)
 }
