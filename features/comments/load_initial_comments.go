@@ -20,6 +20,7 @@ import (
 type CommentThreadGroup struct {
 	Root    CommentDetail   `json:"root"`
 	Replies []CommentDetail `json:"replies"`
+	Next    *int64          `json:"next"`
 }
 
 // todo: add next cursor for each thread group for replies
@@ -91,51 +92,31 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 		return nil, query.Error
 	}
 
-	// Group children comments with their parents
 	parentMap := make(map[int][]CommentDetail) // Map to store parent comments
 	for i := range comments {
-		// Access the comment using the index i (so I can change it
-		// because loops are pass by value not reference)
 		comment := &comments[i]
-
-		// If comment is hidden, set its content to "[removed]" and its identifier to nil ("null")
-		if comment.Comment.Hidden {
-			comment.Comment.Content = "[removed]"
-			comment.Comment.Identifier = nil
-		}
-		// Check if user is owner
-		if comment.UserID == uid {
-			comment.Owner = true
-		}
-
-		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()
-		if err != nil {
-			logger.StdErr(err)
-			return nil, errors.New(serverError.Error())
-		}
-
 		if len(comment.Comment.Ancestors) > 0 {
 			parentID := comment.Comment.Ancestors[0]
 			parentMap[int(parentID)] = append(parentMap[int(parentID)], *comment)
-		} else if _, ok := parentMap[comment.Comment.ID]; !ok {
-			if _, exists := parentMap[comment.Comment.ID]; !exists {
-				parentMap[comment.Comment.ID] = []CommentDetail{*comment}
-			}
 		}
-
 	}
 
-	// Create the final list of comment threads
 	// Create the final list of comment threads
 	var commentThreads []CommentThreadGroup
 	for _, comment := range comments {
 		if len(comment.Comment.Ancestors) == 0 {
 			thread := CommentThreadGroup{
 				Root:    comment,
-				Replies: parentMap[comment.Comment.ID],
+				Replies: parentMap[int(comment.Comment.ID)],
 			}
-			// Remove the root comment from the Replies field
-			thread.Replies = thread.Replies[1:]
+
+			// Set the Next cursor for the last thread
+			if len(thread.Replies) > 0 {
+				lastReply := thread.Replies[len(thread.Replies)-1]
+				time := lastReply.Comment.CreatedAt.MicroSeconds()
+				thread.Next = &time
+			}
+
 			commentThreads = append(commentThreads, thread)
 		}
 	}

@@ -134,13 +134,18 @@ type Comment struct {
 }
 
 // This will store as a `time.Time` in the database,
-// and as a unix ms time for json serialization
+// and as a unix time for json serialization
 type TimeMicros struct {
 	time.Time
 }
 
 func (t TimeMicros) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.Time.UnixNano() / int64(time.Microsecond))
+}
+
+// Value converts the TimeMicros to a time.Time for database storage
+func (t TimeMicros) Value() (driver.Value, error) {
+	return t.Time, nil
 }
 
 func (t *TimeMicros) UnmarshalJSON(data []byte) error {
@@ -153,8 +158,9 @@ func (t *TimeMicros) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (t TimeMicros) Value() (driver.Value, error) {
-	return t.Time, nil
+func (t TimeMicros) MicroSeconds() int64 {
+	epochMicros := t.Time.UnixNano() / int64(time.Microsecond)
+	return epochMicros
 }
 
 func (t *TimeMicros) Scan(value interface{}) error {
