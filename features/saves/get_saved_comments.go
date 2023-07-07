@@ -14,7 +14,7 @@ import (
 
 type FetchedComments struct {
 	Comments []comments.CommentDetail `json:"comments"`
-	Next     validation.NullableNext  `json:"next"`
+	Next     *int64                   `json:"next"`
 }
 
 func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedComments, error) {
@@ -51,7 +51,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 
 	if len(fetchResult.Comments) > 0 {
 		timeMicros := (fetchResult.Comments[len(fetchResult.Comments)-1].CreatedAt.Time).UnixMicro()
-		fetchResult.Next.Set(timeMicros)
+		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Comments {
 			comment := &fetchResult.Comments[i]
 			// keep content hidden if post is hidden

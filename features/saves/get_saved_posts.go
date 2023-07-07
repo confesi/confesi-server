@@ -14,8 +14,8 @@ import (
 )
 
 type FetchedPosts struct {
-	Posts []posts.PostDetail      `json:"posts"`
-	Next  validation.NullableNext `json:"next"`
+	Posts []posts.PostDetail `json:"posts"`
+	Next  *int64             `json:"next"`
 }
 
 func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.SaveContentCursor) (*FetchedPosts, error) {
@@ -53,7 +53,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 
 	if len(fetchResult.Posts) > 0 {
 		timeMicros := fetchResult.Posts[len(fetchResult.Posts)-1].CreatedAt.UnixMicro()
-		fetchResult.Next.Set(timeMicros)
+		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Posts {
 			post := &fetchResult.Posts[i]
 			// keep content hidden if post is hidden
