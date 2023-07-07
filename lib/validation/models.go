@@ -26,7 +26,7 @@ type SaveContentDetails struct {
 }
 
 type SaveContentCursor struct {
-	Next NullableNext
+	Next NullableNext `json:"next"`
 }
 
 type VoteDetail struct {
@@ -78,7 +78,7 @@ type InitialCommentQuery struct {
 
 type RepliesCommentQuery struct {
 	// [required] timestamp of last seen replied comment (ms since epoch)
-	Next NullableNext
+	Next NullableNext `json:"next"`
 	// [required] the comment to load replies for
 	ParentComment uint `json:"parent_comment" validate:"required"`
 }
@@ -100,10 +100,10 @@ type SchoolRankQuery struct {
 
 type YourPostsQuery struct {
 	// [required] timestamp of last viewed post content (ms since epoch)
-	Next NullableNext
+	Next NullableNext `json:"next"`
 }
 
 type YourCommentsQuery struct {
 	// [required] timestamp of last viewed comment content (ms since epoch)
-	Next NullableNext
+	Next NullableNext `json:"next"`
 }

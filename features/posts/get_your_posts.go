@@ -11,6 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type FetchResults struct {
+	Posts []PostDetail `json:"posts"`
+	Next  *int64       `json:"next"`
+}
+
 func (h *handler) handleGetYourPosts(c *gin.Context) {
 	// extract request
 	var req validation.YourPostsQuery
@@ -25,15 +30,16 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 		return
 	}
 
-	posts := []PostDetail{}
+	fetchResults := FetchResults{}
+
 	err = h.db.
 		Preload("School").
 		Preload("Faculty").
 		Where("user_id = ?", token.UID).
-		Raw(req.Next.Cursor("created_at >")).
+		Where(req.Next.Cursor("created_at >")).
 		Where("hidden = ?", false).
 		Order("created_at ASC").
-		Find(&posts).
+		Find(&fetchResults.Posts).
 		Limit(config.YourPostsPageSize).
 		Error
 
@@ -41,15 +47,19 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-
-	for i := range posts {
-		// create ref to post
-		post := &posts[i]
-		if post.UserID == token.UID {
-			post.Owner = true
+	if len(fetchResults.Posts) > 0 {
+		timeMicros := (fetchResults.Posts[len(fetchResults.Posts)-1].CreatedAt.Time).UnixMicro()
+		fetchResults.Next = &timeMicros
+		for i := range fetchResults.Posts {
+			// create ref to post
+			post := &fetchResults.Posts[i]
+			if post.UserID == token.UID {
+				post.Owner = true
+			}
+			post.Emojis = tags.GetEmojis(&post.Post)
 		}
-		post.Emojis = tags.GetEmojis(&post.Post)
+
 	}
 
-	response.New(http.StatusOK).Val(posts).Send(c)
+	response.New(http.StatusOK).Val(fetchResults).Send(c)
 }
