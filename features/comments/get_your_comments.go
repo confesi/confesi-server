@@ -10,14 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ReplyComments struct {
+type FetchResults struct {
 	Comments []CommentDetail `json:"comments"`
 	Next     *int64          `json:"next"`
 }
 
-func (h *handler) handleGetReplies(c *gin.Context) {
+func (h *handler) handleGetYourComments(c *gin.Context) {
 	// extract request
-	var req validation.RepliesCommentQuery
+	var req validation.YourCommentsQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -29,7 +29,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
-	fetchResults := ReplyComments{}
+	fetchResults := FetchResults{}
 
 	err = h.db.
 		Preload("Identifier").
@@ -44,19 +44,24 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 					'0'::vote_score_value
 				) AS user_vote
 			FROM comments
-			WHERE ancestors[1] = ?
+			WHERE user_id = ?
 			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC
 			LIMIT ?
-		`, token.UID, req.ParentComment, config.RepliesLoadedManually).
+		`, token.UID, token.UID, config.YourCommentsPageSize).
 		Find(&fetchResults.Comments).
 		Error
+
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
 
 	if len(fetchResults.Comments) > 0 {
 		timeMicros := (fetchResults.Comments[len(fetchResults.Comments)-1].CreatedAt.Time).UnixMicro()
 		fetchResults.Next = &timeMicros
 		for i := range fetchResults.Comments {
-			// create reference to comment
+			// create ref to comment
 			comment := &fetchResults.Comments[i]
 			if comment.Hidden {
 				comment.Comment.Content = "[removed]"
@@ -69,11 +74,5 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		}
 	}
 
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-
-	// if all good, send 200
 	response.New(http.StatusOK).Val(fetchResults).Send(c)
 }

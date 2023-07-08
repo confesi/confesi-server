@@ -17,11 +17,19 @@ import (
 	"gorm.io/gorm"
 )
 
+type CommentThreadGroup struct {
+	Root    CommentDetail   `json:"root"`
+	Replies []CommentDetail `json:"replies"`
+	Next    *int64          `json:"next"`
+}
+
+// todo: add next cursor for each thread group for replies
+
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
 
-func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string) ([]CommentDetail, error) {
+func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, postSpecificKey string) ([]CommentThreadGroup, error) {
 	var comments []CommentDetail
 
 	excludedIDQuery := ""
@@ -53,7 +61,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 			LIMIT ?
 		), ranked_replies AS (
 			SELECT c.id, c.identifier_id, c.post_id, c.vote_score, c.trending_score, c.content, c.ancestors, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
-				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at DESC) AS reply_num
+				   ROW_NUMBER() OVER (PARTITION BY c.ancestors[1] ORDER BY c.created_at ASC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.ancestors[1] = tr.id
 		)
@@ -84,7 +92,37 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 		return nil, query.Error
 	}
 
-	return comments, nil
+	parentMap := make(map[int][]CommentDetail) // Map to store parent comments
+	for i := range comments {
+		comment := &comments[i]
+		if len(comment.Comment.Ancestors) > 0 {
+			parentID := comment.Comment.Ancestors[0]
+			parentMap[int(parentID)] = append(parentMap[int(parentID)], *comment)
+		}
+	}
+
+	// Create the final list of comment threads
+	var commentThreads []CommentThreadGroup
+	for _, comment := range comments {
+		if len(comment.Comment.Ancestors) == 0 {
+			thread := CommentThreadGroup{
+				Root:    comment,
+				Replies: parentMap[int(comment.Comment.ID)],
+			}
+
+			// Set the Next cursor for the last thread
+			if len(thread.Replies) > 0 {
+				lastReply := thread.Replies[len(thread.Replies)-1]
+				time := lastReply.Comment.CreatedAt.MicroSeconds()
+				thread.Next = &time
+			}
+
+			commentThreads = append(commentThreads, thread)
+		}
+	}
+
+	return commentThreads, nil
+
 }
 
 func (h *handler) handleGetComments(c *gin.Context) {
@@ -132,34 +170,10 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// fetch comments using the translated SQL query
-	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID)
+	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID, *h, c, postSpecificKey)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
-	}
-
-	// update the cache with the retrieved post IDs
-	for i := range comments {
-		// access the comment using the index i (so I can change it
-		// because loops are pass by value not reference)
-		comment := &comments[i]
-
-		// if comment is hidden, set its content to "[removed]" and its identifier to nil ("null")
-		if comment.Comment.Hidden {
-			comment.Comment.Content = "[removed]"
-			comment.Comment.Identifier = nil
-		}
-		// check if user is owner
-		if comment.UserID == token.UID {
-			comment.Owner = true
-		}
-
-		err := h.redis.SAdd(c, postSpecificKey, fmt.Sprint(comment.Comment.ID)).Err()
-		if err != nil {
-			logger.StdErr(err)
-			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
-			return
-		}
 	}
 
 	// set the expiration for the cache
