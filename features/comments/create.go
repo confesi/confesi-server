@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -42,6 +43,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		}
 	}()
 
+	// base comment
 	comment := db.Comment{
 		UserID:  token.UID,
 		PostID:  req.PostID,
@@ -86,52 +88,58 @@ func (h *handler) handleCreate(c *gin.Context) {
 		comment.Ancestors = pq.Int64Array{}
 	}
 
-	// check if there already exists a comment identifier
-	commentIdentifier := db.CommentIdentifier{}
+	// try to create a new identifier record
+	var post db.Post
 	err = tx.
-		Where("user_id = ?", token.UID).
-		Where("post_id = ?", req.PostID).
-		First(&commentIdentifier).
+		Where("id = ?", req.PostID).
+		First(&post).
 		Error
-
-	// check if identifier record already exists
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		// if not, create a new one
-		var post db.Post
-		err = tx.
-			Where("id = ?", req.PostID).
-			First(&post).
-			Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.New(http.StatusBadRequest).Err("referenced post not found").Send(c)
+		}
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		tx.Rollback()
+		return
+	}
+	// is the user the OP?
+	if post.UserID == token.UID {
+		// user is OP
+		newOpCommentIdentifier := db.CommentIdentifier{
+			UserID: token.UID,
+			PostID: req.PostID,
+			IsOp:   true,
+		}
+		// they're creating a threaded comment
+		if req.ParentCommentID != nil {
+			newOpCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
+		}
+		err = tx.Create(&newOpCommentIdentifier).Error
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				response.New(http.StatusBadRequest).Err("referenced post not found").Send(c)
-			}
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
-		if post.UserID == token.UID {
-			// user is OP
-			newOpCommentIdentifier := db.CommentIdentifier{
-				UserID: token.UID,
-				PostID: req.PostID,
-				IsOp:   true,
-			}
-			// they're creating a threaded comment // todo
-			if req.ParentCommentID != nil {
-				newOpCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
-			}
-			err = tx.Create(&newOpCommentIdentifier).Error
-			if err != nil {
-				tx.Rollback()
-				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-				return
-			}
-			comment.IdentifierID = newOpCommentIdentifier.ID
-		} else {
-			// user is not OP
+		comment.IdentifierID = newOpCommentIdentifier.ID
+	} else {
+		// user is not OP
+		var highestIdentifierSoFar db.CommentIdentifier
+		var newIdentifier uint
+
+		// check if there already exists a comment identifier fir user_id and post_id combo
+		alreadyExistingCommentIdentifier := db.CommentIdentifier{}
+		err = tx.
+			Where("user_id = ?", token.UID).
+			Where("post_id = ?", req.PostID).
+			First(&alreadyExistingCommentIdentifier).
+			Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// nothing found! the user has yet to comment on this post
 			// list all the already existing comment identifiers and get the one with the highest "identifier" column, then save one with that + 1
-			var highestIdentifierSoFar db.CommentIdentifier
 			err = tx.
 				Where("post_id = ?", req.PostID).
 				Order("identifier ASC").
@@ -143,15 +151,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 				return
 			}
-			var newIdentifier int64
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifierSoFar.Identifier == nil {
 				newIdentifier = 1
 			} else {
-				if highestIdentifierSoFar.Identifier == nil {
-					newIdentifier = 1
-				} else {
-					newIdentifier = *highestIdentifierSoFar.Identifier + 1
-				}
+				newIdentifier = *highestIdentifierSoFar.Identifier + 1
 			}
 			// save new comment identifier
 			newNotOpCommentIdentifier := db.CommentIdentifier{
@@ -172,10 +175,40 @@ func (h *handler) handleCreate(c *gin.Context) {
 				return
 			}
 			comment.IdentifierID = newNotOpCommentIdentifier.ID
+		} else {
+			// todo: use the existing one, but with new parent_identifier
+			resaveCommentIdentifier := db.CommentIdentifier{
+				Identifier: alreadyExistingCommentIdentifier.Identifier,
+				UserID:     token.UID,
+				PostID:     req.PostID,
+			}
+			if req.ParentCommentID != nil {
+				t := *futureParentIdentifier.Identifier
+				resaveCommentIdentifier.ParentIdentifier = &t
+			}
+			err = tx.Create(&resaveCommentIdentifier).Error
+			if err != nil {
+				var pgErr *pgconn.PgError
+				// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
+				if ok := errors.As(err, &pgErr); !ok {
+					tx.Rollback()
+					response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+					return
+				}
+				switch pgErr.Code {
+				case "23505": // duplicate key value violates unique constraint
+					comment.IdentifierID = *alreadyExistingCommentIdentifier.Identifier
+				default:
+					tx.Rollback()
+					response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+					return
+				}
+			} else {
+				comment.IdentifierID = resaveCommentIdentifier.ID
+			}
+			// note: the id of this record, and if there is a keyerror based on unique (user_id, post_id, identifier, parent_identifer) then we just set the comment pointer to that id
 		}
-	} else {
-		// if it already exists, set it for the soon-to-be-created comment
-		comment.IdentifierID = commentIdentifier.ID
+
 	}
 
 	// save the comment

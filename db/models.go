@@ -262,8 +262,8 @@ type CommentIdentifier struct {
 	UserID           string     `gorm:"column:user_id" json:"-"`
 	PostID           uint       `gorm:"column:post_id" json:"-"`
 	IsOp             bool       `gorm:"column:is_op" json:"is_op"`
-	Identifier       *int64     `gorm:"column:identifier" json:"identifier"`               // pointer so it can be nullable
-	ParentIdentifier *int64     `gorm:"column:parent_identifier" json:"parent_identifier"` // pointer so it can be nullable
+	Identifier       *uint      `gorm:"column:identifier" json:"identifier"`               // pointer so it can be nullable
+	ParentIdentifier *uint      `gorm:"column:parent_identifier" json:"parent_identifier"` // pointer so it can be nullable
 }
 
 func (CommentIdentifier) TableName() string {
