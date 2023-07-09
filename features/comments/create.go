@@ -48,14 +48,19 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Content: req.Content,
 	}
 
-	// they are trying to create a threaded comment
+	futureParentIdentifier := db.CommentIdentifier{}
 	parentComment := db.Comment{}
+	// they are trying to create a threaded comment
 	if req.ParentCommentID != nil {
 		err = tx.
-			Where("id = ?", req.ParentCommentID).
-			Where("post_id = ?", req.PostID).
-			First(&parentComment).
-			UpdateColumn("children_count", gorm.Expr("children_count + ?", 1)).
+			Model(&parentComment).
+			Joins("JOIN comment_identifiers ON comments.identifier_id = comment_identifiers.id").
+			Where("comments.id = ?", req.ParentCommentID).
+			Where("comments.post_id = ?", req.PostID).
+			UpdateColumns(map[string]interface{}{
+				"children_count": gorm.Expr("children_count + ?", 1),
+			}).
+			First(&futureParentIdentifier).
 			Error
 		if err != nil {
 			// parent comment not found
@@ -112,6 +117,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 				PostID: req.PostID,
 				IsOp:   true,
 			}
+			// they're creating a threaded comment // todo
+			if req.ParentCommentID != nil {
+				newOpCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
+			}
 			err = tx.Create(&newOpCommentIdentifier).Error
 			if err != nil {
 				tx.Rollback()
@@ -150,6 +159,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 				PostID:     req.PostID,
 				Identifier: &newIdentifier,
 				IsOp:       false,
+			}
+			// they're creating a threaded comment // todo
+			if req.ParentCommentID != nil {
+				newNotOpCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
 			}
 			err = tx.Create(&newNotOpCommentIdentifier).
 				Error

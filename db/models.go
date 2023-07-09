@@ -256,13 +256,14 @@ func (DailyHottestCron) TableName() string {
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 // only serialize the fields that are needed for the client (if OP or identifier)
 type CommentIdentifier struct {
-	ID         uint       `gorm:"primaryKey" json:"-"`
-	CreatedAt  TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt  TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UserID     string     `gorm:"column:user_id" json:"-"`
-	PostID     uint       `gorm:"column:post_id" json:"-"`
-	IsOp       bool       `gorm:"column:is_op" json:"is_op"`
-	Identifier *int64     `gorm:"column:identifier" json:"identifier"` // pointer so it can be nullable
+	ID               uint       `gorm:"primaryKey" json:"-"`
+	CreatedAt        TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt        TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UserID           string     `gorm:"column:user_id" json:"-"`
+	PostID           uint       `gorm:"column:post_id" json:"-"`
+	IsOp             bool       `gorm:"column:is_op" json:"is_op"`
+	Identifier       *int64     `gorm:"column:identifier" json:"identifier"`               // pointer so it can be nullable
+	ParentIdentifier *int64     `gorm:"column:parent_identifier" json:"parent_identifier"` // pointer so it can be nullable
 }
 
 func (CommentIdentifier) TableName() string {
