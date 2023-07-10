@@ -1,5 +1,8 @@
 package comments
 
+// todo: make `ancestors` a single uint ID
+// todo: db migrations to remove unused things and add new fields
+
 import (
 	"confesi/db"
 	"confesi/lib/response"
@@ -14,29 +17,29 @@ import (
 	"gorm.io/gorm"
 )
 
-func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint) (error, db.CommentIdentifier, bool) {
-	// check if user has already commented on this post with the same matchings
-	possilbeIdentifier := db.CommentIdentifier{}
+// func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint) (error, db.CommentIdentifier, bool) {
+// 	// check if user has already commented on this post with the same matchings
+// 	possilbeIdentifier := db.CommentIdentifier{}
 
-	query := tx.
-		Where("user_id = ?", UID).
-		Where("post_id = ?", postId).
-		Where("identifier = ?", identifier)
+// 	query := tx.
+// 		Where("user_id = ?", UID).
+// 		Where("post_id = ?", postId).
+// 		Where("identifier = ?", identifier)
 
-	err := query.First(&possilbeIdentifier).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return serverError, possilbeIdentifier, false
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		// we have to create it and link the comment to this new one's ID
-		return nil, possilbeIdentifier, false
-	} else {
-		// we link the comment to the ID of the existing one
-		return nil, possilbeIdentifier, true
-	}
-}
+// 	err := query.First(&possilbeIdentifier).Error
+// 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+// 		return serverError, possilbeIdentifier, false
+// 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+// 		// we have to create it and link the comment to this new one's ID
+// 		return nil, possilbeIdentifier, false
+// 	} else {
+// 		// we link the comment to the ID of the existing one
+// 		return nil, possilbeIdentifier, true
+// 	}
+// }
 
 func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint, uint) {
-	highestIdentifier := db.CommentIdentifier{}
+	highestIdentifier := db.Comment{}
 	err := tx.
 		Where("post_id = ?", postId).
 		Order("identifier ASC").
@@ -50,7 +53,7 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint, uint) {
 		return nil, 1, 0
 	} else {
 
-		return nil, *highestIdentifier.Identifier + 1, *highestIdentifier.Identifier
+		return nil, *highestIdentifier.NumericalUser + 1, *highestIdentifier.NumericalUser
 	}
 }
 
@@ -107,14 +110,13 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Content: req.Content,
 	}
 
-	parentCommentIdentifier := db.CommentIdentifier{}
+	parentComment := db.Comment{}
 
+	// they are trying to create a threaded comment
 	if req.ParentCommentID != nil {
 
-		// get parent comment
-		parentComment := db.Comment{}
+		// parent comment
 
-		// they are trying to create a threaded comment
 		err = tx.
 			Where("comments.id = ?", req.ParentCommentID).
 			Where("comments.post_id = ?", req.PostID).
@@ -135,63 +137,33 @@ func (h *handler) handleCreate(c *gin.Context) {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
-		fmt.Println("PARENT COMMENT", parentComment)
-		err = tx.
-			Where("id = ?", parentComment.IdentifierID).
-			First(&parentCommentIdentifier).
-			Error
-		if err != nil {
-			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-			return
-		}
 		comment.Ancestors = pq.Int64Array{*req.ParentCommentID}
 	} else {
 		comment.Ancestors = pq.Int64Array{}
 	}
 
 	var nextIdentifier uint
-	var oldIdentifier uint
 	// is OP?
 	if !isOp {
-		err, nextIdentifier, oldIdentifier = getNextIdentifier(tx, req.PostID)
+		err, nextIdentifier, _ = getNextIdentifier(tx, req.PostID)
 		if err != nil {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		}
 	}
 
-	var identifierIDForComment uint
-	var newlyInsertedCommentIdentifier db.CommentIdentifier
-
-	newlyInsertedCommentIdentifier = db.CommentIdentifier{}
-
-	// is there already an existing `identifier` like this? (aka, has this user already commented on this post?)
-	err, _, exists := doesIdentifierExist(tx, token.UID, req.PostID, &oldIdentifier)
-	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
+	if parentComment.NumericalUserIsOp != nil && *parentComment.NumericalUserIsOp {
+		comment.NumericalReplyingUserIsOp = parentComment.NumericalUserIsOp
+	} else {
+		comment.NumericalReplyingUser = parentComment.NumericalUser
 	}
-	newlyInsertedCommentIdentifier.UserID = token.UID
-	newlyInsertedCommentIdentifier.PostID = req.PostID
-	newlyInsertedCommentIdentifier.Identifier = &nextIdentifier
-	newlyInsertedCommentIdentifier.ParentIdentifier = parentCommentIdentifier.Identifier
-	if exists && !isOp {
-		newlyInsertedCommentIdentifier.Identifier = &oldIdentifier
-	}
-	err = tx.
-		Create(&newlyInsertedCommentIdentifier).
-		Error
-	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-	identifierIDForComment = newlyInsertedCommentIdentifier.ID
 
-	// link comment to its identifier
-	comment.IdentifierID = identifierIDForComment
+	if isOp {
+		t := true
+		comment.NumericalUserIsOp = &t
+	} else {
+		comment.NumericalUser = &nextIdentifier
+	}
 
 	// create the comment
 	err = tx.Create(&comment).

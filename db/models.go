@@ -116,21 +116,25 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	ID            int                `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt     TimeMicros         `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt     TimeMicros         `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	PostID        uint               `gorm:"column:post_id" json:"post_id"`
-	IdentifierID  uint               `gorm:"column:identifier_id" json:"-"`
-	Identifier    *CommentIdentifier `gorm:"foreignKey:IdentifierID" json:"identifier"`
-	Ancestors     pq.Int64Array      `gorm:"type:integer[]" json:"ancestors"`
-	ChildrenCount uint               `gorm:"column:children_count" json:"children_count"`
-	UserID        string             `gorm:"column:user_id" json:"-"`
-	Content       string             `gorm:"column:content" json:"content"`
-	Downvote      uint               `gorm:"column:downvote" json:"downvote"`
-	Upvote        uint               `gorm:"column:upvote" json:"upvote"`
-	VoteScore     int                `gorm:"column:vote_score" json:"-"` // redundant to return to the user
-	TrendingScore float64            `gorm:"column:trending_score" json:"trending_score"`
-	Hidden        bool               `gorm:"column:hidden" json:"-"`
+	ID                        int                `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt                 TimeMicros         `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt                 TimeMicros         `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	PostID                    uint               `gorm:"column:post_id" json:"post_id"`
+	IdentifierID              uint               `gorm:"column:identifier_id" json:"-"`                                 // todo: remove
+	Identifier                *CommentIdentifier `gorm:"foreignKey:IdentifierID" json:"identifier"`                     // todo: remove
+	NumericalUser             *uint              `gorm:"column:numerical_user" json:"numerical_user"`                   // this is a pointer because it can be null
+	NumericalReplyingUser     *uint              `gorm:"column:numerical_replying_user" json:"numerical_replying_user"` // this is a pointer because it can be null
+	NumericalUserIsOp         *bool              `gorm:"column:person_is_op" json:"person_is_op"`                       // this is a pointer because it can be null
+	NumericalReplyingUserIsOp *bool              `gorm:"column:replying_person_is_op" json:"replying_person_is_op"`     // this is a pointer because it can be null
+	Ancestors                 pq.Int64Array      `gorm:"type:integer[]" json:"ancestors"`
+	ChildrenCount             uint               `gorm:"column:children_count" json:"children_count"`
+	UserID                    string             `gorm:"column:user_id" json:"-"`
+	Content                   string             `gorm:"column:content" json:"content"`
+	Downvote                  uint               `gorm:"column:downvote" json:"downvote"`
+	Upvote                    uint               `gorm:"column:upvote" json:"upvote"`
+	VoteScore                 int                `gorm:"column:vote_score" json:"-"` // redundant to return to the user
+	TrendingScore             float64            `gorm:"column:trending_score" json:"trending_score"`
+	Hidden                    bool               `gorm:"column:hidden" json:"-"`
 }
 
 // This will store as a `time.Time` in the database,
@@ -253,6 +257,7 @@ func (DailyHottestCron) TableName() string {
 	return "daily_hottest_cron_jobs"
 }
 
+// todo: remove
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 // only serialize the fields that are needed for the client (if OP or identifier)
 type CommentIdentifier struct {
