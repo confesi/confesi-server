@@ -15,6 +15,7 @@ import (
 var (
 	serverError      = errors.New("server error")
 	threadDepthError = errors.New("thread depth error")
+	invalidInput     = errors.New("invalid content")
 )
 
 type CommentDetail struct {
