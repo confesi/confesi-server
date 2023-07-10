@@ -6,7 +6,6 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -61,14 +60,11 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
 		Limit(1).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		fmt.Println(err, "HERE 1")
 		return serverError, 0
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.Numerics.NumericalUser == nil {
-		fmt.Println(err, "HERE 2")
 		return nil, 1
 	} else {
-		fmt.Println(err, "HERE 3")
 		return nil, *highestIdentifier.Numerics.NumericalUser + 1
 	}
 }
@@ -115,15 +111,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("GOT HEREEEE1")
-
 	isOp := post.UserID == token.UID
-
-	fmt.Println(post.UserID, token.UID)
-
-	fmt.Println("OP CHECK IS ", isOp)
-
-	fmt.Println("GOT HEREEEE2")
 
 	// base comment
 	comment := db.Comment{
@@ -173,14 +161,11 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if !isOp {
 		err, nextIdentifier = getNextIdentifier(tx, req.PostID)
 		if err != nil {
-			fmt.Println("GOT HEREEEE4")
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}
-
-	fmt.Println("GOT HEREEEE3")
 
 	if parentComment.Numerics.NumericalUserIsOp {
 		comment.Numerics.NumericalReplyingUserIsOp = true
@@ -190,7 +175,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	if isOp {
-		fmt.Println("FOUND THE OPPPPPPPP HCEK PASSED")
 		comment.Numerics.NumericalUserIsOp = true
 	} else {
 		comment.Numerics.NumericalUserIsOp = false
