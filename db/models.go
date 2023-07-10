@@ -99,7 +99,7 @@ func (Notification) TableName() string {
 }
 
 type User struct {
-	ID                   string     `gorm:"primaryKey" json:"id"`
+	ID                   string     `gorm:"primaryKey" json:"-"`
 	CreatedAt            TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt            TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	YearOfStudy          uint8      `gorm:"column:year_of_study" json:"year_of_study"`
