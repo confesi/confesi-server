@@ -32,7 +32,6 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 	fetchResults := FetchResults{}
 
 	err = h.db.
-		Preload("Identifier").
 		Raw(`
 			SELECT comments.*, 
 				COALESCE(
@@ -63,10 +62,6 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 		for i := range fetchResults.Comments {
 			// create ref to comment
 			comment := &fetchResults.Comments[i]
-			if comment.Hidden {
-				comment.Comment.Content = "[removed]"
-				comment.Comment.Identifier = nil
-			}
 			// check if user is owner
 			if comment.UserID == token.UID {
 				comment.Owner = true

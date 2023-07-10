@@ -35,14 +35,13 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		FROM comments
 		JOIN saved_comments ON comments.id = saved_comments.comment_id
 		WHERE saved_comments.user_id = ?
-			` + req.Next.Cursor("AND saved_comments.created_at >") + `
+			` + req.Next.Cursor("AND saved_comments.created_at <") + `
 			AND comments.hidden = false
-		ORDER BY saved_comments.created_at ASC
+		ORDER BY saved_comments.created_at DESC
 		LIMIT ?
 		`
 
 	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
-		Preload("Identifier").
 		Find(&fetchResult.Comments).Error
 
 	if err != nil {
@@ -54,10 +53,6 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Comments {
 			comment := &fetchResult.Comments[i]
-			// keep content hidden if post is hidden
-			if comment.Hidden {
-				comment.Content = "[removed]"
-			}
 			// check if user is owner
 			if comment.UserID == token.UID {
 				comment.Owner = true

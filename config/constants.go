@@ -14,7 +14,7 @@ const (
 	RedisCommentsCache                 = "comments"     // redis key for comments cache
 	YourPostsPageSize                  = 3              // how many posts are returned in a page size in the your posts page
 	YourCommentsPageSize               = 3              // how many comments are returned in a page size in the your comments page
-	SavedPostsAndCommentsPageSize      = 1              // how many posts and comments are returned in a page size in the saved posts and comments page
+	SavedPostsAndCommentsPageSize      = 2              // how many posts and comments are returned in a page size in the saved posts and comments page
 
 )
 

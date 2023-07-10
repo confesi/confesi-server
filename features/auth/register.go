@@ -2,10 +2,10 @@ package auth
 
 import (
 	"confesi/db"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -74,7 +74,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 	// save user to postgres
 	err = h.db.Create(&user).Error
 	if err != nil {
-		fmt.Println(err)
+		logger.StdErr(err)
 		// If firebase account creation succeeds, but postgres profile save fails
 		response.New(http.StatusCreated).Val("auth").Send(c)
 		return

@@ -21,7 +21,6 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 	var comment CommentDetail
 
 	err = h.db.
-		Preload("Identifier").
 		Raw(`
 				SELECT comments.*, 
 					COALESCE(
