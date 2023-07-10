@@ -7,10 +7,10 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
@@ -37,6 +37,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// if something goes ary, rollback
 	defer func() {
 		if r := recover(); r != nil {
+			fmt.Println("ROLL BACK")
+
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 			return
@@ -67,17 +69,23 @@ func (h *handler) handleCreate(c *gin.Context) {
 		if err != nil {
 			// parent comment not found
 			if errors.Is(err, gorm.ErrRecordNotFound) {
+				fmt.Println("ROLL BACK")
+
 				tx.Rollback()
 				response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist").Send(c)
 				return
 			}
 			// some other error
+			fmt.Println("ROLL BACK")
+
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 		if len(parentComment.Ancestors) > config.MaxCommentThreadDepthExcludingRoot-1 {
 			// can't thread comments this deep
+			fmt.Println("ROLL BACK")
+
 			tx.Rollback()
 			response.New(http.StatusBadRequest).Err(threadDepthError.Error()).Send(c)
 			return
@@ -99,6 +107,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 			response.New(http.StatusBadRequest).Err("referenced post not found").Send(c)
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		fmt.Println("ROLL BACK")
+
 		tx.Rollback()
 		return
 	}
@@ -134,6 +144,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 			First(&alreadyExistingCommentIdentifier).
 			Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			fmt.Println("ROLL BACK")
+
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
@@ -146,16 +158,21 @@ func (h *handler) handleCreate(c *gin.Context) {
 				Find(&highestIdentifierSoFar).
 				Limit(1).
 				Error
+			fmt.Println("POINT 0")
 			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				fmt.Println("ROLL BACK")
+
 				tx.Rollback()
 				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 				return
 			}
+			fmt.Println("POINT 1")
 			if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifierSoFar.Identifier == nil {
 				newIdentifier = 1
 			} else {
 				newIdentifier = *highestIdentifierSoFar.Identifier + 1
 			}
+			fmt.Println("POINT 2")
 			// save new comment identifier
 			newNotOpCommentIdentifier := db.CommentIdentifier{
 				UserID:     token.UID,
@@ -163,49 +180,61 @@ func (h *handler) handleCreate(c *gin.Context) {
 				Identifier: &newIdentifier,
 				IsOp:       false,
 			}
+			fmt.Println("POINT 3")
 			// they're creating a threaded comment // todo
 			if req.ParentCommentID != nil {
 				newNotOpCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
 			}
+			fmt.Println("POINT 4")
 			err = tx.Create(&newNotOpCommentIdentifier).
 				Error
 			if err != nil {
+				fmt.Println("ROLL BACK")
+
 				tx.Rollback()
 				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 				return
 			}
+			fmt.Println("POINT 5")
 			comment.IdentifierID = newNotOpCommentIdentifier.ID
 		} else {
+			fmt.Println("POINT 6")
 			// todo: use the existing one, but with new parent_identifier
 			resaveCommentIdentifier := db.CommentIdentifier{
 				Identifier: alreadyExistingCommentIdentifier.Identifier,
 				UserID:     token.UID,
 				PostID:     req.PostID,
 			}
+			fmt.Println("POINT 66")
 			if req.ParentCommentID != nil {
-				t := *futureParentIdentifier.Identifier
-				resaveCommentIdentifier.ParentIdentifier = &t
+				resaveCommentIdentifier.ParentIdentifier = futureParentIdentifier.Identifier
 			}
-			err = tx.Create(&resaveCommentIdentifier).Error
-			if err != nil {
-				var pgErr *pgconn.PgError
-				// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
-				if ok := errors.As(err, &pgErr); !ok {
+			fmt.Println("POINT 7")
+			err = tx.
+				Table("comment_identifiers").
+				Where("user_id = ?", token.UID).
+				Where("identifier = ?", alreadyExistingCommentIdentifier.Identifier).
+				Where("post_id = ?", req.PostID).
+				Where("parent_identifier = ?", resaveCommentIdentifier.ParentIdentifier).
+				Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				tx.Rollback()
+				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+				return
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				// todo: insert and do this with new id?
+				err = tx.Create(&resaveCommentIdentifier).Error
+				if err != nil {
 					tx.Rollback()
 					response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 					return
 				}
-				switch pgErr.Code {
-				case "23505": // duplicate key value violates unique constraint
-					comment.IdentifierID = *alreadyExistingCommentIdentifier.Identifier
-				default:
-					tx.Rollback()
-					response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-					return
-				}
-			} else {
 				comment.IdentifierID = resaveCommentIdentifier.ID
+			} else {
+				comment.IdentifierID = *alreadyExistingCommentIdentifier.Identifier
+
 			}
+			fmt.Println("POINT 10")
 			// note: the id of this record, and if there is a keyerror based on unique (user_id, post_id, identifier, parent_identifer) then we just set the comment pointer to that id
 		}
 
@@ -214,6 +243,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// save the comment
 	err = tx.Create(&comment).Error
 	if err != nil {
+		fmt.Println("ROLL BACK")
+
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
@@ -222,6 +253,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// if all goes well, respond with a 201 & commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
+		fmt.Println("ROLL BACK")
+
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
