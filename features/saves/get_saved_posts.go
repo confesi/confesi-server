@@ -36,9 +36,9 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	FROM posts
 	JOIN saved_posts ON posts.id = saved_posts.post_id
 	WHERE saved_posts.user_id = ?
-		` + req.Next.Cursor("AND saved_posts.created_at >") + `
+		` + req.Next.Cursor("AND saved_posts.created_at <") + `
 		AND posts.hidden = false
-	ORDER BY saved_posts.created_at ASC
+	ORDER BY saved_posts.created_at DESC
 	LIMIT ?
 `
 
@@ -56,10 +56,6 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Posts {
 			post := &fetchResult.Posts[i]
-			// keep content hidden if post is hidden
-			if post.Hidden {
-				post.Content = "[removed]"
-			}
 			post.Emojis = emojis.GetEmojis(&post.Post)
 
 			// check if user is owner

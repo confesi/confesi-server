@@ -35,9 +35,9 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		FROM comments
 		JOIN saved_comments ON comments.id = saved_comments.comment_id
 		WHERE saved_comments.user_id = ?
-			` + req.Next.Cursor("AND saved_comments.created_at >") + `
+			` + req.Next.Cursor("AND saved_comments.created_at <") + `
 			AND comments.hidden = false
-		ORDER BY saved_comments.created_at ASC
+		ORDER BY saved_comments.created_at DESC
 		LIMIT ?
 		`
 

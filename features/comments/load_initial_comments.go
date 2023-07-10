@@ -23,8 +23,6 @@ type CommentThreadGroup struct {
 	Next    *int64          `json:"next"`
 }
 
-// todo: add next cursor for each thread group for replies
-
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
@@ -59,14 +57,14 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
             ORDER BY `+sortField+`
 			LIMIT ?
 		), ranked_replies AS (
-			SELECT c.id, c.post_id, c.vote_score, c.trending_score, c.content, c.parent_root, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote,
+			SELECT c.id, c.post_id, c.vote_score, c.trending_score, c.content, c.parent_root, c.created_at, c.updated_at, c.hidden, c.children_count, c.user_id, c.downvote, c.upvote, c.numerical_user, c.numerical_replying_user, c.numerical_replying_user_is_op, c.numerical_user_is_op,
 				   ROW_NUMBER() OVER (PARTITION BY c.parent_root ORDER BY c.created_at ASC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.parent_root = tr.id
 		)
-		SELECT t.id, t.post_id, t.vote_score, t.trending_score, t.content, t.parent_root, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.user_vote
+		SELECT t.id, t.post_id, t.vote_score, t.trending_score, t.content, t.parent_root, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.numerical_user, t.numerical_replying_user, t.numerical_replying_user_is_op, t.numerical_user_is_op, t.user_vote
 		FROM (
-			SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.trending_score, combined_comments.content, combined_comments.parent_root, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.upvote,
+			SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.trending_score, combined_comments.content, combined_comments.parent_root, combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden, combined_comments.children_count, combined_comments.user_id, combined_comments.downvote, combined_comments.upvote, combined_comments.numerical_user, combined_comments.numerical_replying_user, combined_comments.numerical_replying_user_is_op, combined_comments.numerical_user_is_op,
 				   COALESCE(
 					   (SELECT votes.vote
 						FROM votes
@@ -76,9 +74,9 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 					   '0'::vote_score_value
 				   ) AS user_vote
 			FROM (
-				SELECT id, post_id, vote_score, trending_score, content, parent_root, updated_at, created_at, hidden, user_id, children_count, downvote, upvote FROM top_root_comments
+				SELECT id, post_id, vote_score, trending_score, content, parent_root, updated_at, created_at, hidden, user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user, numerical_replying_user_is_op, numerical_user_is_op FROM top_root_comments
 				UNION ALL
-				SELECT id, post_id, vote_score, trending_score, content, parent_root, created_at, updated_at, hidden, user_id, children_count, downvote, upvote
+				SELECT id, post_id, vote_score, trending_score, content, parent_root, created_at, updated_at, hidden, user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user, numerical_replying_user_is_op, numerical_user_is_op
 				FROM ranked_replies
 				WHERE reply_num <= ?
 			) AS combined_comments

@@ -46,7 +46,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImE1MWJiNGJkMWQwYzYxNDc2ZWIxYj
 
 {
     "parent_comment": 91,
-    "next": null
+    "next": 1688991568348248
 }
 
 ### Purge comments cache

@@ -1,9 +1,5 @@
 package comments
 
-// todo: make `ancestors` a single uint ID
-// todo: db migrations to remove unused things and add new fields
-// todo: make all fields serialize into 1 parent type? if all null for numericsl users?
-
 import (
 	"confesi/db"
 	"confesi/lib/response"
