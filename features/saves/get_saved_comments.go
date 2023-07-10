@@ -42,7 +42,6 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		`
 
 	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
-		Preload("Identifier").
 		Find(&fetchResult.Comments).Error
 
 	if err != nil {
@@ -57,6 +56,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 			// keep content hidden if post is hidden
 			if comment.Hidden {
 				comment.Content = "[removed]"
+				// todo: make numerics null somehow
 			}
 			// check if user is owner
 			if comment.UserID == token.UID {

@@ -25,7 +25,7 @@ ALTER TABLE comment_identifiers
 
 ALTER TABLE comments
     DROP CONSTRAINT fk_comments_root_comment,
-    DROP COLUMN root_comment,
+    DROP COLUMN parent_root,
     ADD COLUMN ancestors INTEGER[];
 
 ALTER TABLE comments

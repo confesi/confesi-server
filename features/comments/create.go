@@ -2,6 +2,7 @@ package comments
 
 // todo: make `ancestors` a single uint ID
 // todo: db migrations to remove unused things and add new fields
+// todo: make all fields serialize into 1 parent type? if all null for numericsl users?
 
 import (
 	"confesi/db"
@@ -13,7 +14,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -38,22 +38,42 @@ import (
 // 	}
 // }
 
-func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint, uint) {
+// (error, bool, uint) -> (error, alreadyPosted, numericalUser)
+func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (error, bool, uint) {
+	comment := db.Comment{}
+	err := tx.
+		Where("user_id = ?", userID).
+		Where("post_id = ?", postID).
+		Where("numerical_user IS NOT NULL").
+		First(&comment).
+		Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return serverError, false, 0
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, false, 0
+	} else {
+		return nil, true, *comment.Numerics.NumericalUser
+	}
+}
+
+func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
 	highestIdentifier := db.Comment{}
 	err := tx.
 		Where("post_id = ?", postId).
-		Order("identifier ASC").
+		Order("numerical_user ASC").
 		Find(&highestIdentifier).
 		Limit(1).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return serverError, 0, 0
+		fmt.Println(err, "HERE 1")
+		return serverError, 0
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.Identifier == nil {
-		return nil, 1, 0
+	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.Numerics.NumericalUser == nil {
+		fmt.Println(err, "HERE 2")
+		return nil, 1
 	} else {
-
-		return nil, *highestIdentifier.NumericalUser + 1, *highestIdentifier.NumericalUser
+		fmt.Println(err, "HERE 3")
+		return nil, *highestIdentifier.Numerics.NumericalUser + 1
 	}
 }
 
@@ -79,8 +99,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// if something goes ary, rollback
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("ROLL BACK")
-
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 			return
@@ -101,7 +119,15 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
+	fmt.Println("GOT HEREEEE1")
+
 	isOp := post.UserID == token.UID
+
+	fmt.Println(post.UserID, token.UID)
+
+	fmt.Println("OP CHECK IS ", isOp)
+
+	fmt.Println("GOT HEREEEE2")
 
 	// base comment
 	comment := db.Comment{
@@ -137,32 +163,53 @@ func (h *handler) handleCreate(c *gin.Context) {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
-		comment.Ancestors = pq.Int64Array{*req.ParentCommentID}
+		if parentComment.ParentRoot == nil {
+			comment.ParentRoot = &parentComment.ID
+		} else {
+			comment.ParentRoot = parentComment.ParentRoot
+		}
 	} else {
-		comment.Ancestors = pq.Int64Array{}
+		comment.ParentRoot = nil
 	}
 
 	var nextIdentifier uint
 	// is OP?
 	if !isOp {
-		err, nextIdentifier, _ = getNextIdentifier(tx, req.PostID)
+		err, nextIdentifier = getNextIdentifier(tx, req.PostID)
 		if err != nil {
+			fmt.Println("GOT HEREEEE4")
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
 		}
 	}
 
-	if parentComment.NumericalUserIsOp != nil && *parentComment.NumericalUserIsOp {
-		comment.NumericalReplyingUserIsOp = parentComment.NumericalUserIsOp
+	fmt.Println("GOT HEREEEE3")
+
+	if parentComment.Numerics.NumericalUserIsOp {
+		comment.Numerics.NumericalReplyingUserIsOp = true
 	} else {
-		comment.NumericalReplyingUser = parentComment.NumericalUser
+		comment.Numerics.NumericalReplyingUserIsOp = false
+		comment.Numerics.NumericalReplyingUser = parentComment.Numerics.NumericalUser
 	}
 
 	if isOp {
-		t := true
-		comment.NumericalUserIsOp = &t
+		fmt.Println("FOUND THE OPPPPPPPP HCEK PASSED")
+		comment.Numerics.NumericalUserIsOp = true
 	} else {
-		comment.NumericalUser = &nextIdentifier
+		comment.Numerics.NumericalUserIsOp = false
+		err, alreadyPosted, userNumeric := getAlreadyPostedNumericalUser(tx, req.PostID, token.UID)
+		if err != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		if alreadyPosted {
+			comment.Numerics.NumericalUser = &userNumeric
+		} else {
+			comment.Numerics.NumericalUser = &nextIdentifier
+		}
+
 	}
 
 	// create the comment
@@ -177,8 +224,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// if all goes well, respond with a 201 & commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
-		fmt.Println("ROLL BACK")
-
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return

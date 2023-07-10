@@ -50,7 +50,6 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 	}
 	// query written in raw SQL over pure Gorm because... well this would be a nightmare otherwise and likely impossible
 	query := gm.
-		Preload("Identifier").
 		Raw(`
 		WITH top_root_comments AS (
 			SELECT *
@@ -83,8 +82,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				FROM ranked_replies
 				WHERE reply_num <= ?
 			) AS combined_comments
-		) AS t
-	LEFT JOIN comment_identifiers ON comment_identifiers.id = t.identifier_id;
+		) AS t;
     `, postID, config.RootCommentsLoadedInitially, uid, config.RepliesLoadedInitially).
 		Find(&comments)
 
@@ -95,16 +93,16 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 	parentMap := make(map[int][]CommentDetail) // Map to store parent comments
 	for i := range comments {
 		comment := &comments[i]
-		if len(comment.Comment.Ancestors) > 0 {
-			parentID := comment.Comment.Ancestors[0]
-			parentMap[int(parentID)] = append(parentMap[int(parentID)], *comment)
+		if comment.Comment.ParentRoot != nil {
+			parentID := comment.Comment.ParentRoot
+			parentMap[int(*parentID)] = append(parentMap[int(*parentID)], *comment)
 		}
 	}
 
 	// Create the final list of comment threads
 	var commentThreads []CommentThreadGroup
 	for _, comment := range comments {
-		if len(comment.Comment.Ancestors) == 0 {
+		if comment.Comment.ParentRoot == nil {
 			thread := CommentThreadGroup{
 				Root:    comment,
 				Replies: parentMap[int(comment.Comment.ID)],
