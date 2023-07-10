@@ -5,9 +5,11 @@ import (
 	"confesi/features/auth"
 	"confesi/features/comments"
 	"confesi/features/feedback"
+	"confesi/features/notifications"
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
+	"confesi/features/user"
 	"confesi/features/votes"
 	"confesi/lib/cron"
 	"confesi/middleware"
@@ -72,6 +74,8 @@ func main() {
 	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
 	feedback.Router(api.Group("/feedback"))
+	notifications.Router(api.Group("/notifications"))
+	user.Router(api.Group("/user"))
 
 	// Start the CRON job scheduler
 	cron.StartDailyHottestPostsCronJob()

@@ -73,14 +73,40 @@ func (School) TableName() string {
 	return "schools"
 }
 
+// ! Very important some fields are NOT serialized (json:"-")
+type Topic struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+	Name      string     `gorm:"column:name" json:"name"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+// ! Very important some fields are NOT serialized (json:"-")
+type Notification struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+	Token     string     `gorm:"column:token" json:"token"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+func (Topic) TableName() string {
+	return "topics"
+}
+func (Notification) TableName() string {
+	return "notifications"
+}
+
 type User struct {
-	ID          string     `gorm:"primaryKey" json:"id"`
-	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudy uint8      `gorm:"column:year_of_study" json:"year_of_study"`
-	FacultyID   uint       `gorm:"column:faculty_id" json:"faculty_id"`
-	SchoolID    uint       `gorm:"column:school_id" json:"school_id"`
-	ModID       uint       `gorm:"column:mod_id" json:"mod_id"`
+	ID                   string     `gorm:"primaryKey" json:"id"`
+	CreatedAt            TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt            TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	YearOfStudy          uint8      `gorm:"column:year_of_study" json:"year_of_study"`
+	FacultyID            uint       `gorm:"column:faculty_id" json:"faculty_id"`
+	SchoolID             uint       `gorm:"column:school_id" json:"school_id"`
+	ModID                uint       `gorm:"column:mod_id" json:"mod_id"`
+	NotificationsEnabled bool       `gorm:"column:notifications_enabled" json:"notifications_enabled"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
