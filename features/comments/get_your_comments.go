@@ -63,7 +63,7 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 			// create ref to comment
 			comment := &fetchResults.Comments[i]
 			if comment.Hidden {
-				comment.Comment.Content = "[removed]"
+				// comment.Comment.Content = "[removed]"
 				// todo: make numerics null somehow
 			}
 			// check if user is owner

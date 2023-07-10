@@ -130,6 +130,39 @@ type Comment struct {
 	Hidden        bool       `gorm:"column:hidden" json:"-"`
 }
 
+type Alias Comment
+
+type AuxComment struct {
+	*Alias
+}
+
+// If `Hidden` is true, this auto-sets the `Content` field to "[hidden]" and `Numerics` to null
+func (c Comment) MarshalJSON() ([]byte, error) {
+	type Alias Comment
+
+	if c.Hidden {
+		hiddenComment := struct {
+			Alias
+			Content  string       `json:"content"`
+			Numerics *interface{} `json:"numerics"`
+		}{
+			Alias:    (Alias)(c),
+			Content:  "[hidden]",
+			Numerics: nil,
+		}
+
+		return json.Marshal(hiddenComment)
+	}
+
+	regularComment := struct {
+		Alias
+	}{
+		Alias: (Alias)(c),
+	}
+
+	return json.Marshal(regularComment)
+}
+
 type Numerics struct {
 	NumericalUser             *uint `gorm:"column:numerical_user" json:"numerical_user"`                   // this is a pointer because it can be null
 	NumericalReplyingUser     *uint `gorm:"column:numerical_replying_user" json:"numerical_replying_user"` // this is a pointer because it can be null

@@ -53,11 +53,6 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Comments {
 			comment := &fetchResult.Comments[i]
-			// keep content hidden if post is hidden
-			if comment.Hidden {
-				comment.Content = "[removed]"
-				// todo: make numerics null somehow
-			}
 			// check if user is owner
 			if comment.UserID == token.UID {
 				comment.Owner = true

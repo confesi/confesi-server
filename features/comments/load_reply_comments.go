@@ -43,7 +43,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 					'0'::vote_score_value
 				) AS user_vote
 			FROM comments
-			WHERE ancestors[1] = ?
+			WHERE parent_root = ?
 			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC
 			LIMIT ?
@@ -57,10 +57,6 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		for i := range fetchResults.Comments {
 			// create reference to comment
 			comment := &fetchResults.Comments[i]
-			if comment.Hidden {
-				comment.Comment.Content = "[removed]"
-				// todo: make numerics null somehow
-			}
 			// check if user is owner
 			if comment.UserID == token.UID {
 				comment.Owner = true
