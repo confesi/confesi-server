@@ -1,6 +1,6 @@
 BEGIN;
 
 ALTER TABLE comment_identifiers
-    DROP COLUMN parent_identifier;
+    DROP CONSTRAINT uq_comment_identifiers;
 
 END;

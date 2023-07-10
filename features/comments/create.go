@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint, parentIdentifier *uint) (error, db.CommentIdentifier, bool) {
+func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint) (error, db.CommentIdentifier, bool) {
 	// check if user has already commented on this post with the same matchings
 	possilbeIdentifier := db.CommentIdentifier{}
 
@@ -22,12 +22,6 @@ func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint,
 		Where("user_id = ?", UID).
 		Where("post_id = ?", postId).
 		Where("identifier = ?", identifier)
-
-	if parentIdentifier == nil {
-		query = query.Where("parent_identifier IS NULL")
-	} else {
-		query = query.Where("parent_identifier = ?", *parentIdentifier)
-	}
 
 	err := query.First(&possilbeIdentifier).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -122,9 +116,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 		// they are trying to create a threaded comment
 		err = tx.
-			Find(&parentComment).
 			Where("comments.id = ?", req.ParentCommentID).
 			Where("comments.post_id = ?", req.PostID).
+			Find(&parentComment).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
 			}).
@@ -141,6 +135,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+		fmt.Println("PARENT COMMENT", parentComment)
 		err = tx.
 			Where("id = ?", parentComment.IdentifierID).
 			First(&parentCommentIdentifier).
@@ -156,10 +151,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	var nextIdentifier uint
-	// var oldIdentifier uint
+	var oldIdentifier uint
 	// is OP?
 	if !isOp {
-		err, nextIdentifier, _ = getNextIdentifier(tx, req.PostID)
+		err, nextIdentifier, oldIdentifier = getNextIdentifier(tx, req.PostID)
 		if err != nil {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -169,31 +164,31 @@ func (h *handler) handleCreate(c *gin.Context) {
 	var identifierIDForComment uint
 	var newlyInsertedCommentIdentifier db.CommentIdentifier
 
-	// is there already an existing identifier like this? // todo: ----------------- &oldIdentifier ??
-	err, possibleIdentifier, exists := doesIdentifierExist(tx, token.UID, req.PostID, &nextIdentifier, parentCommentIdentifier.Identifier)
+	newlyInsertedCommentIdentifier = db.CommentIdentifier{}
+
+	// is there already an existing `identifier` like this? (aka, has this user already commented on this post?)
+	err, _, exists := doesIdentifierExist(tx, token.UID, req.PostID, &oldIdentifier)
 	if err != nil {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
-	} else if exists {
-		identifierIDForComment = possibleIdentifier.ID
-	} else {
-		newlyInsertedCommentIdentifier = db.CommentIdentifier{
-			UserID:           token.UID,
-			PostID:           req.PostID,
-			Identifier:       &nextIdentifier,
-			ParentIdentifier: parentCommentIdentifier.Identifier,
-		}
-		err = tx.
-			Create(&newlyInsertedCommentIdentifier).
-			Error
-		if err != nil {
-			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-			return
-		}
-		identifierIDForComment = newlyInsertedCommentIdentifier.ID
 	}
+	newlyInsertedCommentIdentifier.UserID = token.UID
+	newlyInsertedCommentIdentifier.PostID = req.PostID
+	newlyInsertedCommentIdentifier.Identifier = &nextIdentifier
+	newlyInsertedCommentIdentifier.ParentIdentifier = parentCommentIdentifier.Identifier
+	if exists && !isOp {
+		newlyInsertedCommentIdentifier.Identifier = &oldIdentifier
+	}
+	err = tx.
+		Create(&newlyInsertedCommentIdentifier).
+		Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+	identifierIDForComment = newlyInsertedCommentIdentifier.ID
 
 	// link comment to its identifier
 	comment.IdentifierID = identifierIDForComment
