@@ -11,7 +11,9 @@ import (
 )
 
 var (
-	serverError = errors.New("server error")
+	serverError     = errors.New("server error")
+	failedSubbing   = errors.New("failed subbing")
+	failedUnsubbing = errors.New("failed unsubbing")
 )
 
 type handler struct {
