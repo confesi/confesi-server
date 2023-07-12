@@ -25,10 +25,10 @@ func (h *handler) handleRemoveToken(c *gin.Context) {
 		return
 	}
 
-	notification := db.Notification{}
+	fcmToken := db.FcmToken{}
 
 	err = h.db.
-		Delete(&notification, "user_id = ? AND token = ?", token.UID, req.Token).
+		Delete(&fcmToken, "user_id = ? AND token = ?", token.UID, req.Token).
 		Error
 
 	if err != nil {

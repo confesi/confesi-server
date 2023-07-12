@@ -112,3 +112,8 @@ type FcmTokenQuery struct {
 	// [required] fcm token
 	Token string `json:"token" validate:"required"`
 }
+
+type FcmTopicQuery struct {
+	// [required] fcm token
+	Topic string `json:"topic" validate:"required"`
+}

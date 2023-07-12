@@ -74,7 +74,7 @@ func (School) TableName() string {
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
-type Topic struct {
+type FcmTopic struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	Name      string     `gorm:"column:name" json:"name"`
@@ -83,7 +83,7 @@ type Topic struct {
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
-type Notification struct {
+type FcmToken struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	Token     string     `gorm:"column:token" json:"token"`
@@ -91,11 +91,11 @@ type Notification struct {
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
 
-func (Topic) TableName() string {
-	return "topics"
+func (FcmTopic) TableName() string {
+	return "fcm_topics"
 }
-func (Notification) TableName() string {
-	return "notifications"
+func (FcmToken) TableName() string {
+	return "fcm_tokens"
 }
 
 type User struct {
