@@ -1,4 +1,4 @@
-package cron_jobs
+package cronJobs
 
 import (
 	"confesi/lib/logger"

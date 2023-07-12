@@ -27,7 +27,7 @@ func Router(mux *gin.RouterGroup) {
 	})
 	mux.PATCH("/user-standing", h.handleUserStanding)
 	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
-	mux.GET("/daily-hottest-crons", h.handleGetDailyHottestCrons)
+	mux.GET("/crons", h.handleGetDailyHottestCrons)
 	mux.GET("/feedback", h.handleListFeedback)
 	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
 }

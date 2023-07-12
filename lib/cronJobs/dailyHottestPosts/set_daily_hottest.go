@@ -1,9 +1,9 @@
-package daily_hottest_posts
+package dailyHottestPosts
 
 import (
 	"confesi/config"
 	"confesi/db"
-	"confesi/lib/cron_jobs"
+	"confesi/lib/cronJobs"
 	"confesi/lib/logger"
 	"errors"
 	"time"
@@ -18,7 +18,7 @@ import (
 func StartDailyHottestPostsCronJob() {
 	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().At("23:55").Do(func() {
-		cron_jobs.RetryLoop(1000, 1000*60, 6.0, 20, func() error {
+		cronJobs.RetryLoop(1000, 1000*60, 6.0, 20, func() error {
 			return DoDailyHottestJob(time.Now().UTC())
 		})
 	})
@@ -52,9 +52,10 @@ func DoDailyHottestJob(dateTime time.Time) error {
 	}()
 
 	// check if we've already successfully ran this job for this date
-	err := tx.Model(&db.DailyHottestCron{}).
-		Where("successfully_ran = ?", date).
-		First(&db.DailyHottestCron{}).
+	err := tx.Model(&db.CronJob{}).
+		Where("ran = ?", date).
+		Where("type = ?", cronJobs.DailyHottestCronJobLog).
+		First(&db.CronJob{}).
 		Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		tx.Rollback()
@@ -106,7 +107,7 @@ func DoDailyHottestJob(dateTime time.Time) error {
 	}
 
 	// set job on today ran as successful
-	err = tx.Create(&db.DailyHottestCron{SuccessfullyRan: date}).Error
+	err = tx.Create(&db.CronJob{Ran: date, Type: cronJobs.DailyHottestCronJobLog}).Error
 	if err != nil {
 		tx.Rollback()
 		return err

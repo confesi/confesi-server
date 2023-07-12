@@ -307,11 +307,13 @@ type Report struct {
 	UserAlerted bool   `gorm:"column:user_alerted" json:"user_alerted"`
 }
 
-type DailyHottestCron struct {
-	ID              uint           `gorm:"primaryKey" json:"id"`
-	SuccessfullyRan datatypes.Date `gorm:"column:successfully_ran" json:"successfully_ran"`
+type CronJob struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt TimeMicros     `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	Ran       datatypes.Date `gorm:"column:ran" json:"ran"`
+	Type      string         `gorm:"column:type" json:"type"`
 }
 
-func (DailyHottestCron) TableName() string {
-	return "daily_hottest_cron_jobs"
+func (CronJob) TableName() string {
+	return "cron_jobs"
 }
