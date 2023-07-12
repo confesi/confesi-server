@@ -24,7 +24,7 @@ func (h *handler) handleSubToTopic(c *gin.Context) {
 		return
 	}
 
-	// todo: FK to ensure there's a match between either valid sub type or name of watchd uni
+	// todo: FK to ensure there's a match between either valid sub type or name of watchd uni ? Or just check if valid topic?
 
 	// fetch all topic
 	topic := db.FcmTopic{
@@ -32,6 +32,7 @@ func (h *handler) handleSubToTopic(c *gin.Context) {
 		Name:   req.Topic,
 	}
 	err = h.db.
+		Where("user_id = ? AND name = ?", token.UID, req.Topic).
 		FirstOrCreate(&topic).
 		Error
 	if err != nil {

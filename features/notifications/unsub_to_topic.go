@@ -27,7 +27,7 @@ func (h *handler) handleUnsubToTopic(c *gin.Context) {
 	fcmTopic := db.FcmTopic{}
 
 	err = h.db.
-		Delete(&fcmTopic, "user_id = ? AND topic = ?", token.UID, req.Topic).
+		Delete(&fcmTopic, "user_id = ? AND name = ?", token.UID, req.Topic).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

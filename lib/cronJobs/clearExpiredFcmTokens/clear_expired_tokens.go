@@ -37,7 +37,7 @@ func DoClearExpiredFcmTokenJob(dateTime time.Time) error {
 	}
 
 	// set job on today ran
-	err := tx.Create(&db.CronJob{Ran: datatypes.Date(dateTime), Type: cronJobs.DailyHottestCronJobLog}).Error
+	err := tx.Create(&db.CronJob{Ran: datatypes.Date(dateTime), Type: cronJobs.ClearExpiredFcmTokensCronJobLog}).Error
 	if err != nil {
 		tx.Rollback()
 		return err
