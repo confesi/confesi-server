@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"confesi/db"
-	"confesi/lib/fire"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,20 +24,20 @@ func (h *handler) handleSubToTopic(c *gin.Context) {
 		return
 	}
 
-	// fetch all tokens
-	tokens := []db.FcmToken{}
+	// todo: FK to ensure there's a match between either valid sub type or name of watchd uni
+
+	// fetch all topic
+	topic := db.FcmTopic{
+		UserID: token.UID,
+		Name:   req.Topic,
+	}
 	err = h.db.
-		Find(&tokens, "user_id = ?", token.UID).
+		FirstOrCreate(&topic).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
-	// todo: validate topic is valid
-
-	// for each token, sub
-	for _, t := range tokens {
-		fire.SubToTopics(c, h.fb.MsgClient, t.Token, []string{req.Topic})
-	}
+	response.New(http.StatusOK).Send(c)
 }
