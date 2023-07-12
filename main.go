@@ -11,7 +11,8 @@ import (
 	"confesi/features/schools"
 	"confesi/features/user"
 	"confesi/features/votes"
-	"confesi/lib/cron"
+	"confesi/lib/cron_jobs/clear_expired_fcm_tokens"
+	"confesi/lib/cron_jobs/daily_hottest_posts"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -78,7 +79,8 @@ func main() {
 	user.Router(api.Group("/user"))
 
 	// Start the CRON job scheduler
-	cron.StartDailyHottestPostsCronJob()
+	daily_hottest_posts.StartDailyHottestPostsCronJob()
+	clear_expired_fcm_tokens.StartClearExpiredFcmTokensCronJob()
 
 	// Start the server
 	r.Run(fmt.Sprintf(":%s", port))

@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"confesi/lib/cron"
+	"confesi/lib/cron_jobs/daily_hottest_posts"
 	"confesi/lib/response"
 	"net/http"
 	"time"
@@ -19,7 +19,7 @@ func (h *handler) handleManuallyTriggerDailyHottestCron(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("invalid date format").Send(c)
 		return
 	}
-	err = cron.ExecuteCronJob(date)
+	err = daily_hottest_posts.DoDailyHottestJob(date)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
