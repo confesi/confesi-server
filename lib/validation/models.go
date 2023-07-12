@@ -117,3 +117,10 @@ type FcmTopicQuery struct {
 	// [required] fcm token
 	Topic string `json:"topic" validate:"required"`
 }
+
+type FetchRanCrons struct {
+	// [required] type of cron to fetch
+	Type string `json:"type" validate:"required,oneof=clear_expired_fcm_tokens daily_hottest"`
+	// [required] timestamp of last viewed cron job content (ms since epoch)
+	Next NullableNext `json:"next"`
+}
