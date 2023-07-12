@@ -8,6 +8,10 @@ import (
 	"firebase.google.com/go/messaging"
 )
 
+var (
+	InvalidFcmTokenError = errors.New("invalid fcm token")
+)
+
 type FcmMsgSender struct {
 	Client         *messaging.Client
 	Token          string
