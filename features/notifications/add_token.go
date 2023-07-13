@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"confesi/db"
-	"confesi/lib/fire"
 	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -29,7 +28,7 @@ func (h *handler) handleSetToken(c *gin.Context) {
 	}
 
 	// is validate FCM token?
-	if !fire.IsValidFcmToken(h.fb.MsgClient, req.Token) {
+	if !fcm.IsValidFcmToken(h.fb.MsgClient, req.Token) {
 		response.New(http.StatusBadRequest).Err(fcm.InvalidFcmTokenError.Error()).Send(c)
 		return
 	}

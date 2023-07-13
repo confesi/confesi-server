@@ -74,12 +74,27 @@ func (School) TableName() string {
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
-type FcmTopic struct {
+type FcmPriv struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 	Name      string     `gorm:"column:name" json:"name"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+func (FcmTopicPref) TableName() string {
+	return "fcm_topic_prefs"
+}
+
+// ! Very important some fields are NOT serialized (json:"-")
+type FcmTopicPref struct {
+	ID              uint   `gorm:"primaryKey" json:"id"`
+	UserID          string `gorm:"column:user_id" json:"-"`
+	DailyHottest    bool   `gorm:"column:daily_hottest" json:"daily_hottest"`
+	TrendingAll     bool   `gorm:"column:trending_all" json:"trending_all"`
+	TrendingHome    bool   `gorm:"column:trending_home" json:"trending_home"`
+	TrendingWatched bool   `gorm:"column:trending_watched" json:"trending_watched"`
+	NewFeatures     bool   `gorm:"column:new_features" json:"new_features"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
@@ -91,8 +106,8 @@ type FcmToken struct {
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
 
-func (FcmTopic) TableName() string {
-	return "fcm_topics"
+func (FcmPriv) TableName() string {
+	return "fcm_privs"
 }
 func (FcmToken) TableName() string {
 	return "fcm_tokens"

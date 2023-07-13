@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleSubToTopic(c *gin.Context) {
+func (h *handler) handleGetTopicPrefs(c *gin.Context) {
 	// validate request
-	var req validation.FcmTopicQuery
+	var req validation.FcmNotifictionPref
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -24,21 +24,13 @@ func (h *handler) handleSubToTopic(c *gin.Context) {
 		return
 	}
 
-	// todo: FK to ensure there's a match between either valid sub type or name of watchd uni ? Or just check if valid topic?
-
-	// fetch all topic
-	topic := db.FcmTopic{
-		UserID: token.UID,
-		Name:   req.Topic,
-	}
+	topicPrefs := db.FcmTopicPref{}
 	err = h.db.
-		Where("user_id = ? AND name = ?", token.UID, req.Topic).
-		FirstOrCreate(&topic).
+		First(&topicPrefs, "user_id = ?", token.UID).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-
-	response.New(http.StatusOK).Send(c)
+	response.New(http.StatusOK).Val(topicPrefs).Send(c)
 }
