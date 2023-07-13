@@ -5,6 +5,7 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ import (
 
 func (h *handler) handleUnsubToPriv(c *gin.Context) {
 	// validate request
-	var req validation.FcmTopicQuery
+	var req validation.FcmPrivQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -24,10 +25,21 @@ func (h *handler) handleUnsubToPriv(c *gin.Context) {
 		return
 	}
 
+	var delField string
+	if req.ContentType == "post" {
+		delField = "post_id"
+	} else if req.ContentType == "comment" {
+		delField = "comment_id"
+	} else {
+		// should never happen with validated struct, but to be defensive
+		response.New(http.StatusBadRequest).Err(fmt.Sprintf("invalid content type")).Send(c)
+		return
+	}
+
 	fcmTopic := db.FcmPriv{}
 
 	err = h.db.
-		Delete(&fcmTopic, "user_id = ? AND name = ?", token.UID, req.Topic).
+		Delete(&fcmTopic, "user_id = ? AND "+delField+" = ?", token.UID, req.ContentID).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

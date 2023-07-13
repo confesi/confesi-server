@@ -77,7 +77,8 @@ func (School) TableName() string {
 type FcmPriv struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
-	Name      string     `gorm:"column:name" json:"name"`
+	PostID    uint       `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
+	CommentID uint       `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
