@@ -11,6 +11,8 @@ import (
 	"firebase.google.com/go/messaging"
 )
 
+// todo: delete tokens from db when FCM throws the error that means that device doesn't exist anymore
+
 var (
 	InvalidFcmTokenError = errors.New("invalid fcm token")
 	InvalidReceivers     = errors.New("invalid receivers")

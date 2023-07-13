@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleUnsubToTopic(c *gin.Context) {
+func (h *handler) handleUnsubToPriv(c *gin.Context) {
 	// validate request
 	var req validation.FcmTopicQuery
 	err := utils.New(c).Validate(&req)
@@ -24,7 +24,7 @@ func (h *handler) handleUnsubToTopic(c *gin.Context) {
 		return
 	}
 
-	fcmTopic := db.FcmTopic{}
+	fcmTopic := db.FcmPriv{}
 
 	err = h.db.
 		Delete(&fcmTopic, "user_id = ? AND name = ?", token.UID, req.Topic).

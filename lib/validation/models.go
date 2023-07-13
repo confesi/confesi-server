@@ -124,3 +124,12 @@ type FetchRanCrons struct {
 	// [required] timestamp of last viewed cron job content (ms since epoch)
 	Next NullableNext `json:"next"`
 }
+
+type FcmNotifictionPref struct {
+	// true or falses, don't have "required" so that the zero-valuse are OK
+	DailyHottest    bool `json:"daily_hottest"`
+	TrendingAll     bool `json:"trending_all"`
+	TrendingHome    bool `json:"trending_home"`
+	TrendingWatched bool `json:"trending_watched"`
+	NewFeatures     bool `json:"new_features"`
+}
