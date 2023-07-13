@@ -113,9 +113,11 @@ type FcmTokenQuery struct {
 	Token string `json:"token" validate:"required"`
 }
 
-type FcmTopicQuery struct {
-	// [required] fcm token
-	Topic string `json:"topic" validate:"required"`
+type FcmPrivQuery struct {
+	// [required] fcm priv content id
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
 
 type FetchRanCrons struct {
