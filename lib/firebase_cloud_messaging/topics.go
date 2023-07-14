@@ -19,7 +19,7 @@ func SubToTopics(c *gin.Context, client *messaging.Client, fcmToken string, topi
 	return topics
 }
 
-// Unsubs to topics
+// Unsubs a token from topics
 //
 // Return: list of topics that failed to unsub
 func UnsubToTopics(c *gin.Context, client *messaging.Client, fcmToken string, topics []string) []string {
