@@ -46,6 +46,7 @@ func TrendingPostData(postId uint) map[string]string {
 	}
 }
 
+// todo: add proper APNS, notification data stuff here so it doesn't error out as a silent notification
 func NotificationSettingsSyncData() map[string]string {
 	return map[string]string{
 		"type": "notification_settings_sync",
