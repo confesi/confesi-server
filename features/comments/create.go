@@ -1,6 +1,7 @@
 package comments
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
 	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
@@ -9,7 +10,6 @@ import (
 	"errors"
 	"net/http"
 
-	"firebase.google.com/go/messaging"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -191,7 +191,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	// send notifications
-	// join `fcm_tokens` `users` and `posts` to get the tokens of the user who made this post
 	var tokens []string
 	err = h.db.
 		Table("fcm_tokens").
@@ -204,10 +203,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
-		WithMsg(&messaging.Notification{
-			Title: "New Comment",
-			Body:  "New comment on your post",
-		}).
+		WithMsg(builders.CommentAddedToPost(req.Content)).
 		Send(*h.db)
 
 	response.New(http.StatusCreated).Send(c)
