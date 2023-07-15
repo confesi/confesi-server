@@ -51,6 +51,7 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
+	registeredFirebaseUserRoutes.PATCH("/hide", h.handleHidePost)
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
 	registeredFirebaseUserRoutes.GET("/your-posts", h.handleGetYourPosts)
 }

@@ -65,8 +65,13 @@ type CreateComment struct {
 }
 
 type HideComment struct {
-	// [required] the id of comment to delete
+	// [required] the id of comment to "delete"
 	CommentID uint `json:"comment_id" validate:"required"`
+}
+
+type HidePost struct {
+	// [required] the id of post to "delete"
+	PostID uint `json:"post_id" validate:"required"`
 }
 
 type InitialCommentQuery struct {
