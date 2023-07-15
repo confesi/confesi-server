@@ -186,7 +186,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 		if err == nil && len(tokens) > 0 {
 			fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
-				WithMsg(builders.VoteOnComment(vote.Vote)).
+				WithMsg(builders.VoteOnCommentNoti(vote.Vote)).
+				WithData(builders.VoteOnCommentData(*vote.CommentID)).
 				Send(*h.db)
 		}
 	} else if vote.PostID != nil {
@@ -201,7 +202,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 		if err == nil && len(tokens) > 0 {
 			fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
-				WithMsg(builders.VoteOnPost(vote.Vote)).
+				WithMsg(builders.VoteOnPostNoti(vote.Vote)).
+				WithData(builders.VoteOnCommentData(*vote.PostID)).
 				Send(*h.db)
 		}
 	}

@@ -205,7 +205,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if err == nil && len(postTokens) > 0 {
 		fcm.New(h.fb.MsgClient).
 			ToTokens(postTokens).
-			WithMsg(builders.CommentAddedToPost(req.Content)).
+			WithMsg(builders.CommentAddedToPostNoti(req.Content)).
+			WithData(builders.CommentAddedToPostData(comment.ID, req.PostID)).
 			Send(*h.db)
 	}
 
@@ -224,7 +225,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 		if err == nil && len(threadTokens) > 0 {
 			fcm.New(h.fb.MsgClient).
 				ToTokens(threadTokens).
-				WithMsg(builders.ThreadedCommentReply(req.Content)).
+				WithMsg(builders.ThreadedCommentReplyNoti(req.Content)).
+				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
 				Send(*h.db)
 		}
 
