@@ -122,7 +122,7 @@ type FcmPrivQuery struct {
 
 type FetchRanCrons struct {
 	// [required] type of cron to fetch
-	Type string `json:"type" validate:"required,oneof=clear_expired_fcm_tokens daily_hottest"`
+	Type string `json:"type" validate:"required,oneof=clear_expired_fcm_tokens daily_hottest all"`
 	// [required] timestamp of last viewed cron job content (ms since epoch)
 	Next NullableNext `json:"next"`
 }

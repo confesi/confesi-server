@@ -26,9 +26,15 @@ func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
 
 	fetchResults := FetchedCronJobs{}
 
-	err = h.db.
-		Where(req.Next.Cursor("created_at >")).
-		Order("created_at ASC").
+	query := h.db.
+		Where(req.Next.Cursor("created_at <"))
+
+	if req.Type != "all" {
+		query = query.Where("type = ?", req.Type)
+	}
+
+	err = query.
+		Order("created_at DESC").
 		Find(&fetchResults.Crons).
 		Limit(config.CronJobPageSize).
 		Error
