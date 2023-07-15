@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -86,6 +87,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)
+			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		tx.Rollback()
@@ -176,9 +178,26 @@ func (h *handler) handleCreate(c *gin.Context) {
 	err = tx.Create(&comment).
 		Error
 	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(err, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		switch pgErr.Code {
+
+		case "23503": // foreign key constraint violation
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("parent comment doesn't exist").Send(c)
+			return
+		default:
+			// some other postgreSQL error
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
 	}
 
 	// if all goes well, respond with a 201 & commit the transaction
