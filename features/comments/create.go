@@ -109,8 +109,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		// parent comment
 
 		err = tx.
-			Where("comments.id = ?", req.ParentCommentID).
-			Where("comments.post_id = ?", req.PostID).
+			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
 			Find(&parentComment).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
@@ -190,8 +189,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// send notifications
+	// to-send-to tokens
 	var tokens []string
+
+	// post owner
 	err = h.db.
 		Table("fcm_tokens").
 		Select("fcm_tokens.token").
@@ -201,10 +202,31 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	fcm.New(h.fb.MsgClient).
-		ToTokens(tokens).
-		WithMsg(builders.CommentAddedToPost(req.Content)).
-		Send(*h.db)
+	if err == nil {
+		fcm.New(h.fb.MsgClient).
+			ToTokens(tokens).
+			WithMsg(builders.CommentAddedToPost(req.Content)).
+			Send(*h.db)
+	}
+
+	// if threaded comment, parent comment
+	if req.ParentCommentID != nil {
+		err = h.db.
+			Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Joins("JOIN comments ON comments.user_id = users.id").
+			Where("comments.id = ?", req.ParentCommentID).
+			Pluck("fcm_tokens.token", &tokens).
+			Error
+		if err == nil {
+			fcm.New(h.fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.ThreadedCommentReply(req.Content)).
+				Send(*h.db)
+		}
+
+	}
 
 	response.New(http.StatusCreated).Send(c)
 }

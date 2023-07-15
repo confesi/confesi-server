@@ -133,11 +133,16 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 		sends += uint(batchResponse.SuccessCount)
 	}
 
-	result := db.Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(nil)
-	if result.Error != nil {
-		// Handle the error if the deletion fails
-		return result.Error, sends
+	if len(deadTokens) > 0 {
+		result := db.Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(nil)
+		if result.Error != nil {
+			// Handle the error if the deletion fails
+			return result.Error, sends
+		}
 	}
+
+	// log how many sends
+	logger.StdInfo(fmt.Sprintf("sent %d fcm messages successfully of %d attempts", sends, len(messages)))
 
 	return nil, sends
 }
