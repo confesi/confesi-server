@@ -2,36 +2,17 @@ package comments
 
 import (
 	"confesi/db"
+	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
 	"net/http"
 
+	"firebase.google.com/go/messaging"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-// func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint) (error, db.CommentIdentifier, bool) {
-// 	// check if user has already commented on this post with the same matchings
-// 	possilbeIdentifier := db.CommentIdentifier{}
-
-// 	query := tx.
-// 		Where("user_id = ?", UID).
-// 		Where("post_id = ?", postId).
-// 		Where("identifier = ?", identifier)
-
-// 	err := query.First(&possilbeIdentifier).Error
-// 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-// 		return serverError, possilbeIdentifier, false
-// 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-// 		// we have to create it and link the comment to this new one's ID
-// 		return nil, possilbeIdentifier, false
-// 	} else {
-// 		// we link the comment to the ID of the existing one
-// 		return nil, possilbeIdentifier, true
-// 	}
-// }
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
 func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (error, bool, uint) {
@@ -208,5 +189,26 @@ func (h *handler) handleCreate(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	// send notifications
+	// join `fcm_tokens` `users` and `posts` to get the tokens of the user who made this post
+	var tokens []string
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Joins("JOIN posts ON posts.user_id = users.id").
+		Where("posts.id = ?", req.PostID).
+		Pluck("fcm_tokens.token", &tokens).
+		Error
+
+	fcm.New(h.fb.MsgClient).
+		ToTokens(tokens).
+		WithMsg(&messaging.Notification{
+			Title: "New Comment",
+			Body:  "New comment on your post",
+		}).
+		Send(*h.db)
+
 	response.New(http.StatusCreated).Send(c)
 }

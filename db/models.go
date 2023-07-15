@@ -73,29 +73,21 @@ func (School) TableName() string {
 	return "schools"
 }
 
-// ! Very important some fields are NOT serialized (json:"-")
-type FcmPriv struct {
-	ID        uint       `gorm:"primaryKey" json:"id"`
-	UserID    string     `gorm:"column:user_id" json:"-"`
-	PostID    uint       `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
-	CommentID uint       `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
-	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-}
-
 func (FcmTopicPref) TableName() string {
 	return "fcm_topic_prefs"
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmTopicPref struct {
-	ID              uint   `gorm:"primaryKey" json:"id"`
-	UserID          string `gorm:"column:user_id" json:"-"`
-	DailyHottest    bool   `gorm:"column:daily_hottest" json:"daily_hottest"`
-	TrendingAll     bool   `gorm:"column:trending_all" json:"trending_all"`
-	TrendingHome    bool   `gorm:"column:trending_home" json:"trending_home"`
-	TrendingWatched bool   `gorm:"column:trending_watched" json:"trending_watched"`
-	NewFeatures     bool   `gorm:"column:new_features" json:"new_features"`
+	ID                    uint   `gorm:"primaryKey" json:"-"`
+	UserID                string `gorm:"column:user_id" json:"-"`
+	DailyHottest          bool   `gorm:"column:daily_hottest" json:"daily_hottest"`
+	Trending              bool   `gorm:"column:trending" json:"trending"`
+	RepliesToYourComments bool   `gorm:"column:replies_to_your_comments" json:"replies_to_your_comments"`
+	CommentsOnYourPosts   bool   `gorm:"column:comments_on_your_posts" json:"comments_on_your_posts"`
+	VotesOnYourComments   bool   `gorm:"column:votes_on_your_comments" json:"votes_on_your_comments"`
+	VotesOnYourPosts      bool   `gorm:"column:votes_on_your_posts" json:"votes_on_your_posts"`
+	QuotesOfYourPosts     bool   `gorm:"column:quotes_of_your_posts" json:"quotes_of_your_posts"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
@@ -107,9 +99,6 @@ type FcmToken struct {
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 }
 
-func (FcmPriv) TableName() string {
-	return "fcm_privs"
-}
 func (FcmToken) TableName() string {
 	return "fcm_tokens"
 }

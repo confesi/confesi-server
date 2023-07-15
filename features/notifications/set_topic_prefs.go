@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"confesi/db"
+	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -24,23 +25,27 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 		return
 	}
 
-	topicPrefs := db.FcmTopicPref{
-		UserID:          token.UID,
-		DailyHottest:    req.DailyHottest,
-		TrendingAll:     req.TrendingAll,
-		TrendingHome:    req.TrendingHome,
-		TrendingWatched: req.TrendingWatched,
-		NewFeatures:     req.NewFeatures,
+	topicPrefs := map[string]interface{}{
+		"daily_hottest":            req.DailyHottest,
+		"trending":                 req.Trending,
+		"replies_to_your_comments": req.RepliesToYourComments,
+		"comments_on_your_posts":   req.CommentsOnYourPosts,
+		"votes_on_your_comments":   req.VotesOnYourComments,
+		"votes_on_your_posts":      req.VotesOnYourPosts,
+		"quotes_of_your_posts":     req.QuotesOfYourPosts,
 	}
+
 	err = h.db.
-		Save(&topicPrefs).
+		Model(&db.FcmTopicPref{}).
 		Where("user_id = ?", token.UID).
+		Updates(topicPrefs).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	response.New(http.StatusOK).Val(topicPrefs).Send(c)
 
-	// todo: send FCM message to "sync" topic settings to all this user_id's devices
+	// don't catch errors, just hope it works, else, the user can manually sync
+	fcm.SendSyncNotification(*h.db, h.fb.MsgClient, token.UID, fcm.SyncTypeNotificationPrefs)
+	response.New(http.StatusOK).Send(c)
 }
