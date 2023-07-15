@@ -4,19 +4,14 @@ import (
 	"confesi/db"
 	"confesi/lib/response"
 	"confesi/lib/utils"
-	"confesi/lib/validation"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func (h *handler) handleGetTopicPrefs(c *gin.Context) {
-	// validate request
-	var req validation.FcmNotifictionPref
-	err := utils.New(c).Validate(&req)
-	if err != nil {
-		return
-	}
 
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
@@ -28,8 +23,12 @@ func (h *handler) handleGetTopicPrefs(c *gin.Context) {
 	err = h.db.
 		First(&topicPrefs, "user_id = ?", token.UID).
 		Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		response.New(http.StatusBadRequest).Err("no user found").Send(c)
 		return
 	}
 	response.New(http.StatusOK).Val(topicPrefs).Send(c)

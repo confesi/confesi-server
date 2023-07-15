@@ -29,8 +29,6 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
 
-	mux.PATCH("/sub", h.handleSubToPriv)
-	mux.PATCH("/unsub", h.handleUnsubToPriv)
 	mux.POST("/token", h.handleSetToken)
 	mux.DELETE("/token", h.handleRemoveToken)
 	mux.GET("/topic-prefs", h.handleGetTopicPrefs)

@@ -128,10 +128,12 @@ type FetchRanCrons struct {
 }
 
 type FcmNotifictionPref struct {
-	// true or falses, don't have "required" so that the zero-valuse are OK
-	DailyHottest    bool `json:"daily_hottest"`
-	TrendingAll     bool `json:"trending_all"`
-	TrendingHome    bool `json:"trending_home"`
-	TrendingWatched bool `json:"trending_watched"`
-	NewFeatures     bool `json:"new_features"`
+	// true or falses, don't have "required" so that the zero-valuse are OK with pointers
+	DailyHottest          *bool `json:"daily_hottest"`
+	Trending              *bool `json:"trending"`
+	RepliesToYourComments *bool `json:"replies_to_your_comments"`
+	CommentsOnYourPosts   *bool `json:"comments_on_your_posts"`
+	VotesOnYourComments   *bool `json:"votes_on_your_comments"`
+	VotesOnYourPosts      *bool `json:"votes_on_your_posts"`
+	QuotesOfYourPosts     *bool `json:"quotes_of_your_posts"`
 }
