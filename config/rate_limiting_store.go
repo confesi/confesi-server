@@ -1,14 +1,16 @@
 package config
 
 import (
-	"sync"
+	"confesi/lib/cache"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
-var store sync.Map
+var store *redis.Client
 
 func init() {
-	store = sync.Map{} // thread-safe sync map for holding rate limiting buckets
+	store = cache.New() // thread-safe sync map for holding rate limiting buckets
 }
 
 type Bucket struct {
@@ -17,6 +19,6 @@ type Bucket struct {
 	RefillInterval time.Duration
 }
 
-func StoreRef() *sync.Map {
-	return &store
+func StoreRef() *redis.Client {
+	return store
 }
