@@ -34,13 +34,9 @@ func CommentAddedToPost(comment string) *messaging.Notification {
 	}
 }
 
-func VoteOnComment(comment string, vote int) *messaging.Notification {
-	truncatedComment := comment
-	if len(comment) > truncationCommentLength {
-		truncatedComment = comment[:truncationCommentLength]
-	}
-	var emoji string
+func VoteOnComment(vote int) *messaging.Notification {
 	var voteString string
+	var emoji string
 	if vote > 0 {
 		emoji = "👍"
 		voteString = "upvoted"
@@ -49,18 +45,13 @@ func VoteOnComment(comment string, vote int) *messaging.Notification {
 		voteString = "downvoted"
 	}
 	return &messaging.Notification{
-		Title: "Someone " + voteString + " your comment",
-		Body:  emoji + " " + truncatedComment,
+		Title: emoji + " " + "Someone " + voteString + " your comment",
 	}
 }
 
-func VoteOnPost(comment string, vote int) *messaging.Notification {
-	truncatedComment := comment
-	if len(comment) > truncationCommentLength {
-		truncatedComment = comment[:truncationCommentLength]
-	}
-	var emoji string
+func VoteOnPost(vote int) *messaging.Notification {
 	var voteString string
+	var emoji string
 	if vote > 0 {
 		emoji = "👍"
 		voteString = "upvoted"
@@ -69,8 +60,7 @@ func VoteOnPost(comment string, vote int) *messaging.Notification {
 		voteString = "downvoted"
 	}
 	return &messaging.Notification{
-		Title: "Someone " + voteString + " your confession",
-		Body:  emoji + " " + truncatedComment,
+		Title: emoji + " " + "Someone " + voteString + " your confession",
 	}
 }
 

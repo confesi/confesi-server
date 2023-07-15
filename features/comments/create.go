@@ -189,8 +189,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// to-send-to tokens
-	var tokens []string
+	// to-send-to postTokens
+	var postTokens []string
 
 	// post owner
 	err = h.db.
@@ -198,30 +198,32 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Select("fcm_tokens.token").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
 		Joins("JOIN posts ON posts.user_id = users.id").
-		Where("posts.id = ?", req.PostID).
-		Pluck("fcm_tokens.token", &tokens).
+		Where("posts.id = ? AND users.id <> ?", req.PostID, token.UID).
+		Pluck("fcm_tokens.token", &postTokens).
 		Error
 
-	if err == nil {
+	if err == nil && len(postTokens) > 0 {
 		fcm.New(h.fb.MsgClient).
-			ToTokens(tokens).
+			ToTokens(postTokens).
 			WithMsg(builders.CommentAddedToPost(req.Content)).
 			Send(*h.db)
 	}
 
 	// if threaded comment, parent comment
 	if req.ParentCommentID != nil {
+		// to-send-to threadTokens
+		var threadTokens []string
 		err = h.db.
 			Table("fcm_tokens").
 			Select("fcm_tokens.token").
 			Joins("JOIN users ON users.id = fcm_tokens.user_id").
 			Joins("JOIN comments ON comments.user_id = users.id").
-			Where("comments.id = ?", req.ParentCommentID).
-			Pluck("fcm_tokens.token", &tokens).
+			Where("comments.id = ? AND users.id <> ?", req.ParentCommentID, token.UID).
+			Pluck("fcm_tokens.token", &threadTokens).
 			Error
-		if err == nil {
+		if err == nil && len(threadTokens) > 0 {
 			fcm.New(h.fb.MsgClient).
-				ToTokens(tokens).
+				ToTokens(threadTokens).
 				WithMsg(builders.ThreadedCommentReply(req.Content)).
 				Send(*h.db)
 		}
