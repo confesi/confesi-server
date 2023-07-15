@@ -1,11 +1,14 @@
 package notifications
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
 	fcm "confesi/lib/firebase_cloud_messaging"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +49,28 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 	}
 
 	// don't catch errors, just hope it works, else, the user can manually sync
-	fcm.SendSyncNotification(*h.db, h.fb.MsgClient, token.UID, fcm.SyncTypeNotificationPrefs)
+	var tokens []string
+
+	// Fetch user's tokens from the database
+	err = h.db.Table("users").
+		Select("fcm_tokens.token").
+		Joins("JOIN fcm_tokens ON fcm_tokens.user_id = users.id").
+		Where("users.id = ?", token.UID).
+		Pluck("fcm_tokens.token", &tokens).
+		Error
+
+	fmt.Println(tokens)
+
+	if err == nil && len(tokens) > 0 {
+		fcm.New(h.fb.MsgClient).
+			ToTokens(tokens).
+			WithData(builders.NotificationSettingsSyncData()).
+			Send(*h.db)
+
+	} else {
+		// handle the error if fetching tokens fails
+		logger.StdInfo(fmt.Sprintf("failed to send sync request for set topic prefs: %v", err))
+	}
+
 	response.New(http.StatusOK).Send(c)
 }

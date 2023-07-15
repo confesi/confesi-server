@@ -1,7 +1,6 @@
 package fcm
 
 import (
-	"confesi/config/builders"
 	"confesi/lib/logger"
 	"context"
 	"errors"
@@ -17,10 +16,6 @@ var (
 	NoReceivers               = errors.New("no receivers")
 	CantSendToTokensAndTopics = errors.New("can't send to both tokens and topics")
 	InvalidPayload            = errors.New("invalid payload")
-)
-
-const (
-	SyncTypeNotificationPrefs = "notification_prefs"
 )
 
 type Sender struct {
@@ -66,14 +61,16 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 		// Create messages for individual tokens
 		for _, token := range s.Tokens {
 			message := &messaging.Message{
+				FCMOptions: &messaging.FCMOptions{
+					AnalyticsLabel: "confesi",
+				},
 				Token:        token,
 				Data:         s.Data,
 				Notification: s.Notification,
-				Android: &messaging.AndroidConfig{
+				Android: &messaging.AndroidConfig{ // todo: Android CONFIG (content available, priority, etc)
 					Priority: "high", // default to high to get that sweet "ding"
 				},
-				APNS:    &messaging.APNSConfig{},
-				Webpush: &messaging.WebpushConfig{},
+				APNS: &messaging.APNSConfig{}, // todo: APNS CONFIG (content available, priority, etc)
 			}
 			messages = append(messages, message)
 		}
@@ -146,25 +143,4 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 	logger.StdInfo(fmt.Sprintf("sent %d fcm messages successfully of %d attempts", sends, len(messages)))
 
 	return nil, sends
-}
-
-// "Throw it at the mailbox and hope it gets delivered" approach; no error handling
-func SendSyncNotification(db gorm.DB, client *messaging.Client, user_id string, syncType string) {
-
-	var tokens []string
-
-	// Fetch user's tokens from the database
-	err := db.Table("users").
-		Select("fcm_tokens.token").
-		Joins("JOIN fcm_tokens ON fcm_tokens.user_id = users.id").
-		Where("users.id = ?", user_id).
-		Pluck("fcm_tokens.token", &tokens).
-		Error
-
-	if err != nil {
-		// handle the error if fetching tokens fails
-		logger.StdInfo(fmt.Sprintf("failed to send sync request for set topic prefs: %v", err))
-	}
-
-	New(client).ToTokens(tokens).WithData(builders.NotificationSettingsSyncData()).Send(db)
 }
