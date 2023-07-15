@@ -1,6 +1,7 @@
 package fcm
 
 import (
+	"confesi/config/builders"
 	"confesi/lib/logger"
 	"context"
 	"errors"
@@ -165,7 +166,5 @@ func SendSyncNotification(db gorm.DB, client *messaging.Client, user_id string, 
 		logger.StdInfo(fmt.Sprintf("failed to send sync request for set topic prefs: %v", err))
 	}
 
-	New(client).ToTokens(tokens).WithData(map[string]string{
-		"type": syncType,
-	}).Send(db)
+	New(client).ToTokens(tokens).WithData(builders.NotificationSettingsSyncData()).Send(db)
 }

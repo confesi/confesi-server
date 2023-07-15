@@ -12,7 +12,7 @@ const (
 	truncatedPostTitleAndBodyLength = 150
 )
 
-func ThreadedCommentReply(comment string) *messaging.Notification {
+func ThreadedCommentReplyNoti(comment string) *messaging.Notification {
 	truncatedComment := comment
 	if len(comment) > truncationCommentLength {
 		truncatedComment = comment[:truncationCommentLength]
@@ -23,7 +23,7 @@ func ThreadedCommentReply(comment string) *messaging.Notification {
 	}
 }
 
-func CommentAddedToPost(comment string) *messaging.Notification {
+func CommentAddedToPostNoti(comment string) *messaging.Notification {
 	truncatedComment := comment
 	if len(comment) > truncationCommentLength {
 		truncatedComment = comment[:truncationCommentLength]
@@ -34,7 +34,7 @@ func CommentAddedToPost(comment string) *messaging.Notification {
 	}
 }
 
-func VoteOnComment(vote int) *messaging.Notification {
+func VoteOnCommentNoti(vote int) *messaging.Notification {
 	var voteString string
 	var emoji string
 	if vote > 0 {
@@ -49,7 +49,7 @@ func VoteOnComment(vote int) *messaging.Notification {
 	}
 }
 
-func VoteOnPost(vote int) *messaging.Notification {
+func VoteOnPostNoti(vote int) *messaging.Notification {
 	var voteString string
 	var emoji string
 	if vote > 0 {
@@ -64,7 +64,7 @@ func VoteOnPost(vote int) *messaging.Notification {
 	}
 }
 
-func DailyHottestPosts(n int, date string) *messaging.Notification {
+func DailyHottestPostsNoti(n int, date string) *messaging.Notification {
 	var confessionWord string
 	if n == 1 {
 		confessionWord = "confession"
@@ -77,7 +77,7 @@ func DailyHottestPosts(n int, date string) *messaging.Notification {
 	}
 }
 
-func TrendingPost(post db.Post) *messaging.Notification {
+func TrendingPostNoti(post db.Post) *messaging.Notification {
 
 	truncatedContent := post.Title + "\n" + post.Content
 	if len(post.Content) > truncatedPostTitleAndBodyLength {
