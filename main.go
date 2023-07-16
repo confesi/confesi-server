@@ -7,6 +7,7 @@ import (
 	"confesi/features/feedback"
 	"confesi/features/notifications"
 	"confesi/features/posts"
+	"confesi/features/reports"
 	"confesi/features/saves"
 	"confesi/features/schools"
 	"confesi/features/user"
@@ -77,6 +78,7 @@ func main() {
 	feedback.Router(api.Group("/feedback"))
 	notifications.Router(api.Group("/notifications"))
 	user.Router(api.Group("/user"))
+	reports.Router(api.Group("/reports"))
 
 	// Start the CRON job scheduler
 	dailyHottestPosts.StartDailyHottestPostsCronJob()

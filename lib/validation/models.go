@@ -90,7 +90,7 @@ type RepliesCommentQuery struct {
 
 type FeedbackDetails struct {
 	// [required] feedback message
-	Message string `json:"message" validate:"required"`
+	Message string `json:"message" validate:"required,min=1,max=500"`
 	// [required] feedback type
 	Type string `json:"type" validate:"required"`
 }
@@ -141,4 +141,15 @@ type FcmNotifictionPref struct {
 	VotesOnYourComments   *bool `json:"votes_on_your_comments"`
 	VotesOnYourPosts      *bool `json:"votes_on_your_posts"`
 	QuotesOfYourPosts     *bool `json:"quotes_of_your_posts"`
+}
+
+type ReportQuery struct {
+	// [required] content id to report
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] report description
+	Description string `json:"description" validate:"required,min=1,max=500"`
+	// [required] report type
+	Type string `json:"type" validate:"required"`
 }

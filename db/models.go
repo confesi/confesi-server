@@ -330,8 +330,17 @@ type Feedback struct {
 	TypeID    uint       `gorm:"column:type_id" json:"type_id"` // references the feedback_type table
 }
 
-type FeedbackType struct {
+type ReportType struct {
 	ID   int    `gorm:"primary_key;column:id" json:"id"`
+	Type string `gorm:"column:type" json:"type"`
+}
+
+func (ReportType) TableName() string {
+	return "report_types"
+}
+
+type FeedbackType struct {
+	ID   int    `gorm:"primary_key;column:id" json:"-"`
 	Type string `gorm:"column:type" json:"type"`
 }
 
@@ -341,11 +350,19 @@ func (FeedbackType) TableName() string {
 
 // ! Important not to serialize some fields!!
 type Report struct {
-	UserID      string `gorm:"column:user_id" json:"-"`
-	Description string `gorm:"column:description" json:"description"`
-	Type        string `gorm:"type" json:"type"`
-	Result      string `gorm:"column:result" json:"result"`
-	UserAlerted bool   `gorm:"column:user_alerted" json:"user_alerted"`
+	ID          uint        `gorm:"primaryKey" json:"id"`
+	CreatedAt   TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt   TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	ReportedBy  string      `gorm:"column:reported_by" json:"-"`
+	Description string      `gorm:"column:description" json:"description"`
+	TypeID      uint        `gorm:"column:type_id" json:"type_id"` // references the report_type table
+	ReportType  *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
+	Result      string      `gorm:"column:result" json:"result"`
+	UserAlerted bool        `gorm:"column:user_alerted" json:"user_alerted"`
+	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"-"`    // Either one of these FKs can be null, but the constraint
+	Post        *Post       `gorm:"foreignKey:PostID" json:"post"`         // is that exactly one of them is a valid FK
+	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"-"` // is that exactly one of them is a valid FK
+	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment"`   // is that exactly one of them is a valid FK
 }
 
 type CronJob struct {
