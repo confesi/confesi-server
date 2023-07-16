@@ -12,6 +12,7 @@ import (
 
 var (
 	serverError = errors.New("server error")
+	notFound    = errors.New("not found")
 )
 
 type handler struct {
@@ -31,4 +32,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.GET("/crons", h.handleGetDailyHottestCrons)
 	mux.GET("/feedback", h.handleListFeedback)
 	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
+	mux.GET("/reports", h.handleGetReportById)
 }

@@ -355,14 +355,14 @@ type Report struct {
 	UpdatedAt   TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	ReportedBy  string      `gorm:"column:reported_by" json:"-"`
 	Description string      `gorm:"column:description" json:"description"`
-	TypeID      uint        `gorm:"column:type_id" json:"type_id"` // references the report_type table
+	TypeID      uint        `gorm:"column:type_id" json:"-"` // references the report_type table
 	ReportType  *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
 	Result      string      `gorm:"column:result" json:"result"`
 	UserAlerted bool        `gorm:"column:user_alerted" json:"user_alerted"`
-	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"-"`    // Either one of these FKs can be null, but the constraint
-	Post        *Post       `gorm:"foreignKey:PostID" json:"post"`         // is that exactly one of them is a valid FK
-	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"-"` // is that exactly one of them is a valid FK
-	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment"`   // is that exactly one of them is a valid FK
+	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"post_id,omitempty"`       // Use "omitempty" here
+	Post        *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"`                  // Use "omitempty" here
+	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"comment_id,omitempty"` // Use "omitempty" here
+	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"`            // Use "omitempty" here
 }
 
 type CronJob struct {
