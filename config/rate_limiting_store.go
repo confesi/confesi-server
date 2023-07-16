@@ -10,7 +10,7 @@ import (
 var store *redis.Client
 
 func init() {
-	store = cache.New() // thread-safe sync map for holding rate limiting buckets
+	store = cache.New() // Redis client
 }
 
 type Bucket struct {

@@ -29,12 +29,14 @@ func RateLimit(c *gin.Context) {
 	clientIP := c.ClientIP()
 	ctx := c.Request.Context()
 
-	counter, err := store.Get(ctx, clientIP).Int64()
+	idSessionKey := config.RedisRateLimitingCache + ":" + clientIP
+
+	counter, err := store.Get(ctx, idSessionKey).Int64()
 
 	// Check whether a cache exists or not
 	if err == redis.Nil {
 		//If no cache exists create one
-		err = store.Set(ctx, clientIP, 1, unit).Err()
+		err = store.Set(ctx, idSessionKey, 0, unit).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Send(c)
 			return
@@ -50,7 +52,7 @@ func RateLimit(c *gin.Context) {
 	c.Header("X-RateLimit-Remaining", fmt.Sprint(tokensPerUnit-counter))
 
 	// time until next refill
-	ttlResult := store.TTL(ctx, clientIP)
+	ttlResult := store.TTL(ctx, idSessionKey)
 	if ttlResult.Err() != nil {
 		response.New(http.StatusInternalServerError).Send(c)
 		return
@@ -63,11 +65,11 @@ func RateLimit(c *gin.Context) {
 		return
 	}
 
-	c.Header("X-RateLimit-Reset", fmt.Sprint(ttl.String())) // seconds until next refill
+	c.Header("X-RateLimit-Reset", fmt.Sprint(ttl.Seconds())) // seconds until next refill
 
 	// Determine whether or not user has exceeded the limit
 	if counter < tokensPerUnit {
-		store.Incr(ctx, clientIP).Result()
+		store.Incr(ctx, idSessionKey).Result()
 		c.Next()
 	} else {
 		response.New(http.StatusTooManyRequests).
