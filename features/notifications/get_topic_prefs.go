@@ -28,7 +28,7 @@ func (h *handler) handleGetTopicPrefs(c *gin.Context) {
 		return
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		response.New(http.StatusBadRequest).Err("no user found").Send(c)
+		response.New(http.StatusBadRequest).Err("no entry found for user").Send(c)
 		return
 	}
 	response.New(http.StatusOK).Val(topicPrefs).Send(c)
