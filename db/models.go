@@ -3,12 +3,45 @@ package db
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"gorm.io/datatypes"
 
 	"time"
 )
+
+func ModLevelToString(modLevel uint) (error, string) {
+	switch modLevel {
+	case ModEnableID:
+		return nil, ModEnable
+	case ModLimitedID:
+		return nil, ModLimited
+	case ModBannedID:
+		return nil, ModBanned
+	default:
+		return errors.New("invalid mod level"), ""
+	}
+}
+
+func YearOfStudyToString(yearOfStudy uint) (error, string) {
+	switch yearOfStudy {
+	case YearOfStudyOneID:
+		return nil, YearOfStudyOne
+	case YearOfStudyTwoID:
+		return nil, YearOfStudyTwo
+	case YearOfStudyThreeID:
+		return nil, YearOfStudyThree
+	case YearOfStudyFourID:
+		return nil, YearOfStudyFour
+	case YearOfStudyAlumniGraduateID:
+		return nil, YearOfStudyAlumniGraduate
+	case YearOfStudyHiddenID:
+		return nil, YearOfStudyHidden
+	default:
+		return errors.New("invalid year of study"), ""
+	}
+}
 
 const (
 	ModEnableID = 1
@@ -47,7 +80,7 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            uint    `gorm:"primaryKey" json:"id"`
+	ID            uint    `gorm:"primaryKey" json:"-"`
 	Name          string  `json:"name"`
 	Abbr          string  `json:"abbr"`
 	Lat           float32 `json:"lat"`
@@ -57,7 +90,7 @@ type School struct {
 }
 
 type Faculty struct {
-	ID      int    `gorm:"primaryKey" json:"id"`
+	ID      int    `gorm:"primaryKey" json:"-"`
 	Faculty string `gorm:"column:faculty" json:"faculty"`
 }
 
@@ -73,14 +106,48 @@ func (School) TableName() string {
 	return "schools"
 }
 
+func (FcmTopicPref) TableName() string {
+	return "fcm_topic_prefs"
+}
+
+// ! Very important some fields are NOT serialized (json:"-")
+type FcmTopicPref struct {
+	ID                    uint   `gorm:"primaryKey" json:"-"`
+	UserID                string `gorm:"column:user_id" json:"-"`
+	DailyHottest          bool   `gorm:"column:daily_hottest" json:"daily_hottest"`
+	Trending              bool   `gorm:"column:trending" json:"trending"`
+	RepliesToYourComments bool   `gorm:"column:replies_to_your_comments" json:"replies_to_your_comments"`
+	CommentsOnYourPosts   bool   `gorm:"column:comments_on_your_posts" json:"comments_on_your_posts"`
+	VotesOnYourComments   bool   `gorm:"column:votes_on_your_comments" json:"votes_on_your_comments"`
+	VotesOnYourPosts      bool   `gorm:"column:votes_on_your_posts" json:"votes_on_your_posts"`
+	QuotesOfYourPosts     bool   `gorm:"column:quotes_of_your_posts" json:"quotes_of_your_posts"`
+}
+
+// ! Very important some fields are NOT serialized (json:"-")
+type FcmToken struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+	Token     string     `gorm:"column:token" json:"token"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+func (FcmToken) TableName() string {
+	return "fcm_tokens"
+}
+
 type User struct {
-	ID          string     `gorm:"primaryKey" json:"id"`
+	ID          string     `gorm:"primaryKey" json:"-"`
 	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudy uint8      `gorm:"column:year_of_study" json:"year_of_study"`
-	FacultyID   uint       `gorm:"column:faculty_id" json:"faculty_id"`
-	SchoolID    uint       `gorm:"column:school_id" json:"school_id"`
-	ModID       uint       `gorm:"column:mod_id" json:"mod_id"`
+	YearOfStudy uint8      `gorm:"column:year_of_study" json:"-"`
+	StudyYear   string     `gorm:"column:study_year" json:"study_year"`
+	FacultyID   uint       `gorm:"column:faculty_id" json:"-"`
+	Faculty     Faculty    `gorm:"foreignKey:FacultyID" json:"faculty"`
+	SchoolID    uint       `gorm:"column:school_id" json:"-"`
+	School      School     `gorm:"foreignKey:SchoolID" json:"school"`
+	ModID       uint       `gorm:"column:mod_id" json:"-"`
+	Mod         string     `gorm:"column:mod" json:"mod"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
@@ -234,8 +301,8 @@ type Vote struct {
 	ID        uint
 	Vote      int    `db:"vote" json:"vote"`
 	UserID    string `db:"user_id" json:"-"`
-	PostID    uint   `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
-	CommentID uint   `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
+	PostID    *uint  `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
+	CommentID *uint  `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
 }
 
 // ! Important not to serialize some fields!!
@@ -281,11 +348,13 @@ type Report struct {
 	UserAlerted bool   `gorm:"column:user_alerted" json:"user_alerted"`
 }
 
-type DailyHottestCron struct {
-	ID              uint           `gorm:"primaryKey" json:"id"`
-	SuccessfullyRan datatypes.Date `gorm:"column:successfully_ran" json:"successfully_ran"`
+type CronJob struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt TimeMicros     `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	Ran       datatypes.Date `gorm:"column:ran" json:"ran"`
+	Type      string         `gorm:"column:type" json:"type"`
 }
 
-func (DailyHottestCron) TableName() string {
-	return "daily_hottest_cron_jobs"
+func (CronJob) TableName() string {
+	return "cron_jobs"
 }

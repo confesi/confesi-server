@@ -1,6 +1,7 @@
 package votes
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/algorithm"
 	"confesi/lib/response"
@@ -10,6 +11,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	fcm "confesi/lib/firebase_cloud_messaging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -34,7 +37,7 @@ func voteToColumnName(vote int) (string, error) {
 	}
 }
 
-func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error {
+func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid string) error {
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
@@ -48,9 +51,9 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 
 	var content contentMatcher
 	if contentType == "comment" {
-		content = contentMatcher{fieldName: "comment_id", id: &vote.CommentID, model: &db.Comment{}}
+		content = contentMatcher{fieldName: "comment_id", id: vote.CommentID, model: &db.Comment{}}
 	} else if contentType == "post" {
-		content = contentMatcher{fieldName: "post_id", id: &vote.PostID, model: &db.Post{}}
+		content = contentMatcher{fieldName: "post_id", id: vote.PostID, model: &db.Post{}}
 	} else {
 		tx.Rollback()
 		return invalidValue
@@ -163,6 +166,48 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string) error
 		tx.Rollback()
 		return serverError
 	}
+
+	// send fcm notifications
+	if vote.Vote == 0 {
+		return nil
+	}
+
+	// Retrieve tokens for either comment or post
+	var tokens []string
+	if vote.CommentID != nil {
+		err = h.db.
+			Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Joins("JOIN comments ON comments.user_id = users.id").
+			Where("comments.id = ? AND users.id <> ?", vote.CommentID, uid).
+			Pluck("fcm_tokens.token", &tokens).
+			Error
+		if err == nil && len(tokens) > 0 {
+			fcm.New(h.fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.VoteOnCommentNoti(vote.Vote, votes.Upvote-votes.Downvote)).
+				WithData(builders.VoteOnCommentData(*vote.CommentID)).
+				Send(*h.db)
+		}
+	} else if vote.PostID != nil {
+		err = h.db.
+			Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Joins("JOIN posts ON posts.user_id = users.id").
+			Where("posts.id = ? AND users.id <> ?", vote.PostID, uid).
+			Pluck("fcm_tokens.token", &tokens).
+			Error
+		if err == nil && len(tokens) > 0 {
+			fcm.New(h.fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.VoteOnPostNoti(vote.Vote, votes.Upvote-votes.Downvote)).
+				WithData(builders.VoteOnCommentData(*vote.PostID)).
+				Send(*h.db)
+		}
+	}
+
 	return nil
 }
 
@@ -184,16 +229,16 @@ func (h *handler) handleVote(c *gin.Context) {
 	vote.UserID = token.UID
 	vote.Vote = int(*req.Value)
 	if req.ContentType == "post" {
-		vote.PostID = req.ContentID
+		vote.PostID = &req.ContentID
 	} else if req.ContentType == "comment" {
-		vote.CommentID = req.ContentID
+		vote.CommentID = &req.ContentID
 	} else {
 		// should never happen with validated struct, but to be defensive
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("invalid content type")).Send(c)
 		return
 	}
 
-	if err := h.doVote(c, vote, req.ContentType); err != nil {
+	if err := h.doVote(c, vote, req.ContentType, token.UID); err != nil {
 		// errors are always server error if they arise from here
 		switch err {
 		case invalidValue:

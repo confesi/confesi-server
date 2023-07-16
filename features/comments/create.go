@@ -1,7 +1,9 @@
 package comments
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
+	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -9,29 +11,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
-
-// func doesIdentifierExist(tx *gorm.DB, UID string, postId uint, identifier *uint) (error, db.CommentIdentifier, bool) {
-// 	// check if user has already commented on this post with the same matchings
-// 	possilbeIdentifier := db.CommentIdentifier{}
-
-// 	query := tx.
-// 		Where("user_id = ?", UID).
-// 		Where("post_id = ?", postId).
-// 		Where("identifier = ?", identifier)
-
-// 	err := query.First(&possilbeIdentifier).Error
-// 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-// 		return serverError, possilbeIdentifier, false
-// 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-// 		// we have to create it and link the comment to this new one's ID
-// 		return nil, possilbeIdentifier, false
-// 	} else {
-// 		// we link the comment to the ID of the existing one
-// 		return nil, possilbeIdentifier, true
-// 	}
-// }
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
 func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (error, bool, uint) {
@@ -105,6 +87,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)
+			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		tx.Rollback()
@@ -128,8 +111,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		// parent comment
 
 		err = tx.
-			Where("comments.id = ?", req.ParentCommentID).
-			Where("comments.post_id = ?", req.PostID).
+			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
 			Find(&parentComment).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
@@ -196,9 +178,26 @@ func (h *handler) handleCreate(c *gin.Context) {
 	err = tx.Create(&comment).
 		Error
 	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(err, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		switch pgErr.Code {
+
+		case "23503": // foreign key constraint violation
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("parent comment doesn't exist").Send(c)
+			return
+		default:
+			// some other postgreSQL error
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
 	}
 
 	// if all goes well, respond with a 201 & commit the transaction
@@ -208,5 +207,49 @@ func (h *handler) handleCreate(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	// to-send-to postTokens
+	var postTokens []string
+
+	// post owner
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Joins("JOIN posts ON posts.user_id = users.id").
+		Where("posts.id = ? AND users.id <> ?", req.PostID, token.UID).
+		Pluck("fcm_tokens.token", &postTokens).
+		Error
+
+	if err == nil && len(postTokens) > 0 {
+		fcm.New(h.fb.MsgClient).
+			ToTokens(postTokens).
+			WithMsg(builders.CommentAddedToPostNoti(req.Content)).
+			WithData(builders.CommentAddedToPostData(comment.ID, req.PostID)).
+			Send(*h.db)
+	}
+
+	// if threaded comment, parent comment
+	if req.ParentCommentID != nil {
+		// to-send-to threadTokens
+		var threadTokens []string
+		err = h.db.
+			Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Joins("JOIN comments ON comments.user_id = users.id").
+			Where("comments.id = ? AND users.id <> ?", req.ParentCommentID, token.UID).
+			Pluck("fcm_tokens.token", &threadTokens).
+			Error
+		if err == nil && len(threadTokens) > 0 {
+			fcm.New(h.fb.MsgClient).
+				ToTokens(threadTokens).
+				WithMsg(builders.ThreadedCommentReplyNoti(req.Content)).
+				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
+				Send(*h.db)
+		}
+
+	}
+
 	response.New(http.StatusCreated).Send(c)
 }

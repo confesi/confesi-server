@@ -5,11 +5,14 @@ import (
 	"confesi/features/auth"
 	"confesi/features/comments"
 	"confesi/features/feedback"
+	"confesi/features/notifications"
 	"confesi/features/posts"
 	"confesi/features/saves"
 	"confesi/features/schools"
+	"confesi/features/user"
 	"confesi/features/votes"
-	"confesi/lib/cron"
+	"confesi/lib/cronJobs/clearExpiredFcmTokens"
+	"confesi/lib/cronJobs/dailyHottestPosts"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -72,9 +75,12 @@ func main() {
 	saves.Router(api.Group("/saves"))
 	admin.Router(api.Group("/admin"))
 	feedback.Router(api.Group("/feedback"))
+	notifications.Router(api.Group("/notifications"))
+	user.Router(api.Group("/user"))
 
 	// Start the CRON job scheduler
-	cron.StartDailyHottestPostsCronJob()
+	dailyHottestPosts.StartDailyHottestPostsCronJob()
+	clearExpiredFcmTokens.StartClearExpiredFcmTokensCronJob()
 
 	// Start the server
 	r.Run(fmt.Sprintf(":%s", port))

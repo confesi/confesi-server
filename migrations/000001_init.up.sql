@@ -8,7 +8,6 @@ BEGIN;
         (1, 'enabled'),
         (2, 'banned'),
         (3, 'limited');
-    
 
     CREATE TABLE schools (
         id SERIAL PRIMARY KEY UNIQUE NOT NULL,

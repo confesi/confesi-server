@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"confesi/lib/cronJobs/dailyHottestPosts"
+	"confesi/lib/cronJobs/clearExpiredFcmTokens"
 	"confesi/lib/response"
 	"net/http"
 	"time"
@@ -9,8 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Attempts to execute the cron job once, for the specified date, without retries.
-func (h *handler) handleManuallyTriggerDailyHottestCron(c *gin.Context) {
+// Attempts to execute the cron job once, without retries.
+func (h *handler) handleManuallyTriggerClearExpiredFcmTokens(c *gin.Context) {
+
 	dateStr := c.Query("day")
 
 	// Parse the date string into a time.Time value
@@ -19,7 +20,7 @@ func (h *handler) handleManuallyTriggerDailyHottestCron(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("invalid date format").Send(c)
 		return
 	}
-	err = dailyHottestPosts.DoDailyHottestJob(date)
+	err = clearExpiredFcmTokens.DoClearExpiredFcmTokenJob(date)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return

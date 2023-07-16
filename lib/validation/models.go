@@ -65,8 +65,13 @@ type CreateComment struct {
 }
 
 type HideComment struct {
-	// [required] the id of comment to delete
+	// [required] the id of comment to "delete"
 	CommentID uint `json:"comment_id" validate:"required"`
+}
+
+type HidePost struct {
+	// [required] the id of post to "delete"
+	PostID uint `json:"post_id" validate:"required"`
 }
 
 type InitialCommentQuery struct {
@@ -106,4 +111,34 @@ type YourPostsQuery struct {
 type YourCommentsQuery struct {
 	// [required] timestamp of last viewed comment content (ms since epoch)
 	Next NullableNext `json:"next"`
+}
+
+type FcmTokenQuery struct {
+	// [required] fcm token
+	Token string `json:"token" validate:"required"`
+}
+
+type FcmPrivQuery struct {
+	// [required] fcm priv content id
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+}
+
+type FetchRanCrons struct {
+	// [required] type of cron to fetch
+	Type string `json:"type" validate:"required,oneof=clear_expired_fcm_tokens daily_hottest all"`
+	// [required] timestamp of last viewed cron job content (ms since epoch)
+	Next NullableNext `json:"next"`
+}
+
+type FcmNotifictionPref struct {
+	// true or falses, don't have "required" so that the zero-valuse are OK with pointers
+	DailyHottest          *bool `json:"daily_hottest"`
+	Trending              *bool `json:"trending"`
+	RepliesToYourComments *bool `json:"replies_to_your_comments"`
+	CommentsOnYourPosts   *bool `json:"comments_on_your_posts"`
+	VotesOnYourComments   *bool `json:"votes_on_your_comments"`
+	VotesOnYourPosts      *bool `json:"votes_on_your_posts"`
+	QuotesOfYourPosts     *bool `json:"quotes_of_your_posts"`
 }
