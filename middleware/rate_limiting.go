@@ -4,11 +4,11 @@ import (
 	"confesi/config"
 	"confesi/lib/response"
 	"fmt"
-	"math"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 )
 
 const (
@@ -24,48 +24,52 @@ const (
 //
 // Includes headers to let the user know how many requests they have left and when the next refill is. Unit: seconds.
 func RateLimit(c *gin.Context) {
-	refillFreq := unit // refill tokens every unit, aka, you have n tokens per unit to use
 
 	store := config.StoreRef()
-
 	clientIP := c.ClientIP()
+	ctx := c.Request.Context()
 
-	bucketValue, ok := store.Load(clientIP)
-	var bucket *config.Bucket
-	if ok {
-		bucket = bucketValue.(*config.Bucket)
-	} else {
-		bucket = &config.Bucket{
-			Tokens:         tokensPerUnit,
-			LastRefill:     time.Now(),
-			RefillInterval: unit,
+	idSessionKey := config.RedisRateLimitingCache + ":" + clientIP
+
+	counter, err := store.Get(ctx, idSessionKey).Int64()
+
+	// Check whether a cache exists or not
+	if err == redis.Nil {
+		//If no cache exists create one
+		err = store.Set(ctx, idSessionKey, 0, unit).Err()
+		if err != nil {
+			response.New(http.StatusInternalServerError).Send(c)
+			return
 		}
-		store.Store(clientIP, bucket)
-	}
-
-	// clean up expired entries if they've been expired for more than 2 times the time unit
-	store.Range(func(key, value interface{}) bool {
-		ip := key.(string)
-		entry := value.(*config.Bucket)
-		if time.Since(entry.LastRefill) > 2*unit {
-			store.Delete(ip)
-		}
-		return true
-	})
-
-	// refill the tokens for a time interval if a new time window has started
-	if time.Since(bucket.LastRefill) >= refillFreq {
-		bucket.Tokens = tokensPerUnit
-		bucket.LastRefill = time.Now()
+		counter = 1
+	} else if err != nil {
+		response.New(http.StatusInternalServerError).Send(c)
+		return
 	}
 
 	// set headers to let the user know know metadata about their rate limit
 	c.Header("X-RateLimit-Limit", fmt.Sprint(tokensPerUnit))
-	c.Header("X-RateLimit-Remaining", fmt.Sprint(bucket.Tokens))
-	c.Header("X-RateLimit-Reset", fmt.Sprint(math.Round((refillFreq - time.Since(bucket.LastRefill)).Seconds()))) // seconds until next refill
+	c.Header("X-RateLimit-Remaining", fmt.Sprint(tokensPerUnit-counter))
 
-	if bucket.Tokens >= 1 {
-		bucket.Tokens--
+	// time until next refill
+	ttlResult := store.TTL(ctx, idSessionKey)
+	if ttlResult.Err() != nil {
+		response.New(http.StatusInternalServerError).Send(c)
+		return
+	}
+
+	// Retrieve the time left from the result
+	ttl, err := ttlResult.Result()
+	if err != nil {
+		response.New(http.StatusInternalServerError).Send(c)
+		return
+	}
+
+	c.Header("X-RateLimit-Reset", fmt.Sprint(ttl.Seconds())) // seconds until next refill
+
+	// Determine whether or not user has exceeded the limit
+	if counter < tokensPerUnit {
+		store.Incr(ctx, idSessionKey).Result()
 		c.Next()
 	} else {
 		response.New(http.StatusTooManyRequests).
