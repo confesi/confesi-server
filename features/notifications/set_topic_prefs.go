@@ -28,30 +28,60 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 		return
 	}
 
-	topicPrefs := map[string]interface{}{
-		"daily_hottest":            req.DailyHottest,
-		"trending":                 req.Trending,
-		"replies_to_your_comments": req.RepliesToYourComments,
-		"comments_on_your_posts":   req.CommentsOnYourPosts,
-		"votes_on_your_comments":   req.VotesOnYourComments,
-		"votes_on_your_posts":      req.VotesOnYourPosts,
-		"quotes_of_your_posts":     req.QuotesOfYourPosts,
+	// first or create the FcmTopicPref record for the user
+	topicPref := db.FcmTopicPref{
+		UserID: token.UID,
 	}
 
+	// perform a FirstOrCreate to check if the record exists
 	err = h.db.
-		Model(&db.FcmTopicPref{}).
-		Where("user_id = ?", token.UID).
-		Updates(topicPrefs).
+		Where(&db.FcmTopicPref{UserID: token.UID}).
+		Attrs(&topicPref).
+		FirstOrCreate(&topicPref).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
-	// don't catch errors, just hope it works, else, the user can manually sync
+	// check if any of the fields have changed
+	changed := false
+	if topicPref.DailyHottest != *req.DailyHottest ||
+		topicPref.Trending != *req.Trending ||
+		topicPref.RepliesToYourComments != *req.RepliesToYourComments ||
+		topicPref.CommentsOnYourPosts != *req.CommentsOnYourPosts ||
+		topicPref.VotesOnYourComments != *req.VotesOnYourComments ||
+		topicPref.VotesOnYourPosts != *req.VotesOnYourPosts ||
+		topicPref.QuotesOfYourPosts != *req.QuotesOfYourPosts {
+		changed = true
+	}
+
+	// update the prefs with the new values
+	topicPref.DailyHottest = *req.DailyHottest
+	topicPref.Trending = *req.Trending
+	topicPref.RepliesToYourComments = *req.RepliesToYourComments
+	topicPref.CommentsOnYourPosts = *req.CommentsOnYourPosts
+	topicPref.VotesOnYourComments = *req.VotesOnYourComments
+	topicPref.VotesOnYourPosts = *req.VotesOnYourPosts
+	topicPref.QuotesOfYourPosts = *req.QuotesOfYourPosts
+
+	// save the record (create or update)
+	err = h.db.Save(&topicPref).Error
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// if nothing changed, don't send a sync request
+	if !changed {
+		response.New(http.StatusOK).Send(c)
+		return
+	}
+
+	// don't catch errors, just hope it works; the user can manually sync if needed
 	var tokens []string
 
-	// Fetch user's tokens from the database
+	// fetch user's tokens from the database
 	err = h.db.Table("users").
 		Select("fcm_tokens.token").
 		Joins("JOIN fcm_tokens ON fcm_tokens.user_id = users.id").
@@ -59,16 +89,13 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	fmt.Println(tokens)
-
 	if err == nil && len(tokens) > 0 {
 		fcm.New(h.fb.MsgClient).
 			ToTokens(tokens).
 			WithData(builders.NotificationSettingsSyncData()).
 			Send(*h.db)
-
-	} else {
-		// handle the error if fetching tokens fails
+	} else if err != nil {
+		// "handle" the error if fetching tokens fails
 		logger.StdInfo(fmt.Sprintf("failed to send sync request for set topic prefs: %v", err))
 	}
 

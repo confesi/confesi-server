@@ -3,12 +3,45 @@ package db
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"gorm.io/datatypes"
 
 	"time"
 )
+
+func ModLevelToString(modLevel uint) (error, string) {
+	switch modLevel {
+	case ModEnableID:
+		return nil, ModEnable
+	case ModLimitedID:
+		return nil, ModLimited
+	case ModBannedID:
+		return nil, ModBanned
+	default:
+		return errors.New("invalid mod level"), ""
+	}
+}
+
+func YearOfStudyToString(yearOfStudy uint) (error, string) {
+	switch yearOfStudy {
+	case YearOfStudyOneID:
+		return nil, YearOfStudyOne
+	case YearOfStudyTwoID:
+		return nil, YearOfStudyTwo
+	case YearOfStudyThreeID:
+		return nil, YearOfStudyThree
+	case YearOfStudyFourID:
+		return nil, YearOfStudyFour
+	case YearOfStudyAlumniGraduateID:
+		return nil, YearOfStudyAlumniGraduate
+	case YearOfStudyHiddenID:
+		return nil, YearOfStudyHidden
+	default:
+		return errors.New("invalid year of study"), ""
+	}
+}
 
 const (
 	ModEnableID = 1
@@ -47,7 +80,7 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            uint    `gorm:"primaryKey" json:"id"`
+	ID            uint    `gorm:"primaryKey" json:"-"`
 	Name          string  `json:"name"`
 	Abbr          string  `json:"abbr"`
 	Lat           float32 `json:"lat"`
@@ -57,7 +90,7 @@ type School struct {
 }
 
 type Faculty struct {
-	ID      int    `gorm:"primaryKey" json:"id"`
+	ID      int    `gorm:"primaryKey" json:"-"`
 	Faculty string `gorm:"column:faculty" json:"faculty"`
 }
 
@@ -104,14 +137,17 @@ func (FcmToken) TableName() string {
 }
 
 type User struct {
-	ID                   string     `gorm:"primaryKey" json:"-"`
-	CreatedAt            TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt            TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudy          uint8      `gorm:"column:year_of_study" json:"year_of_study"`
-	FacultyID            uint       `gorm:"column:faculty_id" json:"faculty_id"`
-	SchoolID             uint       `gorm:"column:school_id" json:"school_id"`
-	ModID                uint       `gorm:"column:mod_id" json:"mod_id"`
-	NotificationsEnabled bool       `gorm:"column:notifications_enabled" json:"notifications_enabled"`
+	ID          string     `gorm:"primaryKey" json:"-"`
+	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	YearOfStudy uint8      `gorm:"column:year_of_study" json:"-"`
+	StudyYear   string     `gorm:"column:study_year" json:"study_year"`
+	FacultyID   uint       `gorm:"column:faculty_id" json:"-"`
+	Faculty     Faculty    `gorm:"foreignKey:FacultyID" json:"faculty"`
+	SchoolID    uint       `gorm:"column:school_id" json:"-"`
+	School      School     `gorm:"foreignKey:SchoolID" json:"school"`
+	ModID       uint       `gorm:"column:mod_id" json:"-"`
+	Mod         string     `gorm:"column:mod" json:"mod"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
