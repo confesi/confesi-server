@@ -16,6 +16,7 @@ import (
 )
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
+
 func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (error, bool, uint) {
 	comment := db.Comment{}
 	err := tx.

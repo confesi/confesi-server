@@ -13,6 +13,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//	CreatePost godoc
+//
+//	@Summary		Create a Post.
+//	@Description	Create a post with the given title and body.
+//	@Tags			Posts
+//	@Accept			application/json
+//	@Produce		application/json
+//
+// @Security BearerAuth
+//
+//	@Param			Body	body		string	true	"The title and body of the post"	SchemaExample({\n "title": "My Title",\n "body": "My Body"\n})
+//
+//	@Success		200		{string}	string	"ok"
+//	@Failure		500		{object}	string	"server error"
+//
+//	@Router			/posts/create [post]
 func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token) error {
 	// start a transaction
 	tx := h.db.Begin()

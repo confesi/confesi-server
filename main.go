@@ -40,14 +40,18 @@ func init() {
 	}
 }
 
-// @title           Confesi dev-only API docs
-// @version         1.0
-
-// @host      localhost:8080
-// @BasePath  /api/v1
-
-// @externalDocs.description  GitHub
-// @externalDocs.url          https://github.com/mattrltrent/confesi-server
+// @title						Confesi dev-only API docs
+// @version					1.0
+// @host						localhost:8080
+// @BasePath					/api/v1
+//
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @Security BearerAuth
+//
+// @externalDocs.description	GitHub
+// @externalDocs.url			https://github.com/mattrltrent/confesi-server
 func main() {
 	r := gin.Default()
 
