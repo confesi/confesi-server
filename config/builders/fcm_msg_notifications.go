@@ -34,7 +34,7 @@ func CommentAddedToPostNoti(comment string) *messaging.Notification {
 	}
 }
 
-func VoteOnCommentNoti(vote int) *messaging.Notification {
+func VoteOnCommentNoti(vote int, totalVotes int) *messaging.Notification {
 	var voteString string
 	var emoji string
 	if vote > 0 {
@@ -46,10 +46,11 @@ func VoteOnCommentNoti(vote int) *messaging.Notification {
 	}
 	return &messaging.Notification{
 		Title: emoji + " " + "Someone " + voteString + " your comment",
+		Body:  fmt.Sprintf("Total votes: %d", totalVotes),
 	}
 }
 
-func VoteOnPostNoti(vote int) *messaging.Notification {
+func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 	var voteString string
 	var emoji string
 	if vote > 0 {
@@ -61,6 +62,7 @@ func VoteOnPostNoti(vote int) *messaging.Notification {
 	}
 	return &messaging.Notification{
 		Title: emoji + " " + "Someone " + voteString + " your confession",
+		Body:  fmt.Sprintf("Total votes: %d", totalVotes),
 	}
 }
 
