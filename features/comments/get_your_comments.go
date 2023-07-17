@@ -66,6 +66,7 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 			if comment.Comment.UserID == token.UID {
 				comment.Owner = true
 			}
+			comment.Comment.ObscureIfHidden()
 		}
 	}
 

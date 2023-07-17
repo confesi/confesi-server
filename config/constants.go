@@ -18,7 +18,7 @@ const (
 	YourCommentsPageSize               = 3               // how many comments are returned in a page size in the your comments page
 	SavedPostsAndCommentsPageSize      = 2               // how many posts and comments are returned in a page size in the saved posts and comments page
 	UserCommentsAdminPageSize          = 3               // how many comments are returned in a page size in the user comments admin page
-
+	ViewYourReportsPageSize            = 10              // how many reports are returned in a page size in the view your reports page
 )
 
 // Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go

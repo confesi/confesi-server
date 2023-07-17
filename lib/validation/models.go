@@ -169,3 +169,7 @@ type FetchReports struct {
 	// [required] timestamp of last viewed report (ms since epoch)
 	Next NullableNext `json:"next"`
 }
+
+type ReportCursor struct {
+	Next NullableNext `json:"next"`
+}

@@ -30,4 +30,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
 	anyFirebaseUserRoutes.POST("/report", h.handleCreateReport)
+	anyFirebaseUserRoutes.GET("/reports", h.handleGetYourReports)
 }

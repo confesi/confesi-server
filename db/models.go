@@ -177,7 +177,7 @@ type Post struct {
 	VoteScore     int             `gorm:"column:vote_score" json:"-"` // redundant to return to the user
 	TrendingScore float64         `gorm:"column:trending_score" json:"trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
-	Hidden        bool            `gorm:"column:hidden" json:"-"`
+	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
@@ -198,10 +198,10 @@ type Comment struct {
 	Upvote                    uint       `gorm:"column:upvote" json:"upvote"`
 	VoteScore                 int        `gorm:"column:vote_score" json:"-"` // redundant to return to the user
 	TrendingScore             float64    `gorm:"column:trending_score" json:"trending_score"`
-	Hidden                    bool       `gorm:"column:hidden" json:"-"`
+	Hidden                    bool       `gorm:"column:hidden" json:"hidden"`
 }
 
-func (c *Comment) obscureIfHidden() Comment {
+func (c *Comment) ObscureIfHidden() Comment {
 	if c.Hidden {
 		c.Content = "[deleted]"
 		c.NumericalReplyingUser = nil
@@ -332,7 +332,7 @@ type Report struct {
 	Description string      `gorm:"column:description" json:"description"`
 	TypeID      uint        `gorm:"column:type_id" json:"-"` // references the report_type table
 	ReportType  *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
-	Result      string      `gorm:"column:result" json:"result"`
+	Result      *string     `gorm:"column:result" json:"result"` // can be null
 	Handled     bool        `gorm:"column:handled" json:"handled"`
 	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"post_id,omitempty"`       // Use "omitempty" here
 	Post        *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"`                  // Use "omitempty" here
@@ -349,4 +349,8 @@ type CronJob struct {
 
 func (CronJob) TableName() string {
 	return "cron_jobs"
+}
+
+func (Report) TableName() string {
+	return "reports"
 }
