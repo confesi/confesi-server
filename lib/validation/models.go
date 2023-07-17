@@ -113,6 +113,13 @@ type YourCommentsQuery struct {
 	Next NullableNext `json:"next"`
 }
 
+type UserCommentsQueryAdmin struct {
+	// [required] timestamp of last viewed comment content (ms since epoch)
+	Next NullableNext `json:"next"`
+	// [required] user id to get comments for
+	UserID string `json:"user_id" validate:"required"`
+}
+
 type FcmTokenQuery struct {
 	// [required] fcm token
 	Token string `json:"token" validate:"required"`

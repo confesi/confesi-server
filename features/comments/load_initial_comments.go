@@ -27,7 +27,7 @@ const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
 
-func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, postSpecificKey string) ([]CommentThreadGroup, error) {
+func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, commentSpecificKey string) ([]CommentThreadGroup, error) {
 	var comments []CommentDetail
 
 	excludedIDQuery := ""
@@ -92,8 +92,16 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 	for i := range comments {
 		comment := &comments[i]
 		if comment.Comment.ParentRoot != nil {
+			// aka, it's a reply
 			parentID := comment.Comment.ParentRoot
 			parentMap[int(*parentID)] = append(parentMap[int(*parentID)], *comment)
+		} else {
+			id := fmt.Sprint(comment.Comment.ID)
+			err := h.redis.SAdd(c, commentSpecificKey, id).Err()
+			if err != nil {
+				logger.StdErr(err)
+				return nil, errors.New("failed to update redis cache")
+			}
 		}
 	}
 
@@ -143,11 +151,11 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// session key ("comments" + ":" + "userid" + "+" + "[uuid_session]") -> root comment ids seen
-	postSpecificKey := idSessionKey
+	commentSpecificKey := idSessionKey
 
 	if req.PurgeCache {
 		// purge the cache
-		err := h.redis.Del(c, postSpecificKey).Err()
+		err := h.redis.Del(c, commentSpecificKey).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
@@ -155,7 +163,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// retrieve the seen root comment IDs from the cache
-	ids, err := h.redis.SMembers(c, postSpecificKey).Result()
+	ids, err := h.redis.SMembers(c, commentSpecificKey).Result()
 	if err != nil {
 		if err == redis.Nil {
 			ids = []string{} // assigns an empty slice
@@ -166,14 +174,14 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// fetch comments using the translated SQL query
-	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID, *h, c, postSpecificKey)
+	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID, *h, c, commentSpecificKey)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
 	// set the expiration for the cache
-	err = h.redis.Expire(c, postSpecificKey, seenCommentsCacheExpiry).Err()
+	err = h.redis.Expire(c, commentSpecificKey, seenCommentsCacheExpiry).Err()
 	if err != nil {
 		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
