@@ -21,6 +21,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
                     }
                 ],
                 "description": "Create a post with the given title and body.",
@@ -47,18 +50,33 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "ok",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/config.Created"
                         }
                     },
                     "500": {
                         "description": "server error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/config.Created"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "config.Created": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "woah"
+                },
+                "value": {
+                    "type": "string",
+                    "x-nullable": true
                 }
             }
         }
@@ -67,6 +85,11 @@ const docTemplate = `{
         "BearerAuth": {
             "type": "apiKey",
             "name": "Authorization",
+            "in": "header"
+        },
+        "X-AppCheck-Token": {
+            "type": "apiKey",
+            "name": "X-AppCheck-Token",
             "in": "header"
         }
     }

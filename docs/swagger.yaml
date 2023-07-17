@@ -1,4 +1,14 @@
 basePath: /api/v1
+definitions:
+  config.Created:
+    properties:
+      error:
+        example: woah
+        type: string
+      value:
+        type: string
+        x-nullable: true
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -25,16 +35,17 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: ok
+        "201":
+          description: Created
           schema:
-            type: string
+            $ref: '#/definitions/config.Created'
         "500":
           description: server error
           schema:
-            type: string
+            $ref: '#/definitions/config.Created'
       security:
       - BearerAuth: []
+      - X-AppCheck-Token: []
       summary: Create a Post.
       tags:
       - Posts
@@ -42,5 +53,9 @@ securityDefinitions:
   BearerAuth:
     in: header
     name: Authorization
+    type: apiKey
+  X-AppCheck-Token:
+    in: header
+    name: X-AppCheck-Token
     type: apiKey
 swagger: "2.0"
