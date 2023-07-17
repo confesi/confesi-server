@@ -334,10 +334,10 @@ type Report struct {
 	ReportType  *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
 	Result      *string     `gorm:"column:result" json:"result"` // can be null
 	Handled     bool        `gorm:"column:handled" json:"handled"`
-	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"post_id,omitempty"`       // Use "omitempty" here
-	Post        *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"`                  // Use "omitempty" here
-	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"comment_id,omitempty"` // Use "omitempty" here
-	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"`            // Use "omitempty" here
+	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"-"`
+	Post        *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
+	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
+	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 }
 
 type CronJob struct {
