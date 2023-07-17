@@ -132,6 +132,8 @@ type HideContent struct {
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 	// [required] true to hide, false to unhide (not having required with pointers to ensure zero-value is OK)
 	Hide *bool `json:"hide"`
+	// [optional] reason for hiding content
+	Reason string `json:"reason"`
 }
 
 type FetchRanCrons struct {

@@ -1,6 +1,8 @@
 package builders
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func ThreadedCommentReplyData(parentCommentId uint, commentId uint, postId uint) map[string]string {
 	return map[string]string{
@@ -50,5 +52,19 @@ func TrendingPostData(postId uint) map[string]string {
 func NotificationSettingsSyncData() map[string]string {
 	return map[string]string{
 		"type": "notification_settings_sync",
+	}
+}
+
+func HideOffendingUserData(modLogId uint) map[string]string {
+	return map[string]string{
+		"type":       "hide_offending_user_content",
+		"mod_log_id": fmt.Sprintf("%v", modLogId),
+	}
+}
+
+func HideReportData(reportId uint) map[string]string {
+	return map[string]string{
+		"type":    "hide_report_result",
+		"post_id": fmt.Sprintf("%v", reportId),
 	}
 }

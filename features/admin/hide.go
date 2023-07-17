@@ -1,13 +1,29 @@
 package admin
 
 import (
+	"confesi/config/builders"
+	"confesi/db"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
+
+	fcm "confesi/lib/firebase_cloud_messaging"
 
 	"github.com/gin-gonic/gin"
 )
+
+type fcmTokenWithReportID struct {
+	Token    string `gorm:"column:token"`
+	ReportID uint   `gorm:"column:report_id"`
+}
+
+type fcmTokenWithOffendingHideLogID struct {
+	Token     string `gorm:"column:token"`
+	HideLogID uint   `gorm:"column:hide_log_id"`
+}
 
 func (h *handler) handleHideContent(c *gin.Context) {
 
@@ -18,27 +34,149 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		return
 	}
 
+	hideLogEntry := db.HideLog{}
+	var reportsFcmFieldMatcher string
+
 	var table string
-	if req.ContentType != "comment" && req.ContentType != "post" {
+	if req.ContentType == "comment" {
+		table = "comments"
+		hideLogEntry.CommentID = &req.ContentID
+		reportsFcmFieldMatcher = "comment_id"
+	} else if req.ContentType == "post" {
+		table = "posts"
+		hideLogEntry.PostID = &req.ContentID
+		reportsFcmFieldMatcher = "post_id"
+	} else {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
 		return
 	}
-	table = req.ContentType + "s"
 
-	// Update the "hidden" field on a comment.
-	result := h.db.
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
+	// update the "hidden" field on a comment.
+	result := tx.
 		Table(table).
 		Where("id = ?", req.ContentID).
 		Update("hidden", req.Hide)
 
 	if result.Error != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+	if result.RowsAffected == 0 {
+		tx.Rollback()
+		response.New(http.StatusBadRequest).Err(notFound.Error()).Send(c)
+		return
+	}
+
+	// update all the reports for this content
+	err = tx.
+		Table("reports").
+		Where(table+" = ?", req.ContentID).
+		Update("has_been_removed", req.Hide).
+		Update("result", req.Reason).
+		Error
+
+	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
-	if result.RowsAffected == 0 {
-		response.New(http.StatusBadRequest).Err("no content found with this ID").Send(c)
+	// get the offending user's user_id
+	var offendingContentUserId string
+	err = tx.
+		Table(table).
+		Where("id = ?", req.ContentID).
+		Pluck("user_id", &offendingContentUserId).
+		Error
+
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
+	}
+
+	// create hide_log entry
+	hideLogEntry.Reason = req.Reason
+	hideLogEntry.UserID = offendingContentUserId
+	hideLogEntry.Hidden = *req.Hide
+
+	// save it
+	err = tx.Create(&hideLogEntry).
+		Error
+
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	var reports []fcmTokenWithReportID
+	var offenders []fcmTokenWithOffendingHideLogID
+
+	// notify users who reported about the change
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token, reports.id as report_id").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Joins("JOIN reports ON reports.reported_by = users.id").
+		Joins(table+" ON reports."+reportsFcmFieldMatcher+" = "+table+".id").
+		Where(table+"."+reportsFcmFieldMatcher+" = ?", req.ContentID).
+		Scan(&reports).
+		Error
+	// (ignore errors, just log)
+	if err != nil {
+		logger.StdInfo(fmt.Sprintf("error while fetching tokens for reports: %s", err))
+	} else if len(reports) > 0 {
+		for _, tokenWithReportID := range reports {
+			fcm.New(h.fb.MsgClient).
+				ToTokens([]string{tokenWithReportID.Token}).
+				WithMsg(builders.HideReportNoti()).
+				WithData(builders.HideReportData(tokenWithReportID.ReportID)).
+				Send(*h.db)
+		}
+	}
+
+	// notify the offending user about the change
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token, hide_log.id as hide_log_id").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Joins("JOIN hide_log ON hide_log.user_id = users.id").
+		Joins(table+" ON reports."+reportsFcmFieldMatcher+" = "+table+".id").
+		Where(table+"."+reportsFcmFieldMatcher+" = ?", req.ContentID).
+		Scan(&offenders).
+		Error
+	// (ignore errors, just log)
+	if err != nil {
+		logger.StdInfo(fmt.Sprintf("error while fetching tokens for offending user: %s", err))
+	} else if len(offenders) > 0 {
+		for _, tokenWithOffenderID := range offenders {
+			fcm.New(h.fb.MsgClient).
+				ToTokens([]string{tokenWithOffenderID.Token}).
+				WithMsg(builders.HideReportNoti()).
+				WithData(builders.HideReportData(tokenWithOffenderID.HideLogID)).
+				Send(*h.db)
+		}
 	}
 
 	response.New(http.StatusOK).Send(c)

@@ -323,21 +323,38 @@ func (FeedbackType) TableName() string {
 	return "feedback_types"
 }
 
+type HideLog struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	PostID    *uint      `db:"post_id" gorm:"default:NULL" json:"-"`
+	Post      *Post      `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
+	CommentID *uint      `db:"comment_id" gorm:"default:NULL" json:"-"`
+	Comment   *Comment   `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
+	Reason    string     `gorm:"column:reason" json:"reason"`
+	Hidden    bool       `gorm:"column:hidden" json:"hidden"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+}
+
+func (HideLog) TableName() string {
+	return "hide_log"
+}
+
 // ! Important not to serialize some fields!!
 type Report struct {
-	ID          uint        `gorm:"primaryKey" json:"id"`
-	CreatedAt   TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt   TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	ReportedBy  string      `gorm:"column:reported_by" json:"-"`
-	Description string      `gorm:"column:description" json:"description"`
-	TypeID      uint        `gorm:"column:type_id" json:"-"` // references the report_type table
-	ReportType  *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
-	Result      *string     `gorm:"column:result" json:"result"` // can be null
-	Handled     bool        `gorm:"column:handled" json:"handled"`
-	PostID      *uint       `db:"post_id" gorm:"default:NULL" json:"-"`
-	Post        *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
-	CommentID   *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
-	Comment     *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
+	ID             uint        `gorm:"primaryKey" json:"id"`
+	CreatedAt      TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt      TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	ReportedBy     string      `gorm:"column:reported_by" json:"-"`
+	Description    string      `gorm:"column:description" json:"description"`
+	TypeID         uint        `gorm:"column:type_id" json:"-"` // references the report_type table
+	ReportType     *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
+	Result         *string     `gorm:"column:result" json:"result"` // can be null
+	HasBeenRemoved bool        `gorm:"column:has_been_removed" json:"has_been_removed"`
+	PostID         *uint       `db:"post_id" gorm:"default:NULL" json:"-"`
+	Post           *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
+	CommentID      *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
+	Comment        *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 }
 
 type CronJob struct {
