@@ -331,7 +331,7 @@ type Feedback struct {
 }
 
 type ReportType struct {
-	ID   int    `gorm:"primary_key;column:id" json:"id"`
+	ID   int    `gorm:"primary_key;column:id" json:"-"`
 	Type string `gorm:"column:type" json:"type"`
 }
 

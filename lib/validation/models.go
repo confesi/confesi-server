@@ -153,3 +153,10 @@ type ReportQuery struct {
 	// [required] report type
 	Type string `json:"type" validate:"required"`
 }
+
+type FetchReports struct {
+	// [required] type of report to fetch (accepts anything because we have the options defined in the db)
+	Type string `json:"type" validate:"required"`
+	// [required] timestamp of last viewed report (ms since epoch)
+	Next NullableNext `json:"next"`
+}
