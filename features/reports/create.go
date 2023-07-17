@@ -66,6 +66,9 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 			return
 		}
 		switch pgErr.Code {
+		case "23505": // duplicate key value violates unique constraint
+			response.New(http.StatusBadRequest).Err(reportAlreadyExists.Error()).Send(c)
+			return
 		case "23503": // foreign key constraint violation
 			response.New(http.StatusBadRequest).Err(invalidContentId.Error()).Send(c)
 			return // aka, you provided an invalid post/comment id to try saving

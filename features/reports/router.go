@@ -14,6 +14,7 @@ var (
 	serverError           = errors.New("server error")
 	reportTypeDoesntExist = errors.New("report type doesn't exist")
 	invalidContentId      = errors.New("invalid content id")
+	reportAlreadyExists   = errors.New("report already exists")
 )
 
 type handler struct {

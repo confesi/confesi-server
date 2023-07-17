@@ -1,6 +1,7 @@
 BEGIN;
 
 ALTER TABLE reports
-    DROP CONSTRAINT reports_user_comment_id_post_id_unique;
+    DROP CONSTRAINT IF EXISTS idx_reports_comments,
+    DROP CONSTRAINT IF EXISTS idx_reports_posts;
 
 END;
