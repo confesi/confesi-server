@@ -118,11 +118,13 @@ type FcmTokenQuery struct {
 	Token string `json:"token" validate:"required"`
 }
 
-type FcmPrivQuery struct {
-	// [required] fcm priv content id
+type HideContent struct {
+	// [required] content id
 	ContentID uint `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] true to hide, false to unhide (not having required with pointers to ensure zero-value is OK)
+	Hide *bool `json:"hide"`
 }
 
 type FetchRanCrons struct {

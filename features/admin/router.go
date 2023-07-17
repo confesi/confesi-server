@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	serverError = errors.New("server error")
-	notFound    = errors.New("not found")
+	serverError  = errors.New("server error")
+	notFound     = errors.New("not found")
+	invalidValue = errors.New("invalid value")
 )
 
 type handler struct {
@@ -34,4 +35,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
 	mux.GET("/report", h.handleGetReportById)
 	mux.GET("/reports", h.handleGetReports)
+	mux.PATCH("/hide", h.handleHideContent)
 }
