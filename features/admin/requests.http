@@ -125,7 +125,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjE0ZWI4YTNiNjgzN2Y2MTU4ZWViNj
 
 {
     "purge_cache": true,
-    "reviewed_by_mod": false,
+    "reviewed_by_mod": true,
     "session_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 }
 

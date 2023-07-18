@@ -36,7 +36,7 @@ func (h *handler) handleUserStanding(c *gin.Context) {
 	case "banned":
 		stance = 3
 	default:
-		//! Should Never Get Here
+		// should never get here, but to be defensive
 		response.New(http.StatusBadRequest).Err("invalid standing").Send(c)
 		return
 	}
