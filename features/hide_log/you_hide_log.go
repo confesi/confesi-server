@@ -39,14 +39,10 @@ func (h *handler) handleYourHideLog(c *gin.Context) {
 
 	fetchResults := fetchedReports{}
 
-	// note: paginating by `UpdatedAt` instead of `CreatedAt` so we can update the `HideLog` table
-	// and sort by most recently updated
 	err = h.db.
-		// Preload("Comment").
-		// Preload("Post").
-		Where(req.Next.Cursor("updated_at <")).
+		Where(req.Next.Cursor("created_at <")).
 		Where("user_id = ?", token.UID). // just a precaution; the entries here should always be by the creator, but to ensure to not leak any data
-		Order("updated_at DESC").
+		Order("created_at DESC").
 		Find(&fetchResults.Logs).
 		Limit(config.ReportsPageSize).
 		Error
@@ -56,9 +52,8 @@ func (h *handler) handleYourHideLog(c *gin.Context) {
 		return
 	}
 	if len(fetchResults.Logs) > 0 {
-		// note: paginating by `UpdatedAt` instead of `CreatedAt` so we can update the `HideLog` table
-		// and sort by most recently updated
-		timeMicros := (fetchResults.Logs[len(fetchResults.Logs)-1].UpdatedAt.Time).UnixMicro()
+
+		timeMicros := (fetchResults.Logs[len(fetchResults.Logs)-1].CreatedAt.Time).UnixMicro()
 		fetchResults.Next = &timeMicros
 	}
 
