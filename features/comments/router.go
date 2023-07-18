@@ -16,6 +16,7 @@ var (
 	serverError      = errors.New("server error")
 	threadDepthError = errors.New("thread depth error")
 	invalidInput     = errors.New("invalid content")
+	notFound         = errors.New("not found")
 )
 
 type CommentDetail struct {
@@ -50,4 +51,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.POST("/create", h.handleCreate)
 	mux.PATCH("/hide", h.handleHideComment)
 	mux.GET("/your-comments", h.handleGetYourComments)
+	mux.PATCH("/edit", h.handleEditComment)
 }
