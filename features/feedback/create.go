@@ -49,7 +49,7 @@ func (h *handler) handleFeedback(c *gin.Context) {
 
 	err = h.db.Create(&feedback).Error
 	if err != nil {
-		response.New(http.StatusCreated).Val(serverError.Error()).Send(c)
+		response.New(http.StatusCreated).Err(serverError.Error()).Send(c)
 		return
 	}
 

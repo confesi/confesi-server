@@ -175,7 +175,7 @@ firebase emulators:start
 
 **Editing the docs:**
 
-[Here](https://github.com/swaggo/swag#declarative-comments-format) is a good resource to learn how to properly annotate handler functions so they appear in the Swagger UI.
+[Here](https://github.com/swaggo/swag#declarative-comments-format) is a good resource to learn how to properly annotate handler functions so they appear in the Swagger UI. [Here](https://mholt.github.io/json-to-go/) is another good resource to help with speedy struct-to-JSON conversions.
 
 **Rebuilding the docs:**
 
@@ -186,3 +186,11 @@ swag init
 ```
 
 ... this should rebuild the doc files under `/docs` to reflect the changes.
+
+**Formatting the docs:**
+
+You can also run to format the Swagger "code".
+
+```sh
+swag fmt
+```

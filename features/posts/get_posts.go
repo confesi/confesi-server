@@ -95,9 +95,9 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		Preload("School").
 		Preload("Faculty").
 		Order(sortField).
-		Limit(config.FeedPostsPageSize).
+		Where("school_id = ?", req.School).
 		Where("hidden = ?", false).
-		Where("school_id = ?", req.School)
+		Limit(config.FeedPostsPageSize)
 
 	if len(ids) > 0 {
 		query = query.Where("posts.id NOT IN (?)", ids)

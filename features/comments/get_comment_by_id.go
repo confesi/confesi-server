@@ -4,6 +4,7 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 
 	err = h.db.
 		Raw(`
-				SELECT comments.*, 
+				SELECT comments.*,
 					COALESCE(
 						(SELECT votes.vote
 						FROM votes
@@ -38,6 +39,8 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		First(&comment).
 		Error
 
+	fmt.Println(comment)
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("comment not found").Send(c)
@@ -47,12 +50,12 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		return
 	}
 
-	if comment.Hidden {
+	if comment.Comment.Hidden {
 		response.New(http.StatusGone).Err("comment removed").Send(c)
 		return
 	}
 	// check if user is owner
-	if comment.UserID == token.UID {
+	if comment.Comment.UserID == token.UID {
 		comment.Owner = true
 	}
 	response.New(http.StatusOK).Val(comment).Send(c)

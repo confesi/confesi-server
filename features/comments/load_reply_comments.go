@@ -52,15 +52,16 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		Error
 
 	if len(fetchResults.Comments) > 0 {
-		timeMicros := (fetchResults.Comments[len(fetchResults.Comments)-1].CreatedAt.Time).UnixMicro()
+		timeMicros := (fetchResults.Comments[len(fetchResults.Comments)-1].Comment.CreatedAt.Time).UnixMicro()
 		fetchResults.Next = &timeMicros
 		for i := range fetchResults.Comments {
 			// create reference to comment
 			comment := &fetchResults.Comments[i]
 			// check if user is owner
-			if comment.UserID == token.UID {
+			if comment.Comment.UserID == token.UID {
 				comment.Owner = true
 			}
+			comment.Comment.ObscureIfHidden()
 		}
 	}
 

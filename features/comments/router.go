@@ -20,7 +20,7 @@ var (
 
 type CommentDetail struct {
 	db.Comment `json:"comment"`
-	UserVote   int  `json:"user_vote"`
+	UserVote   int  `json:"user_vote" gorm:"column:user_vote"`
 	Owner      bool `json:"owner"`
 }
 

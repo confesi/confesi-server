@@ -43,6 +43,7 @@ func YearOfStudyToString(yearOfStudy uint) (error, string) {
 	}
 }
 
+// todo: normalize these into the database, else, it's messy?
 const (
 	ModEnableID = 1
 	ModEnable   = "enabled"
@@ -141,13 +142,13 @@ type User struct {
 	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	YearOfStudy uint8      `gorm:"column:year_of_study" json:"-"`
-	StudyYear   string     `gorm:"column:study_year" json:"study_year"`
+	StudyYear   string     `gorm:"-" json:"study_year"` // This is not a column in the database
 	FacultyID   uint       `gorm:"column:faculty_id" json:"-"`
 	Faculty     Faculty    `gorm:"foreignKey:FacultyID" json:"faculty"`
 	SchoolID    uint       `gorm:"column:school_id" json:"-"`
 	School      School     `gorm:"foreignKey:SchoolID" json:"school"`
 	ModID       uint       `gorm:"column:mod_id" json:"-"`
-	Mod         string     `gorm:"column:mod" json:"mod"`
+	Mod         string     `gorm:"-" json:"mod"` // This is not a column in the database
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
@@ -176,65 +177,43 @@ type Post struct {
 	VoteScore     int             `gorm:"column:vote_score" json:"-"` // redundant to return to the user
 	TrendingScore float64         `gorm:"column:trending_score" json:"trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
-	Hidden        bool            `gorm:"column:hidden" json:"-"`
+	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
+	ReportCount   uint            `gorm:"column:report_count" json:"-"`
+	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	ID            uint       `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt     TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt     TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	PostID        uint       `gorm:"column:post_id" json:"post_id"`
-	Numerics      Numerics   `gorm:"embedded" json:"numerics"` // Embed the Numerics struct
-	ParentRoot    *uint      `gorm:"column:parent_root" json:"parent_root"`
-	ChildrenCount uint       `gorm:"column:children_count" json:"children_count"`
-	UserID        string     `gorm:"column:user_id" json:"-"`
-	Content       string     `gorm:"column:content" json:"content"`
-	Downvote      uint       `gorm:"column:downvote" json:"downvote"`
-	Upvote        uint       `gorm:"column:upvote" json:"upvote"`
-	VoteScore     int        `gorm:"column:vote_score" json:"-"` // redundant to return to the user
-	TrendingScore float64    `gorm:"column:trending_score" json:"trending_score"`
-	Hidden        bool       `gorm:"column:hidden" json:"-"`
+	ID                        uint       `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt                 TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt                 TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	PostID                    uint       `gorm:"column:post_id" json:"post_id"`
+	NumericalUser             *uint      `gorm:"column:numerical_user" json:"numerical_user"`                               // this is a pointer because it can be null
+	NumericalReplyingUser     *uint      `gorm:"column:numerical_replying_user" json:"numerical_replying_user"`             // this is a pointer because it can be null
+	NumericalUserIsOp         *bool      `gorm:"column:numerical_user_is_op" json:"numerical_user_is_op"`                   // this is a pointer because it can be null
+	NumericalReplyingUserIsOp *bool      `gorm:"column:numerical_replying_user_is_op" json:"numerical_replying_user_is_op"` // this is a pointer because it can be null
+	ParentRoot                *uint      `gorm:"column:parent_root" json:"parent_root"`
+	ChildrenCount             uint       `gorm:"column:children_count" json:"children_count"`
+	UserID                    string     `gorm:"column:user_id" json:"-"`
+	Content                   string     `gorm:"column:content" json:"content"`
+	Downvote                  uint       `gorm:"column:downvote" json:"downvote"`
+	Upvote                    uint       `gorm:"column:upvote" json:"upvote"`
+	VoteScore                 int        `gorm:"column:vote_score" json:"-"` // redundant to return to the user
+	TrendingScore             float64    `gorm:"column:trending_score" json:"trending_score"`
+	Hidden                    bool       `gorm:"column:hidden" json:"hidden"`
+	ReportCount               uint       `gorm:"column:report_count" json:"-"`
+	ReviewedByMod             bool       `gorm:"column:reviewed_by_mod" json:"-"`
 }
 
-type Alias Comment
-
-type AuxComment struct {
-	*Alias
-}
-
-// If `Hidden` is true, this auto-sets the `Content` field to "[hidden]" and `Numerics` to null
-func (c Comment) MarshalJSON() ([]byte, error) {
-	type Alias Comment
-
+func (c *Comment) ObscureIfHidden() Comment {
 	if c.Hidden {
-		hiddenComment := struct {
-			Alias
-			Content  string       `json:"content"`
-			Numerics *interface{} `json:"numerics"`
-		}{
-			Alias:    (Alias)(c),
-			Content:  "[hidden]",
-			Numerics: nil,
-		}
-
-		return json.Marshal(hiddenComment)
+		c.Content = "[deleted]"
+		c.NumericalReplyingUser = nil
+		c.NumericalReplyingUserIsOp = nil
+		c.NumericalUser = nil
+		c.NumericalUserIsOp = nil
 	}
-
-	regularComment := struct {
-		Alias
-	}{
-		Alias: (Alias)(c),
-	}
-
-	return json.Marshal(regularComment)
-}
-
-type Numerics struct {
-	NumericalUser             *uint `gorm:"column:numerical_user" json:"numerical_user"`                   // this is a pointer because it can be null
-	NumericalReplyingUser     *uint `gorm:"column:numerical_replying_user" json:"numerical_replying_user"` // this is a pointer because it can be null
-	NumericalUserIsOp         bool  `gorm:"column:numerical_user_is_op" json:"numerical_user_is_op"`
-	NumericalReplyingUserIsOp bool  `gorm:"column:numerical_replying_user_is_op" json:"numerical_replying_user_is_op"`
+	return *c
 }
 
 // This will store as a `time.Time` in the database,
@@ -330,8 +309,17 @@ type Feedback struct {
 	TypeID    uint       `gorm:"column:type_id" json:"type_id"` // references the feedback_type table
 }
 
+type ReportType struct {
+	ID   int    `gorm:"primary_key;column:id" json:"-"`
+	Type string `gorm:"column:type" json:"type"`
+}
+
+func (ReportType) TableName() string {
+	return "report_types"
+}
+
 type FeedbackType struct {
-	ID   int    `gorm:"primary_key;column:id" json:"id"`
+	ID   int    `gorm:"primary_key;column:id" json:"-"`
 	Type string `gorm:"column:type" json:"type"`
 }
 
@@ -339,13 +327,38 @@ func (FeedbackType) TableName() string {
 	return "feedback_types"
 }
 
+type HideLog struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	PostID    *uint      `db:"post_id" gorm:"default:NULL" json:"-"`
+	Post      *Post      `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
+	CommentID *uint      `db:"comment_id" gorm:"default:NULL" json:"-"`
+	Comment   *Comment   `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
+	Reason    string     `gorm:"column:reason" json:"reason"`
+	Removed   bool       `gorm:"column:removed" json:"removed"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+}
+
+func (HideLog) TableName() string {
+	return "hide_log"
+}
+
 // ! Important not to serialize some fields!!
 type Report struct {
-	UserID      string `gorm:"column:user_id" json:"-"`
-	Description string `gorm:"column:description" json:"description"`
-	Type        string `gorm:"type" json:"type"`
-	Result      string `gorm:"column:result" json:"result"`
-	UserAlerted bool   `gorm:"column:user_alerted" json:"user_alerted"`
+	ID             uint        `gorm:"primaryKey" json:"id"`
+	CreatedAt      TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt      TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	ReportedBy     string      `gorm:"column:reported_by" json:"-"`
+	Description    string      `gorm:"column:description" json:"description"`
+	TypeID         uint        `gorm:"column:type_id" json:"-"` // references the report_type table
+	ReportType     *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
+	Result         *string     `gorm:"column:result" json:"result"` // can be null
+	HasBeenRemoved bool        `gorm:"column:has_been_removed" json:"has_been_removed"`
+	PostID         *uint       `db:"post_id" gorm:"default:NULL" json:"-"`
+	Post           *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
+	CommentID      *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
+	Comment        *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 }
 
 type CronJob struct {
@@ -357,4 +370,8 @@ type CronJob struct {
 
 func (CronJob) TableName() string {
 	return "cron_jobs"
+}
+
+func (Report) TableName() string {
+	return "reports"
 }

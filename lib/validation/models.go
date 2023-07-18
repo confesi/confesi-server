@@ -90,7 +90,7 @@ type RepliesCommentQuery struct {
 
 type FeedbackDetails struct {
 	// [required] feedback message
-	Message string `json:"message" validate:"required"`
+	Message string `json:"message" validate:"required,min=1,max=500"`
 	// [required] feedback type
 	Type string `json:"type" validate:"required"`
 }
@@ -113,16 +113,29 @@ type YourCommentsQuery struct {
 	Next NullableNext `json:"next"`
 }
 
+type UserCommentsQueryAdmin struct {
+	// [required] timestamp of last viewed comment content (ms since epoch)
+	Next NullableNext `json:"next"`
+	// [required] user id to get comments for
+	UserID string `json:"user_id" validate:"required"`
+}
+
 type FcmTokenQuery struct {
 	// [required] fcm token
 	Token string `json:"token" validate:"required"`
 }
 
-type FcmPrivQuery struct {
-	// [required] fcm priv content id
+type HideContent struct {
+	// [required] content id
 	ContentID uint `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] true to hide, false to unhide (not having required with pointers to ensure zero-value is OK)
+	Hide *bool `json:"hide"`
+	// [optional] reason for hiding content
+	Reason string `json:"reason"`
+	// [required] mark as done with or still needs attention from mods
+	ReviewedByMod bool `json:"reviewed_by_mod" validate:"required"`
 }
 
 type FetchRanCrons struct {
@@ -141,4 +154,65 @@ type FcmNotifictionPref struct {
 	VotesOnYourComments   *bool `json:"votes_on_your_comments"`
 	VotesOnYourPosts      *bool `json:"votes_on_your_posts"`
 	QuotesOfYourPosts     *bool `json:"quotes_of_your_posts"`
+}
+
+type ReportQuery struct {
+	// [required] content id to report
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] report description
+	Description string `json:"description" validate:"required,min=1,max=500"`
+	// [required] report type
+	Type string `json:"type" validate:"required"`
+}
+
+type UpdateReviewedByModQuery struct {
+	// [required] content id to report
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] true to mark as reviewed, false to unmark as reviewed (not having required with pointers to ensure zero-value is OK)
+	ReviewedByMod *bool `json:"reviewed_by_mod"`
+}
+
+type FetchReports struct {
+	// [required] type of report to fetch (accepts anything because we have the options defined in the db)
+	Type string `json:"type" validate:"required"`
+	// [required] timestamp of last viewed report (ms since epoch)
+	Next NullableNext `json:"next"`
+}
+
+type ReportCursor struct {
+	Next NullableNext `json:"next"`
+}
+
+type HideLogCursor struct {
+	Next NullableNext `json:"next"`
+}
+
+type RankedCommentsByReportsQuery struct {
+	PurgeCache    bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey    string `json:"session_key" validate:"required"`
+	ReviewedByMod bool   `json:"reviewed_by_mod"` // true or false, doesn't have "required" so that the zero-value is OK
+}
+
+type RankedPostsByReportsQuery struct {
+	PurgeCache    bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey    string `json:"session_key" validate:"required"`
+	ReviewedByMod bool   `json:"reviewed_by_mod"` // true or false, doesn't have "required" so that the zero-value is OK
+}
+
+type FetchReportsForCommentById struct {
+	// [required] comment id
+	CommentID uint `json:"comment_id" validate:"required"`
+	// [required] timestamp of last viewed content (ms since unix epoch)
+	Next NullableNext `json:"next"`
+}
+
+type FetchReportsForPostById struct {
+	// [required] post id
+	PostID uint `json:"post_id" validate:"required"`
+	// [required] timestamp of last viewed content (ms since unix epoch)
+	Next NullableNext `json:"next"`
 }

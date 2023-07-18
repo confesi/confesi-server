@@ -49,14 +49,15 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	}
 
 	if len(fetchResult.Comments) > 0 {
-		timeMicros := (fetchResult.Comments[len(fetchResult.Comments)-1].CreatedAt.Time).UnixMicro()
+		timeMicros := (fetchResult.Comments[len(fetchResult.Comments)-1].Comment.CreatedAt.Time).UnixMicro()
 		fetchResult.Next = &timeMicros
 		for i := range fetchResult.Comments {
 			comment := &fetchResult.Comments[i]
 			// check if user is owner
-			if comment.UserID == token.UID {
+			if comment.Comment.UserID == token.UID {
 				comment.Owner = true
 			}
+			comment.Comment.ObscureIfHidden()
 		}
 	}
 

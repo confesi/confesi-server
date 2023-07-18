@@ -29,7 +29,7 @@ func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (err
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, false, 0
 	} else {
-		return nil, true, *comment.Numerics.NumericalUser
+		return nil, true, *comment.NumericalUser
 	}
 }
 
@@ -44,10 +44,10 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return serverError, 0
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.Numerics.NumericalUser == nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.NumericalUser == nil {
 		return nil, 1
 	} else {
-		return nil, *highestIdentifier.Numerics.NumericalUser + 1
+		return nil, *highestIdentifier.NumericalUser + 1
 	}
 }
 
@@ -135,6 +135,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 			comment.ParentRoot = parentComment.ParentRoot
 		}
 	} else {
+
 		comment.ParentRoot = nil
 	}
 
@@ -149,27 +150,37 @@ func (h *handler) handleCreate(c *gin.Context) {
 		}
 	}
 
-	if parentComment.Numerics.NumericalUserIsOp {
-		comment.Numerics.NumericalReplyingUserIsOp = true
+	// to allow for pointers
+	t := true
+	f := false
+
+	if parentComment.NumericalUserIsOp != nil && *parentComment.NumericalUserIsOp {
+
+		comment.NumericalReplyingUserIsOp = &t
 	} else {
-		comment.Numerics.NumericalReplyingUserIsOp = false
-		comment.Numerics.NumericalReplyingUser = parentComment.Numerics.NumericalUser
+
+		comment.NumericalReplyingUserIsOp = &f
+		comment.NumericalReplyingUser = parentComment.NumericalUser
 	}
 
 	if isOp {
-		comment.Numerics.NumericalUserIsOp = true
+
+		comment.NumericalUserIsOp = &t
 	} else {
-		comment.Numerics.NumericalUserIsOp = false
+
+		comment.NumericalUserIsOp = &f
 		err, alreadyPosted, userNumeric := getAlreadyPostedNumericalUser(tx, req.PostID, token.UID)
 		if err != nil {
+
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+
 		if alreadyPosted {
-			comment.Numerics.NumericalUser = &userNumeric
+			comment.NumericalUser = &userNumeric
 		} else {
-			comment.Numerics.NumericalUser = &nextIdentifier
+			comment.NumericalUser = &nextIdentifier
 		}
 
 	}
