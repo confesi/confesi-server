@@ -35,17 +35,17 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	}
 
 	hideLogEntry := db.HideLog{}
-	var reportsFcmFieldMatcher string
+	var commentOrPostIdMatcher string
 
 	var table string
 	if req.ContentType == "comment" {
 		table = "comments"
 		hideLogEntry.CommentID = &req.ContentID
-		reportsFcmFieldMatcher = "comment_id"
+		commentOrPostIdMatcher = "comment_id"
 	} else if req.ContentType == "post" {
 		table = "posts"
 		hideLogEntry.PostID = &req.ContentID
-		reportsFcmFieldMatcher = "post_id"
+		commentOrPostIdMatcher = "post_id"
 	} else {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
 		return
@@ -62,7 +62,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		}
 	}()
 
-	// update the "hidden" field on a comment.
+	// update the "hidden" field on content.
 	result := tx.
 		Table(table).
 		Where("id = ?", req.ContentID).
@@ -82,7 +82,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	// update all the reports for this content
 	err = tx.
 		Table("reports").
-		Where(table+" = ?", req.ContentID).
+		Where(commentOrPostIdMatcher+" = ?", req.ContentID).
 		Update("has_been_removed", req.Hide).
 		Update("result", req.Reason).
 		Error
@@ -110,7 +110,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	// create hide_log entry
 	hideLogEntry.Reason = req.Reason
 	hideLogEntry.UserID = offendingContentUserId
-	hideLogEntry.Hidden = *req.Hide
+	hideLogEntry.Removed = *req.Hide
 
 	// save it
 	err = tx.Create(&hideLogEntry).
@@ -139,8 +139,8 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		Select("fcm_tokens.token, reports.id as report_id").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
 		Joins("JOIN reports ON reports.reported_by = users.id").
-		Joins(table+" ON reports."+reportsFcmFieldMatcher+" = "+table+".id").
-		Where(table+"."+reportsFcmFieldMatcher+" = ?", req.ContentID).
+		Joins("JOIN "+table+" ON reports."+commentOrPostIdMatcher+" = "+table+".id").
+		Where(table+".id = ?", req.ContentID).
 		Scan(&reports).
 		Error
 	// (ignore errors, just log)
@@ -162,8 +162,6 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		Select("fcm_tokens.token, hide_log.id as hide_log_id").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
 		Joins("JOIN hide_log ON hide_log.user_id = users.id").
-		Joins(table+" ON reports."+reportsFcmFieldMatcher+" = "+table+".id").
-		Where(table+"."+reportsFcmFieldMatcher+" = ?", req.ContentID).
 		Scan(&offenders).
 		Error
 	// (ignore errors, just log)
@@ -173,8 +171,8 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		for _, tokenWithOffenderID := range offenders {
 			fcm.New(h.fb.MsgClient).
 				ToTokens([]string{tokenWithOffenderID.Token}).
-				WithMsg(builders.HideReportNoti()).
-				WithData(builders.HideReportData(tokenWithOffenderID.HideLogID)).
+				WithMsg(builders.HideOffendingUserNoti()).
+				WithData(builders.HideOffendingUserData(tokenWithOffenderID.HideLogID)).
 				Send(*h.db)
 		}
 	}

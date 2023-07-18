@@ -11,9 +11,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type reportDetail struct {
+	db.Report   `gorm:"embedded"`
+	ContentType string `json:"content_type" gorm:"-"`
+}
+
 type fetchResults struct {
-	Reports []db.Report `json:"reports"`
-	Next    *int64      `json:"next"`
+	Reports []reportDetail `json:"reports"`
+	Next    *int64         `json:"next"`
 }
 
 func (h *handler) handleGetYourReports(c *gin.Context) {
@@ -46,8 +51,16 @@ func (h *handler) handleGetYourReports(c *gin.Context) {
 		return
 	}
 	if len(fetchResults.Reports) > 0 {
-		timeMicros := (fetchResults.Reports[len(fetchResults.Reports)-1].CreatedAt.Time).UnixMicro()
+		timeMicros := (fetchResults.Reports[len(fetchResults.Reports)-1].Report.CreatedAt.Time).UnixMicro()
 		fetchResults.Next = &timeMicros
+	}
+
+	for i := 0; i < len(fetchResults.Reports); i++ {
+		if fetchResults.Reports[i].Report.PostID != nil {
+			fetchResults.Reports[i].ContentType = "post"
+		} else if fetchResults.Reports[i].Report.CommentID != nil {
+			fetchResults.Reports[i].ContentType = "comment"
+		}
 	}
 
 	response.New(http.StatusOK).Val(fetchResults).Send(c)

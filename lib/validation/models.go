@@ -175,3 +175,7 @@ type FetchReports struct {
 type ReportCursor struct {
 	Next NullableNext `json:"next"`
 }
+
+type HideLogCursor struct {
+	Next NullableNext `json:"next"`
+}

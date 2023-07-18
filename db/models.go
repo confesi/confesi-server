@@ -332,7 +332,7 @@ type HideLog struct {
 	CommentID *uint      `db:"comment_id" gorm:"default:NULL" json:"-"`
 	Comment   *Comment   `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 	Reason    string     `gorm:"column:reason" json:"reason"`
-	Hidden    bool       `gorm:"column:hidden" json:"hidden"`
+	Removed   bool       `gorm:"column:removed" json:"removed"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
 }
 
