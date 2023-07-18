@@ -2,11 +2,13 @@ package admin
 
 import (
 	"confesi/config"
+	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +18,12 @@ import (
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
 )
+
+type AdminCommentDetail struct {
+	Comment       db.Comment `json:"comment"`
+	ReportCount   uint       `json:"-"`
+	ReviewedByMod bool       `json:"-"`
+}
 
 func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	// extract request
@@ -58,7 +66,37 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 		}
 	}
 
+	excludedIDQuery := ""
+	if len(ids) > 0 {
+		excludedIDQuery = " AND comments.id NOT IN (" + strings.Join(ids, ",") + ")"
+	}
+
+	comments := []db.Comment{}
 	// fetch comments
+	err = h.db.
+		Where("reviewed_by_mod = ?"+excludedIDQuery, req.ReviewedByMod).
+		Order("report_count DESC").
+		Find(&comments).
+		Limit(config.AdminSchoolsByReportsPageSize).
+		Error
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	// to help with serialization
+	adminComments := []AdminCommentDetail{}
+	for i := range comments {
+		err := h.redis.SAdd(c, commentSpecificKey, comments[i].ID).Err()
+		if err != nil {
+			logger.StdErr(err)
+			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
+			return
+		}
+		comment := &comments[i]
+		// for every comment, make it a comment admin detail
+		adminComments = append(adminComments, AdminCommentDetail{Comment: *comment, ReportCount: comment.ReportCount, ReviewedByMod: comment.ReviewedByMod})
+	}
 
 	// set the expiration for the cache
 	err = h.redis.Expire(c, commentSpecificKey, seenCommentsCacheExpiry).Err()
@@ -69,5 +107,5 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	}
 
 	// Send response
-	response.New(http.StatusOK).Val(comments).Send(c)
+	response.New(http.StatusOK).Val(adminComments).Send(c)
 }

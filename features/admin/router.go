@@ -40,4 +40,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.GET("/reports", h.handleGetReports)
 	mux.PATCH("/hide", h.handleHideContent)
 	mux.PATCH("/reviewed-by-mod", h.handleReviewContentByMod)
+	mux.GET("/comments-by-report", h.handleGetRankedCommentsByReport)
 }

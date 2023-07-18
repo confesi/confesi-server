@@ -199,6 +199,8 @@ type Comment struct {
 	VoteScore                 int        `gorm:"column:vote_score" json:"-"` // redundant to return to the user
 	TrendingScore             float64    `gorm:"column:trending_score" json:"trending_score"`
 	Hidden                    bool       `gorm:"column:hidden" json:"hidden"`
+	ReportCount               uint       `gorm:"column:report_count" json:"-"`
+	ReviewedByMod             bool       `gorm:"column:reviewed_by_mod" json:"-"`
 }
 
 func (c *Comment) ObscureIfHidden() Comment {
