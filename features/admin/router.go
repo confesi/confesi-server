@@ -2,11 +2,13 @@ package admin
 
 import (
 	"confesi/db"
+	"confesi/lib/cache"
 	"confesi/lib/fire"
 	"confesi/middleware"
 	"errors"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
@@ -17,12 +19,13 @@ var (
 )
 
 type handler struct {
-	db *gorm.DB
-	fb *fire.FirebaseApp
+	db    *gorm.DB
+	fb    *fire.FirebaseApp
+	redis *redis.Client
 }
 
 func Router(mux *gin.RouterGroup) {
-	h := handler{db: db.New(), fb: fire.New()}
+	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 	mux.Use(func(c *gin.Context) {
 		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT.
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
