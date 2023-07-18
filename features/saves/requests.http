@@ -7,7 +7,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjE0ZWI4YTNiNjgzN2Y2MTU4ZWViNj
 
 {
     "content_id": 1,
-    "content_type": "comment"
+    "content_type": "post"
 }
 
 ### Unsave content

@@ -45,11 +45,12 @@ func Router(mux *gin.RouterGroup) {
 	anyFirebaseUserRoutes.DELETE("/purge", h.handlePurgeCommentsCache)
 
 	// registered firebase users only
-	mux.Use(func(c *gin.Context) {
+	registeredFirebaseUserOnly := mux.Group("")
+	registeredFirebaseUserOnly.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-	mux.POST("/create", h.handleCreate)
-	mux.PATCH("/hide", h.handleHideComment)
-	mux.GET("/your-comments", h.handleGetYourComments)
-	mux.PATCH("/edit", h.handleEditComment)
+	registeredFirebaseUserOnly.POST("/create", h.handleCreate)
+	registeredFirebaseUserOnly.PATCH("/hide", h.handleHideComment)
+	registeredFirebaseUserOnly.GET("/your-comments", h.handleGetYourComments)
+	registeredFirebaseUserOnly.PATCH("/edit", h.handleEditComment)
 }

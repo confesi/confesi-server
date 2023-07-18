@@ -15,6 +15,7 @@ import (
 
 var (
 	serverError = errors.New("server error")
+	notFound    = errors.New("not found")
 )
 
 type PostDetail struct {
@@ -54,4 +55,6 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUserRoutes.PATCH("/hide", h.handleHidePost)
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
 	registeredFirebaseUserRoutes.GET("/your-posts", h.handleGetYourPosts)
+	registeredFirebaseUserRoutes.PATCH("/edit", h.handleEditPost)
+
 }

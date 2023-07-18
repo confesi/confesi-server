@@ -1,4 +1,4 @@
-package comments
+package posts
 
 import (
 	"confesi/db"
@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleEditComment(c *gin.Context) {
+func (h *handler) handleEditPost(c *gin.Context) {
 	// validate the json body from request
-	var req validation.EditComment
+	var req validation.EditPost
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -25,15 +25,18 @@ func (h *handler) handleEditComment(c *gin.Context) {
 		return
 	}
 
-	// Update the `Content` and `Edited` fields of the comment in a single query
-	results := h.db.Model(&db.Comment{}).
-		Where("id = ?", req.CommentID).
+	updates := map[string]interface{}{
+		"edited":  true,
+		"title":   req.Title,
+		"content": req.Body,
+	}
+
+	// Update the `Title`/`Body` and `Edited` fields of the comment in a single query
+	results := h.db.Model(&db.Post{}).
+		Where("id = ?", req.PostID).
 		Where("hidden = false").
 		Where("user_id = ?", token.UID).
-		Updates(map[string]interface{}{
-			"content": req.Content,
-			"edited":  true,
-		})
+		Updates(updates)
 
 	if results.Error != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
