@@ -64,9 +64,303 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/posts/hottest": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Fetch hottest posts from a specific day",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Get Hottest Posts.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date Example: 2023-07-04",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Hottest",
+                        "schema": {
+                            "$ref": "#/definitions/docs.HottestPosts"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid Date Format",
+                        "schema": {
+                            "$ref": "#/definitions/docs.InvalidDateFormat"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/post": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Fetch a post by id.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Get Post By ID.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: 27",
+                        "name": "date",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Post Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostFound"
+                        }
+                    },
+                    "400": {
+                        "description": "Post was Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostNotFound"
+                        }
+                    },
+                    "410": {
+                        "description": "Post was Removed",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostRemoved"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/posts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Fetch posts.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Get Posts.",
+                "parameters": [
+                    {
+                        "description": "The title and/or body of the post",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "{\n    \"sort\": \"new\",\n    \"school\": 1,\n    \"purge_cache\": true,\n    \"session_key\": \"6ba7b810-9dad-11d1-80b4-00c04fd430c8\"\n}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/docs.Created"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid Sort Field",
+                        "schema": {
+                            "$ref": "#/definitions/docs.InvalidSortField"
+                        }
+                    },
+                    "5001": {
+                        "description": "Failed To Set Cache Expiration",
+                        "schema": {
+                            "$ref": "#/definitions/docs.FailedToSetCacheExpiration"
+                        }
+                    },
+                    "5002": {
+                        "description": "Failed To Update Cache",
+                        "schema": {
+                            "$ref": "#/definitions/docs.FailedToUpdateCache"
+                        }
+                    },
+                    "5003": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/purge": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Deletes the cache for the posts of a user based on their session.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Purge Cache.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: 6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+                        "name": "session-key",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cache Purged",
+                        "schema": {
+                            "$ref": "#/definitions/docs.CachePurged"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/posts/sentiment": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Sentiment anaylsis for posts by ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Sentiment Anaylsis.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: 27",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sentiment Anaylsis",
+                        "schema": {
+                            "$ref": "#/definitions/docs.SentimentAnaylsis"
+                        }
+                    },
+                    "400": {
+                        "description": "Post Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostNotFound"
+                        }
+                    },
+                    "410": {
+                        "description": "Post Removed",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostRemoved"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "docs.CachePurged": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
         "docs.Created": {
             "type": "object",
             "properties": {
@@ -77,6 +371,237 @@ const docTemplate = `{
                 "value": {
                     "type": "string",
                     "example": "null"
+                }
+            }
+        },
+        "docs.FailedToSetCacheExpiration": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "failed to set cache expiration"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.FailedToUpdateCache": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "failed to update cache"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.HottestPosts": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.InvalidDateFormat": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "invalid date format"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.InvalidSortField": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "invalid sort field"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.PostFound": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "object",
+                    "properties": {
+                        "emojis": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "example": [
+                                "[]"
+                            ]
+                        },
+                        "owner": {
+                            "type": "boolean",
+                            "example": true
+                        },
+                        "post": {
+                            "type": "object",
+                            "properties": {
+                                "content": {
+                                    "type": "string",
+                                    "example": ""
+                                },
+                                "created_at": {
+                                    "type": "integer",
+                                    "example": 1689570882898185
+                                },
+                                "downvote": {
+                                    "type": "integer",
+                                    "example": 0
+                                },
+                                "faculty": {
+                                    "type": "object",
+                                    "properties": {
+                                        "faculty": {
+                                            "type": "string",
+                                            "example": "ENG"
+                                        }
+                                    }
+                                },
+                                "hottest_on": {
+                                    "type": "string",
+                                    "example": "null"
+                                },
+                                "id": {
+                                    "type": "integer",
+                                    "example": 4
+                                },
+                                "school": {
+                                    "type": "object",
+                                    "properties": {
+                                        "abbr": {
+                                            "type": "string",
+                                            "example": "UVIC"
+                                        },
+                                        "daily_hottests": {
+                                            "type": "integer",
+                                            "example": 0
+                                        },
+                                        "domain": {
+                                            "type": "string",
+                                            "example": "@uvic.ca"
+                                        },
+                                        "lat": {
+                                            "type": "number",
+                                            "example": 48.4634
+                                        },
+                                        "lon": {
+                                            "type": "number",
+                                            "example": -123.3117
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "example": "University of Victoria"
+                                        }
+                                    }
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "example": "noti"
+                                },
+                                "trending_score": {
+                                    "type": "integer",
+                                    "example": 0
+                                },
+                                "updated_at": {
+                                    "type": "integer",
+                                    "example": 1689570882898185
+                                },
+                                "upvote": {
+                                    "type": "integer",
+                                    "example": 0
+                                }
+                            }
+                        },
+                        "user_vote": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    }
+                }
+            }
+        },
+        "docs.PostNotFound": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "post not found"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.PostRemoved": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "post removed"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.SentimentAnaylsis": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "object",
+                    "properties": {
+                        "compound": {
+                            "type": "integer",
+                            "example": 0
+                        },
+                        "negative": {
+                            "type": "integer",
+                            "example": 0
+                        },
+                        "neutral": {
+                            "type": "integer",
+                            "example": 1
+                        },
+                        "positive": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    }
                 }
             }
         },

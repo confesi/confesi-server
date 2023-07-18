@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  docs.CachePurged:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
   docs.Created:
     properties:
       error:
@@ -8,6 +17,168 @@ definitions:
       value:
         example: "null"
         type: string
+    type: object
+  docs.FailedToSetCacheExpiration:
+    properties:
+      error:
+        example: failed to set cache expiration
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.FailedToUpdateCache:
+    properties:
+      error:
+        example: failed to update cache
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.HottestPosts:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.InvalidDateFormat:
+    properties:
+      error:
+        example: invalid date format
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.InvalidSortField:
+    properties:
+      error:
+        example: invalid sort field
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.PostFound:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        properties:
+          emojis:
+            example:
+            - '[]'
+            items:
+              type: string
+            type: array
+          owner:
+            example: true
+            type: boolean
+          post:
+            properties:
+              content:
+                example: ""
+                type: string
+              created_at:
+                example: 1689570882898185
+                type: integer
+              downvote:
+                example: 0
+                type: integer
+              faculty:
+                properties:
+                  faculty:
+                    example: ENG
+                    type: string
+                type: object
+              hottest_on:
+                example: "null"
+                type: string
+              id:
+                example: 4
+                type: integer
+              school:
+                properties:
+                  abbr:
+                    example: UVIC
+                    type: string
+                  daily_hottests:
+                    example: 0
+                    type: integer
+                  domain:
+                    example: '@uvic.ca'
+                    type: string
+                  lat:
+                    example: 48.4634
+                    type: number
+                  lon:
+                    example: -123.3117
+                    type: number
+                  name:
+                    example: University of Victoria
+                    type: string
+                type: object
+              title:
+                example: noti
+                type: string
+              trending_score:
+                example: 0
+                type: integer
+              updated_at:
+                example: 1689570882898185
+                type: integer
+              upvote:
+                example: 0
+                type: integer
+            type: object
+          user_vote:
+            example: 0
+            type: integer
+        type: object
+    type: object
+  docs.PostNotFound:
+    properties:
+      error:
+        example: post not found
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.PostRemoved:
+    properties:
+      error:
+        example: post removed
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.SentimentAnaylsis:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        properties:
+          compound:
+            example: 0
+            type: integer
+          negative:
+            example: 0
+            type: integer
+          neutral:
+            example: 1
+            type: integer
+          positive:
+            example: 0
+            type: integer
+        type: object
     type: object
   docs.ServerError:
     properties:
@@ -56,6 +227,186 @@ paths:
       - BearerAuth: []
       - X-AppCheck-Token: []
       summary: Create a Post.
+      tags:
+      - Posts
+  /posts/hottest:
+    get:
+      consumes:
+      - application/json
+      description: Fetch hottest posts from a specific day
+      parameters:
+      - description: 'Date Example: 2023-07-04'
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Hottest
+          schema:
+            $ref: '#/definitions/docs.HottestPosts'
+        "400":
+          description: Invalid Date Format
+          schema:
+            $ref: '#/definitions/docs.InvalidDateFormat'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Get Hottest Posts.
+      tags:
+      - Posts
+  /posts/post:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a post by id.
+      parameters:
+      - description: 'Example: 27'
+        in: query
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post Found
+          schema:
+            $ref: '#/definitions/docs.PostFound'
+        "400":
+          description: Post was Not Found
+          schema:
+            $ref: '#/definitions/docs.PostNotFound'
+        "410":
+          description: Post was Removed
+          schema:
+            $ref: '#/definitions/docs.PostRemoved'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Get Post By ID.
+      tags:
+      - Posts
+  /posts/posts:
+    get:
+      consumes:
+      - application/json
+      description: Fetch posts.
+      parameters:
+      - description: The title and/or body of the post
+        in: body
+        name: Body
+        required: true
+        schema:
+          example: |-
+            {
+                "sort": "new",
+                "school": 1,
+                "purge_cache": true,
+                "session_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+            }
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/docs.Created'
+        "400":
+          description: Invalid Sort Field
+          schema:
+            $ref: '#/definitions/docs.InvalidSortField'
+        "5001":
+          description: Failed To Set Cache Expiration
+          schema:
+            $ref: '#/definitions/docs.FailedToSetCacheExpiration'
+        "5002":
+          description: Failed To Update Cache
+          schema:
+            $ref: '#/definitions/docs.FailedToUpdateCache'
+        "5003":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Get Posts.
+      tags:
+      - Posts
+  /posts/purge:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the cache for the posts of a user based on their session.
+      parameters:
+      - description: 'Example: 6ba7b810-9dad-11d1-80b4-00c04fd430c8'
+        in: query
+        name: session-key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cache Purged
+          schema:
+            $ref: '#/definitions/docs.CachePurged'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Purge Cache.
+      tags:
+      - Posts
+  /posts/sentiment:
+    get:
+      consumes:
+      - application/json
+      description: Sentiment anaylsis for posts by ID.
+      parameters:
+      - description: 'Example: 27'
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sentiment Anaylsis
+          schema:
+            $ref: '#/definitions/docs.SentimentAnaylsis'
+        "400":
+          description: Post Not Found
+          schema:
+            $ref: '#/definitions/docs.PostNotFound'
+        "410":
+          description: Post Removed
+          schema:
+            $ref: '#/definitions/docs.PostRemoved'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Sentiment Anaylsis.
       tags:
       - Posts
 securityDefinitions:

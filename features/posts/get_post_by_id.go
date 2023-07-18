@@ -11,6 +11,24 @@ import (
 	"gorm.io/gorm"
 )
 
+// GetPostByID godoc
+//
+//	@Summary		Get Post By ID.
+//	@Description	Fetch a post by id.
+//	@Tags			Posts
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//
+//	@Param			date	query		string				true	"Example: 27"
+//
+//	@Success		200		{object}	docs.PostFound		"Post Found"
+//	@Failure		400		{object}	docs.PostNotFound	"Post was Not Found"
+//	@Failure		410		{object}	docs.PostRemoved	"Post was Removed"
+//	@Failure		500		{object}	docs.ServerError	"Server Error"
+//
+//	@Router			/posts/post [get]
 func (h *handler) handleGetPostById(c *gin.Context) {
 	postID := c.Query("id")
 	token, err := utils.UserTokenFromContext(c)

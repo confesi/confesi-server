@@ -19,6 +19,22 @@ type sentimentAnalysis struct {
 	Compound float64 `json:"compound"`
 }
 
+// SentimentAnaylsis godoc
+//
+//	@Summary		Sentiment Anaylsis.
+//	@Description	Sentiment anaylsis for posts by ID.
+//	@Tags			Posts
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//	@Param			id	query		string					true	"Example: 27"
+//	@Success		200	{object}	docs.SentimentAnaylsis	"Sentiment Anaylsis"
+//	@Failure		400	{object}	docs.PostNotFound		"Post Not Found"
+//	@Failure		410	{object}	docs.PostRemoved		"Post Removed"
+//	@Failure		500	{object}	docs.ServerError		"Server Error"
+//
+//	@Router			/posts/sentiment [get]
 func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	postID := c.Query("id")
 	var post db.Post

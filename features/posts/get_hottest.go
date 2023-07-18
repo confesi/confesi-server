@@ -11,6 +11,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// GetHottest godoc
+//
+//	@Summary		Get Hottest Posts.
+//	@Description	Fetch hottest posts from a specific day
+//	@Tags			Posts
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//
+//	@Param			date	query		string					true	"Date Example: 2023-07-04"
+//
+//	@Success		200		{object}	docs.HottestPosts		"Hottest"
+//	@Failure		500		{object}	docs.ServerError		"Server Error"
+//	@Failure		400		{object}	docs.InvalidDateFormat	"Invalid Date Format"
+//
+//	@Router			/posts/hottest [get]
 func (h *handler) getHottestPosts(c *gin.Context, date time.Time, userID string) ([]PostDetail, error) {
 	var posts []PostDetail
 	err := h.db.
