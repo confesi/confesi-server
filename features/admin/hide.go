@@ -83,8 +83,10 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	err = tx.
 		Table("reports").
 		Where(commentOrPostIdMatcher+" = ?", req.ContentID).
-		Update("has_been_removed", req.Hide).
-		Update("result", req.Reason).
+		Updates(map[string]interface{}{
+			"has_been_removed": req.Hide,
+			"result":           req.Reason,
+		}).
 		Error
 
 	if err != nil {
@@ -129,6 +131,9 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	// return early! just keep working on the fcm messages in the background
+	response.New(http.StatusOK).Send(c)
 
 	var reports []fcmTokenWithReportID
 	var offenders []fcmTokenWithOffendingHideLogID
@@ -176,7 +181,4 @@ func (h *handler) handleHideContent(c *gin.Context) {
 				Send(*h.db)
 		}
 	}
-
-	response.New(http.StatusOK).Send(c)
-	return
 }
