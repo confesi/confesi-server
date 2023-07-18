@@ -16,6 +16,20 @@ type FetchResults struct {
 	Next  *int64       `json:"next"`
 }
 
+// GetYourPosts godoc
+//
+//	@Summary		Get Your Posts.
+//	@Description	Fetch your posts.
+//	@Tags			Posts
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//	@Param			Body	body		string				true	"The Pagination Cursor"	SchemaExample({\n "next":1688460277629001\n})
+//	@Success		201		{object}	docs.YourPosts		"Your Posts"
+//	@Failure		500		{object}	docs.ServerError	"Server Error"
+//
+//	@Router			/posts/your-posts [get]
 func (h *handler) handleGetYourPosts(c *gin.Context) {
 	// extract request
 	var req validation.YourPostsQuery

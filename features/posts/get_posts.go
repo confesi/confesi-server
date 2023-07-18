@@ -31,7 +31,7 @@ const (
 //	@Produce		application/json
 //	@Security		BearerAuth
 //	@Security		X-AppCheck-Token
-//	@Param			Body	body		string							true	"The title and/or body of the post"	SchemaExample({\n    "sort": "new",\n    "school": 1,\n    "purge_cache": true,\n    "session_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"\n})
+//	@Param			Body	body		string							true	"Json Example"	SchemaExample({\n    "sort": "new",\n    "school": 1,\n    "purge_cache": true,\n    "session_key": "6ba7b810-9dad-11d1-80b4-00c04fd430c8"\n})
 //	@Success		201		{object}	docs.Created					"Created"
 //	@Failure		400		{object}	docs.InvalidSortField			"Invalid Sort Field"
 //	@Failure		5001	{object}	docs.FailedToSetCacheExpiration	"Failed To Set Cache Expiration"

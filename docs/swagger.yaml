@@ -63,6 +63,15 @@ definitions:
         example: "null"
         type: string
     type: object
+  docs.NoPostFoundWithThisID:
+    properties:
+      error:
+        example: no post found with this ID
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
   docs.PostFound:
     properties:
       error:
@@ -141,6 +150,15 @@ definitions:
             type: integer
         type: object
     type: object
+  docs.PostHidden:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
   docs.PostNotFound:
     properties:
       error:
@@ -189,6 +207,92 @@ definitions:
         example: "null"
         type: string
     type: object
+  docs.YourPosts:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        properties:
+          next:
+            example: 1689641897327536
+            type: integer
+          posts:
+            items:
+              properties:
+                emojis:
+                  example:
+                  - '[]'
+                  items:
+                    type: string
+                  type: array
+                owner:
+                  example: true
+                  type: boolean
+                post:
+                  properties:
+                    content:
+                      example: noti
+                      type: string
+                    created_at:
+                      example: 1689559373125623
+                      type: integer
+                    downvote:
+                      example: 0
+                      type: integer
+                    faculty:
+                      properties:
+                        faculty:
+                          example: ENG
+                          type: string
+                      type: object
+                    hottest_on:
+                      example: "null"
+                      type: string
+                    id:
+                      example: 1
+                      type: integer
+                    school:
+                      properties:
+                        abbr:
+                          example: UVIC
+                          type: string
+                        daily_hottests:
+                          example: 0
+                          type: integer
+                        domain:
+                          example: '@uvic.ca'
+                          type: string
+                        lat:
+                          example: 48.4634
+                          type: number
+                        lon:
+                          example: -123.3117
+                          type: number
+                        name:
+                          example: University of Victoria
+                          type: string
+                      type: object
+                    title:
+                      example: noti
+                      type: string
+                    trending_score:
+                      example: 0
+                      type: integer
+                    updated_at:
+                      example: 1689559373125623
+                      type: integer
+                    upvote:
+                      example: 0
+                      type: integer
+                  type: object
+                user_vote:
+                  example: 0
+                  type: integer
+              type: object
+            type: array
+        type: object
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -227,6 +331,43 @@ paths:
       - BearerAuth: []
       - X-AppCheck-Token: []
       summary: Create a Post.
+      tags:
+      - Posts
+  /posts/hide:
+    patch:
+      consumes:
+      - application/json
+      description: Hide posts based on ID.
+      parameters:
+      - description: Json Example
+        in: body
+        name: Body
+        required: true
+        schema:
+          example: |-
+            {
+            "post_id": 150
+            }
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post Hidden
+          schema:
+            $ref: '#/definitions/docs.PostHidden'
+        "400":
+          description: No Post Found With This ID
+          schema:
+            $ref: '#/definitions/docs.NoPostFoundWithThisID'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Hide Post.
       tags:
       - Posts
   /posts/hottest:
@@ -303,7 +444,7 @@ paths:
       - application/json
       description: Fetch posts.
       parameters:
-      - description: The title and/or body of the post
+      - description: Json Example
         in: body
         name: Body
         required: true
@@ -407,6 +548,39 @@ paths:
       - BearerAuth: []
       - X-AppCheck-Token: []
       summary: Sentiment Anaylsis.
+      tags:
+      - Posts
+  /posts/your-posts:
+    get:
+      consumes:
+      - application/json
+      description: Fetch your posts.
+      parameters:
+      - description: The Pagination Cursor
+        in: body
+        name: Body
+        required: true
+        schema:
+          example: |-
+            {
+             "next":1688460277629001
+            }
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Your Posts
+          schema:
+            $ref: '#/definitions/docs.YourPosts'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Get Your Posts.
       tags:
       - Posts
 securityDefinitions:

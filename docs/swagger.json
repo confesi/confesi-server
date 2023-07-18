@@ -57,6 +57,61 @@
                 }
             }
         },
+        "/posts/hide": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Hide posts based on ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Hide Post.",
+                "parameters": [
+                    {
+                        "description": "Json Example",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "{\n\"post_id\": 150\n}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Post Hidden",
+                        "schema": {
+                            "$ref": "#/definitions/docs.PostHidden"
+                        }
+                    },
+                    "400": {
+                        "description": "No Post Found With This ID",
+                        "schema": {
+                            "$ref": "#/definitions/docs.NoPostFoundWithThisID"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/posts/hottest": {
             "get": {
                 "security": [
@@ -190,7 +245,7 @@
                 "summary": "Get Posts.",
                 "parameters": [
                     {
-                        "description": "The title and/or body of the post",
+                        "description": "Json Example",
                         "name": "Body",
                         "in": "body",
                         "required": true,
@@ -337,6 +392,55 @@
                     }
                 }
             }
+        },
+        "/posts/your-posts": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Fetch your posts.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Posts"
+                ],
+                "summary": "Get Your Posts.",
+                "parameters": [
+                    {
+                        "description": "The Pagination Cursor",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "{\n \"next\":1688460277629001\n}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Your Posts",
+                        "schema": {
+                            "$ref": "#/definitions/docs.YourPosts"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -424,6 +528,19 @@
                 "error": {
                     "type": "string",
                     "example": "invalid sort field"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.NoPostFoundWithThisID": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "no post found with this ID"
                 },
                 "value": {
                     "type": "string",
@@ -541,6 +658,19 @@
                 }
             }
         },
+        "docs.PostHidden": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
         "docs.PostNotFound": {
             "type": "object",
             "properties": {
@@ -607,6 +737,128 @@
                 "value": {
                     "type": "string",
                     "example": "null"
+                }
+            }
+        },
+        "docs.YourPosts": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "object",
+                    "properties": {
+                        "next": {
+                            "type": "integer",
+                            "example": 1689641897327536
+                        },
+                        "posts": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "emojis": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "[]"
+                                        ]
+                                    },
+                                    "owner": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "post": {
+                                        "type": "object",
+                                        "properties": {
+                                            "content": {
+                                                "type": "string",
+                                                "example": "noti"
+                                            },
+                                            "created_at": {
+                                                "type": "integer",
+                                                "example": 1689559373125623
+                                            },
+                                            "downvote": {
+                                                "type": "integer",
+                                                "example": 0
+                                            },
+                                            "faculty": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "faculty": {
+                                                        "type": "string",
+                                                        "example": "ENG"
+                                                    }
+                                                }
+                                            },
+                                            "hottest_on": {
+                                                "type": "string",
+                                                "example": "null"
+                                            },
+                                            "id": {
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "school": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "abbr": {
+                                                        "type": "string",
+                                                        "example": "UVIC"
+                                                    },
+                                                    "daily_hottests": {
+                                                        "type": "integer",
+                                                        "example": 0
+                                                    },
+                                                    "domain": {
+                                                        "type": "string",
+                                                        "example": "@uvic.ca"
+                                                    },
+                                                    "lat": {
+                                                        "type": "number",
+                                                        "example": 48.4634
+                                                    },
+                                                    "lon": {
+                                                        "type": "number",
+                                                        "example": -123.3117
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "University of Victoria"
+                                                    }
+                                                }
+                                            },
+                                            "title": {
+                                                "type": "string",
+                                                "example": "noti"
+                                            },
+                                            "trending_score": {
+                                                "type": "integer",
+                                                "example": 0
+                                            },
+                                            "updated_at": {
+                                                "type": "integer",
+                                                "example": 1689559373125623
+                                            },
+                                            "upvote": {
+                                                "type": "integer",
+                                                "example": 0
+                                            }
+                                        }
+                                    },
+                                    "user_vote": {
+                                        "type": "integer",
+                                        "example": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
