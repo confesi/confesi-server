@@ -134,6 +134,8 @@ type HideContent struct {
 	Hide *bool `json:"hide"`
 	// [optional] reason for hiding content
 	Reason string `json:"reason"`
+	// [required] mark as done with or still needs attention from mods
+	ReviewedByMod bool `json:"reviewed_by_mod" validate:"required"`
 }
 
 type FetchRanCrons struct {
@@ -199,4 +201,18 @@ type RankedPostsByReportsQuery struct {
 	PurgeCache    bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey    string `json:"session_key" validate:"required"`
 	ReviewedByMod bool   `json:"reviewed_by_mod"` // true or false, doesn't have "required" so that the zero-value is OK
+}
+
+type FetchReportsForCommentById struct {
+	// [required] comment id
+	CommentID uint `json:"comment_id" validate:"required"`
+	// [required] timestamp of last viewed content (ms since unix epoch)
+	Next NullableNext `json:"next"`
+}
+
+type FetchReportsForPostById struct {
+	// [required] post id
+	PostID uint `json:"post_id" validate:"required"`
+	// [required] timestamp of last viewed content (ms since unix epoch)
+	Next NullableNext `json:"next"`
 }

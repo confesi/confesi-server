@@ -62,11 +62,16 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		}
 	}()
 
+	updateData := map[string]interface{}{
+		"hidden":          req.Hide,
+		"reviewed_by_mod": req.ReviewedByMod,
+	}
+
 	// update the "hidden" field on content.
 	result := tx.
 		Table(table).
 		Where("id = ?", req.ContentID).
-		Update("hidden", req.Hide)
+		Updates(updateData)
 
 	if result.Error != nil {
 		tx.Rollback()

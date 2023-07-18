@@ -23,6 +23,9 @@ const (
 	ViewYourReportsPageSize              = 10                   // how many reports are returned in a page size in the view your reports page
 	AdminCommentsSortedByReportsPageSize = 10                   // how many comments are returned in a page size in the admin comments sorted by reports page
 	AdminPostsSortedByReportsPageSize    = 10                   // how many posts are returned in a page size in the admin posts sorted by reports page
+	AdminViewAllReportsPerCommentId      = 10                   // how many reports are returned in a page size in the view of reports for a comment given by id
+	AdminViewAllReportsPerPostId         = 10                   // how many reports are returned in a page size in the view of reports for a post given by id
+
 )
 
 // Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go

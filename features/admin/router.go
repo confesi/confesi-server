@@ -24,6 +24,16 @@ type handler struct {
 	redis *redis.Client
 }
 
+type reportDetail struct {
+	db.Report   `gorm:"embedded"`
+	ContentType string `json:"content_type" gorm:"-"`
+}
+
+type fetchResults struct {
+	Reports []reportDetail `json:"reports"`
+	Next    *int64         `json:"next"`
+}
+
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 	mux.Use(func(c *gin.Context) {
@@ -42,4 +52,6 @@ func Router(mux *gin.RouterGroup) {
 	mux.PATCH("/reviewed-by-mod", h.handleReviewContentByMod)
 	mux.GET("/comments-by-report", h.handleGetRankedCommentsByReport)
 	mux.GET("/posts-by-report", h.handleGetRankedPostsByReport)
+	mux.GET("/reports-for-comment", h.handleFetchReportForCommentById)
+	mux.GET("/reports-for-post", h.handleFetchReportForPostById)
 }
