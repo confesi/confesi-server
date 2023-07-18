@@ -1,13 +1,22 @@
 basePath: /api/v1
 definitions:
-  config.Created:
+  docs.Created:
     properties:
       error:
-        example: woah
+        example: "null"
         type: string
       value:
+        example: "null"
         type: string
-        x-nullable: true
+    type: object
+  docs.ServerError:
+    properties:
+      error:
+        example: server error
+        type: string
+      value:
+        example: "null"
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -21,7 +30,7 @@ paths:
       - application/json
       description: Create a post with the given title and body.
       parameters:
-      - description: The title and body of the post
+      - description: The title and/or body of the post
         in: body
         name: Body
         required: true
@@ -38,11 +47,11 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/config.Created'
+            $ref: '#/definitions/docs.Created'
         "500":
-          description: server error
+          description: Server Error
           schema:
-            $ref: '#/definitions/config.Created'
+            $ref: '#/definitions/docs.ServerError'
       security:
       - BearerAuth: []
       - X-AppCheck-Token: []

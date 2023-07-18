@@ -22,9 +22,9 @@ import (
 // @Produce		application/json
 // @Security		BearerAuth
 // @Security		X-AppCheck-Token
-// @Param			Body	body		string	true						"The title and body of the post"	SchemaExample({\n "title": "My Title",\n "body": "My Body"\n})
-// @Success		201		{object}	config.Created	"Created"
-// @Failure		500		{object}	config.Created{}	"server error"
+// @Param			Body	body		string	true						"The title and/or body of the post"	SchemaExample({\n "title": "My Title",\n "body": "My Body"\n})
+// @Success		201		{object}	docs.Created	"Created"
+// @Failure		500		{object}	docs.ServerError 	"Server Error"
 //
 // @Router			/posts/create [post]
 func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token) error {

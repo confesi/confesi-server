@@ -39,7 +39,7 @@ const docTemplate = `{
                 "summary": "Create a Post.",
                 "parameters": [
                     {
-                        "description": "The title and body of the post",
+                        "description": "The title and/or body of the post",
                         "name": "Body",
                         "in": "body",
                         "required": true,
@@ -53,13 +53,13 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/config.Created"
+                            "$ref": "#/definitions/docs.Created"
                         }
                     },
                     "500": {
-                        "description": "server error",
+                        "description": "Server Error",
                         "schema": {
-                            "$ref": "#/definitions/config.Created"
+                            "$ref": "#/definitions/docs.ServerError"
                         }
                     }
                 }
@@ -67,16 +67,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "config.Created": {
+        "docs.Created": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string",
-                    "example": "woah"
+                    "example": "null"
                 },
                 "value": {
                     "type": "string",
-                    "x-nullable": true
+                    "example": "null"
+                }
+            }
+        },
+        "docs.ServerError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "server error"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
                 }
             }
         }
