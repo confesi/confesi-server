@@ -58,5 +58,8 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 	if comment.Comment.UserID == token.UID {
 		comment.Owner = true
 	}
+	if !utils.ProfanityEnabled(c) {
+		comment.Comment = comment.Comment.CensorComment()
+	}
 	response.New(http.StatusOK).Val(comment).Send(c)
 }

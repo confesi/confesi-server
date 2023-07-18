@@ -91,6 +91,9 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 	parentMap := make(map[int][]CommentDetail) // Map to store parent comments
 	for i := range comments {
 		comment := &comments[i]
+		if !utils.ProfanityEnabled(c) {
+			comment.Comment = comment.Comment.CensorComment()
+		}
 		comment.Comment.ObscureIfHidden()
 		if comment.Comment.ParentRoot != nil {
 			// aka, it's a reply

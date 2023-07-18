@@ -67,6 +67,9 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 			return
 		}
 		report.Comment = &comment
+		if !utils.ProfanityEnabled(c) {
+			comment = comment.CensorComment()
+		}
 	}
 
 	response.New(http.StatusOK).Val(report).Send(c)

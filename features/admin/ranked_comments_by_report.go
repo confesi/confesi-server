@@ -94,6 +94,9 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 			return
 		}
 		comment := &comments[i]
+		if !utils.ProfanityEnabled(c) {
+			*comment = comment.CensorComment()
+		}
 		// for every comment, make it a comment admin detail
 		adminComments = append(adminComments, AdminCommentDetail{Comment: *comment, ReportCount: comment.ReportCount, ReviewedByMod: comment.ReviewedByMod})
 	}
