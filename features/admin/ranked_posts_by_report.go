@@ -16,18 +16,18 @@ import (
 )
 
 const (
-	seenCommentsCacheExpiry = 24 * time.Hour // one day
+	seenPostsCacheExpiry = 24 * time.Hour // one day
 )
 
-type AdminCommentDetail struct {
-	Comment       db.Comment `json:"comment"`
-	ReportCount   uint       `json:"-"`
-	ReviewedByMod bool       `json:"-"`
+type AdminPostDetail struct {
+	Post          db.Post `json:"post"`
+	ReportCount   uint    `json:"-"`
+	ReviewedByMod bool    `json:"-"`
 }
 
-func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
+func (h *handler) handleGetRankedPostsByReport(c *gin.Context) {
 	// extract request
-	var req validation.RankedCommentsByReportsQuery
+	var req validation.RankedPostsByReportsQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -40,7 +40,7 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	}
 
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
-	commentSpecificKey, err := utils.CreateCacheKey(config.RedisCommentsCacheByReports, token.UID, req.SessionKey)
+	postSpecificKey, err := utils.CreateCacheKey(config.RedisPostsCacheByReports, token.UID, req.SessionKey)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return
@@ -48,15 +48,15 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 
 	if req.PurgeCache {
 		// purge the cache
-		err := h.redis.Del(c, commentSpecificKey).Err()
+		err := h.redis.Del(c, postSpecificKey).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}
 
-	// retrieve the seen comment IDs from the cache
-	ids, err := h.redis.SMembers(c, commentSpecificKey).Result()
+	// retrieve the seen post IDs from the cache
+	ids, err := h.redis.SMembers(c, postSpecificKey).Result()
 	if err != nil {
 		if err == redis.Nil {
 			ids = []string{} // assigns an empty slice
@@ -68,16 +68,18 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 
 	excludedIDQuery := ""
 	if len(ids) > 0 {
-		excludedIDQuery = " AND comments.id NOT IN (" + strings.Join(ids, ",") + ")"
+		excludedIDQuery = " AND posts.id NOT IN (" + strings.Join(ids, ",") + ")"
 	}
 
-	comments := []db.Comment{}
+	posts := []db.Post{}
 	// fetch comments
 	err = h.db.
+		Preload("Faculty").
+		Preload("School").
 		Where("reviewed_by_mod = ?"+excludedIDQuery, req.ReviewedByMod).
 		Order("report_count DESC").
-		Find(&comments).
-		Limit(config.AdminCommentsSortedByReportsPageSize).
+		Find(&posts).
+		Limit(config.AdminPostsSortedByReportsPageSize).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -85,21 +87,21 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	}
 
 	// to help with serialization
-	adminComments := []AdminCommentDetail{}
-	for i := range comments {
-		err := h.redis.SAdd(c, commentSpecificKey, comments[i].ID).Err()
+	adminPosts := []AdminPostDetail{}
+	for i := range posts {
+		err := h.redis.SAdd(c, postSpecificKey, posts[i].ID).Err()
 		if err != nil {
 			logger.StdErr(err)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
 		}
-		comment := &comments[i]
-		// for every comment, make it a comment admin detail
-		adminComments = append(adminComments, AdminCommentDetail{Comment: *comment, ReportCount: comment.ReportCount, ReviewedByMod: comment.ReviewedByMod})
+		post := &posts[i]
+		// for every post, make it a post admin detail
+		adminPosts = append(adminPosts, AdminPostDetail{Post: *post, ReportCount: post.ReportCount, ReviewedByMod: post.ReviewedByMod})
 	}
 
 	// set the expiration for the cache
-	err = h.redis.Expire(c, commentSpecificKey, seenCommentsCacheExpiry).Err()
+	err = h.redis.Expire(c, postSpecificKey, seenCommentsCacheExpiry).Err()
 	if err != nil {
 		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
@@ -107,5 +109,5 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	}
 
 	// Send response
-	response.New(http.StatusOK).Val(adminComments).Send(c)
+	response.New(http.StatusOK).Val(adminPosts).Send(c)
 }

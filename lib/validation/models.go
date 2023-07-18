@@ -194,3 +194,9 @@ type RankedCommentsByReportsQuery struct {
 	SessionKey    string `json:"session_key" validate:"required"`
 	ReviewedByMod bool   `json:"reviewed_by_mod"` // true or false, doesn't have "required" so that the zero-value is OK
 }
+
+type RankedPostsByReportsQuery struct {
+	PurgeCache    bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
+	SessionKey    string `json:"session_key" validate:"required"`
+	ReviewedByMod bool   `json:"reviewed_by_mod"` // true or false, doesn't have "required" so that the zero-value is OK
+}
