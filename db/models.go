@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	"gorm.io/datatypes"
-
 	"time"
+
+	goaway "github.com/TwiN/go-away"
+	"gorm.io/datatypes"
 )
 
 func ModLevelToString(modLevel uint) (error, string) {
@@ -181,6 +182,17 @@ type Post struct {
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
+}
+
+func (p *Post) CensorPost() Post {
+	p.Title = goaway.Censor(p.Title)
+	p.Content = goaway.Censor(p.Content)
+	return *p
+}
+
+func (c *Comment) CensorComment() Comment {
+	c.Content = goaway.Censor(c.Content)
+	return *c
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")

@@ -59,6 +59,6 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 		return
 	}
 	post.Emojis = tags.GetEmojis(&post.Post)
-	response.New(http.StatusOK).Val(post).Send(c)
+	response.New(http.StatusOK).Val(post.CensorPost()).Send(c)
 	return
 }
