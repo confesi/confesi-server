@@ -70,6 +70,9 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 		if post.UserID == token.UID {
 			post.Owner = true
 		}
+		if !utils.ProfanityEnabled(c) {
+			post.Post = post.Post.CensorPost()
+		}
 		post.Emojis = tags.GetEmojis(&post.Post)
 	}
 
