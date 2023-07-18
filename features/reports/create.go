@@ -29,25 +29,54 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 		return
 	}
 
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
+	var modelMatcher interface{}
 	report := db.Report{}
 	if req.ContentType == "post" {
 		report.PostID = &req.ContentID
+		modelMatcher = &db.Post{}
 	} else if req.ContentType == "comment" {
 		report.CommentID = &req.ContentID
+		modelMatcher = &db.Comment{}
 	} else {
 		// should never happen... but to be defensive
-		response.New(http.StatusBadRequest).Err("invalid content type").Send(c)
+		tx.Rollback()
+		response.New(http.StatusBadRequest).Err(invalidContentId.Error()).Send(c)
+		return
+	}
+
+	// inc the report count for the post/comment by 1
+	err = tx.
+		Model(&modelMatcher).
+		Where("id = ?", req.ContentID).
+		Update("report_count", gorm.Expr("report_count + 1")).
+		Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
 	// match the req.Type to the report_type table
 	var reportType db.ReportType
-	err = h.db.Where("type = ?", req.Type).First(&reportType).Error
+	err = tx.Where("type = ?", req.Type).First(&reportType).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			tx.Rollback()
 			response.New(http.StatusBadRequest).Err(reportTypeDoesntExist.Error()).Send(c)
 			return
 		}
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
@@ -56,7 +85,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 	report.Description = req.Description
 	report.TypeID = uint(reportType.ID)
 
-	err = h.db.Create(&report).Error
+	err = tx.Create(&report).Error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
@@ -67,16 +96,27 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 		}
 		switch pgErr.Code {
 		case "23505": // duplicate key value violates unique constraint
+			tx.Rollback()
 			response.New(http.StatusConflict).Err(reportAlreadyExists.Error()).Send(c)
 			return
 		case "23503": // foreign key constraint violation
+			tx.Rollback()
 			response.New(http.StatusBadRequest).Err(invalidContentId.Error()).Send(c)
 			return // aka, you provided an invalid post/comment id to try saving
 		default:
 			// some other postgreSQL error
+			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+	}
+
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
 	}
 
 	// if all goes well, send 201

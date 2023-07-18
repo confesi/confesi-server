@@ -186,3 +186,11 @@ swag init
 ```
 
 ... this should rebuild the doc files under `/docs` to reflect the changes.
+
+**Formatting the docs:**
+
+You can also run to format the Swagger "code".
+
+```sh
+swag fmt
+```

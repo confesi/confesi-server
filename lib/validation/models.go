@@ -165,6 +165,15 @@ type ReportQuery struct {
 	Type string `json:"type" validate:"required"`
 }
 
+type UpdateReviewedByModQuery struct {
+	// [required] content id to report
+	ContentID uint `json:"content_id" validate:"required"`
+	// [required] "post" for post, "comment" for comment
+	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
+	// [required] true to mark as reviewed, false to unmark as reviewed (not having required with pointers to ensure zero-value is OK)
+	ReviewedByMod *bool `json:"reviewed_by_mod"`
+}
+
 type FetchReports struct {
 	// [required] type of report to fetch (accepts anything because we have the options defined in the db)
 	Type string `json:"type" validate:"required"`
