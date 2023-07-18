@@ -180,6 +180,7 @@ type Post struct {
 	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
+	Edited        bool            `gorm:"column:edited" json:"edited"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
@@ -203,6 +204,7 @@ type Comment struct {
 	Hidden                    bool       `gorm:"column:hidden" json:"hidden"`
 	ReportCount               uint       `gorm:"column:report_count" json:"-"`
 	ReviewedByMod             bool       `gorm:"column:reviewed_by_mod" json:"-"`
+	Edited                    bool       `gorm:"column:edited" json:"edited"`
 }
 
 func (c *Comment) ObscureIfHidden() Comment {

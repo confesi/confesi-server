@@ -216,3 +216,19 @@ type FetchReportsForPostById struct {
 	// [required] timestamp of last viewed content (ms since unix epoch)
 	Next NullableNext `json:"next"`
 }
+
+type EditComment struct {
+	// [required] comment id
+	CommentID uint `json:"comment_id" validate:"required"`
+	// [required] the actual text content of the comment
+	Content string `json:"content" validate:"required,min=1,max=500" gorm:"not null"`
+}
+
+type EditPost struct {
+	// [required] post id
+	PostID uint `json:"post_id" validate:"required"`
+	// [required if Body empty/null] at most 100 characters
+	Title string `json:"title" validate:"max=100,required_without=Body"`
+	// [required if Title empty/null] at most 2000 characters
+	Body string `json:"body" validate:"max=2000,required_without=Title"`
+}
