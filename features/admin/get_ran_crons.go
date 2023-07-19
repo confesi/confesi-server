@@ -16,6 +16,20 @@ type FetchedCronJobs struct {
 	Next  *int64       `json:"next"`
 }
 
+// GetRanCrons godoc
+//
+//	@Summary		Get Ran Crons.
+//	@Description	Obtain the Ran Cron Jobs of a specific type
+//	@Tags			Admin
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//	@Param			Body	body		string				true	"Pagination Cursor and Type"	SchemaExample({\n    "next": 1689156632542916,\n    "type": "all"\n})
+//	@Success		200		{object}	docs.GetCronJobs	"Cron Jobs Ran Result"
+//	@Failure		500		{object}	docs.ServerError	"Server Error"
+//
+//	@Router			/admin/crons [get]
 func (h *handler) handleGetDailyHottestCrons(c *gin.Context) {
 	// extract request
 	var req validation.FetchRanCrons

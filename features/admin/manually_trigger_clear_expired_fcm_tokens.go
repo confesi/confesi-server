@@ -9,6 +9,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TriggerClearExpiredTokens godoc
+//
+//	@Summary		Trigger Clear Expired Tokens
+//	@Description	Attempts to execute the cron job once, for the specified date, without retries.
+//	@Tags			Admin
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//
+//	@Param			day	query		string					true	"Example: 2023-07-09"
+//
+//	@Success		200	{object}	docs.Success			"Cron Initiated"
+//	@Failure		400	{object}	docs.InvalidDateFormat	"Post was Not Found"
+//
+//	@Router			/admin/expire-fcm-tokens [post]
+//
 // Attempts to execute the cron job once, without retries.
 func (h *handler) handleManuallyTriggerClearExpiredFcmTokens(c *gin.Context) {
 

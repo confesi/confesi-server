@@ -1,5 +1,12 @@
 package docs
 
+import "time"
+
+type Success struct {
+	Error *string `json:"error" example:"null"`
+	Value *string `json:"value" example:"null"`
+}
+
 type Created struct {
 	Error *string `json:"error" example:"null"`
 	Value *string `json:"value" example:"null"`
@@ -68,6 +75,54 @@ type SentimentAnaylsis struct {
 		Neutral  int `json:"neutral" example:"1"`
 		Compound int `json:"compound" example:"0"`
 	} `json:"value"`
+}
+
+type GetCronJobs struct {
+	Error *string `json:"error" example:"null"`
+	Value struct {
+		Crons []struct {
+			ID        int       `json:"id" example:"1"`
+			CreatedAt int64     `json:"created_at" example:"1689736231093838"`
+			Ran       time.Time `json:"ran" example:"2023-06-21T00:00:00Z"`
+			Type      string    `json:"type" example:"clear_expired_fcm_tokens"`
+		} `json:"crons"`
+		Next int64 `json:"next" example:"1689736231093838"`
+	} `json:"value"`
+}
+
+type FeedbackByID struct {
+	Error *string `json:"error" example:"null"`
+	Value struct {
+		ID        int    `json:"id" example:"12"`
+		CreatedAt int64  `json:"created_at" example:"1687339205605989"`
+		Content   string `json:"content" example:"WOAH THIS WAS SUCH AN AMAZING APP I CAN'T BELEIVE YOU DID IT!"`
+		TypeID    int    `json:"type_id" example:"0"`
+	} `json:"value"`
+}
+
+type RegisteredUser struct {
+	Error *string `json:"error" example:"null"`
+	Value string  `json:"value" example:"auth"`
+}
+
+type ErrorExtractingDomainFromEmail struct {
+	Error *string `json:"error" example:"error extracting domain from email"`
+	Value string  `json:"value" example:"null"`
+}
+
+type DomainDoesNotBelongToASchool struct {
+	Error *string `json:"error" example:"domain doesn't belong to school"`
+	Value string  `json:"value" example:"null"`
+}
+
+type FacultyDoesNotExist struct {
+	Error *string `json:"error" example:"faculty doesn't exist"`
+	Value string  `json:"value" example:"null"`
+}
+
+type EmailAlreadyExists struct {
+	Error *string `json:"error" example:"email already exists"`
+	Value string  `json:"value" example:"null"`
 }
 
 type PostFound struct {

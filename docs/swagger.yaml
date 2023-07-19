@@ -18,6 +18,42 @@ definitions:
         example: "null"
         type: string
     type: object
+  docs.DomainDoesNotBelongToASchool:
+    properties:
+      error:
+        example: domain doesn't belong to school
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.EmailAlreadyExists:
+    properties:
+      error:
+        example: email already exists
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.ErrorExtractingDomainFromEmail:
+    properties:
+      error:
+        example: error extracting domain from email
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.FacultyDoesNotExist:
+    properties:
+      error:
+        example: faculty doesn't exist
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
   docs.FailedToSetCacheExpiration:
     properties:
       error:
@@ -35,6 +71,56 @@ definitions:
       value:
         example: "null"
         type: string
+    type: object
+  docs.FeedbackByID:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        properties:
+          content:
+            example: WOAH THIS WAS SUCH AN AMAZING APP I CAN'T BELEIVE YOU DID IT!
+            type: string
+          created_at:
+            example: 1687339205605989
+            type: integer
+          id:
+            example: 12
+            type: integer
+          type_id:
+            example: 0
+            type: integer
+        type: object
+    type: object
+  docs.GetCronJobs:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        properties:
+          crons:
+            items:
+              properties:
+                created_at:
+                  example: 1689736231093838
+                  type: integer
+                id:
+                  example: 1
+                  type: integer
+                ran:
+                  example: "2023-06-21T00:00:00Z"
+                  type: string
+                type:
+                  example: clear_expired_fcm_tokens
+                  type: string
+              type: object
+            type: array
+          next:
+            example: 1689736231093838
+            type: integer
+        type: object
     type: object
   docs.HottestPosts:
     properties:
@@ -177,6 +263,15 @@ definitions:
         example: "null"
         type: string
     type: object
+  docs.RegisteredUser:
+    properties:
+      error:
+        example: "null"
+        type: string
+      value:
+        example: auth
+        type: string
+    type: object
   docs.SentimentAnaylsis:
     properties:
       error:
@@ -202,6 +297,15 @@ definitions:
     properties:
       error:
         example: server error
+        type: string
+      value:
+        example: "null"
+        type: string
+    type: object
+  docs.Success:
+    properties:
+      error:
+        example: "null"
         type: string
       value:
         example: "null"
@@ -299,6 +403,178 @@ info:
   title: Confesi dev-only API docs
   version: "1.0"
 paths:
+  /admin/crons:
+    post:
+      consumes:
+      - application/json
+      description: Obtain the Ran Cron Jobs of a specific type
+      parameters:
+      - description: Pagination Cursor and Type
+        in: body
+        name: Body
+        required: true
+        schema:
+          example: |-
+            {
+                "next": 1689156632542916,
+                "type": "all"
+            }
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cron Jobs Ran Result
+          schema:
+            $ref: '#/definitions/docs.GetCronJobs'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Get Ran Crons.
+      tags:
+      - Admin
+  /admin/daily-hottest-cron:
+    post:
+      consumes:
+      - application/json
+      description: Attempts to execute the cron job once, for the specified date,
+        without retries.
+      parameters:
+      - description: 'Example: 2023-07-09'
+        in: query
+        name: day
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cron Initiated
+          schema:
+            $ref: '#/definitions/docs.Success'
+        "400":
+          description: Post was Not Found
+          schema:
+            $ref: '#/definitions/docs.InvalidDateFormat'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Trigger Daily Hottest Cron
+      tags:
+      - Admin
+  /admin/expire-fcm-tokens:
+    post:
+      consumes:
+      - application/json
+      description: Attempts to execute the cron job once, for the specified date,
+        without retries.
+      parameters:
+      - description: 'Example: 2023-07-09'
+        in: query
+        name: day
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cron Initiated
+          schema:
+            $ref: '#/definitions/docs.Success'
+        "400":
+          description: Post was Not Found
+          schema:
+            $ref: '#/definitions/docs.InvalidDateFormat'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Trigger Clear Expired Tokens
+      tags:
+      - Admin
+  /admin/feedback/{feedback_id}:
+    get:
+      consumes:
+      - application/json
+      description: Obtain specific feedback by its ID
+      parameters:
+      - description: Feedback ID
+        in: path
+        name: feedback_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Feedback Result
+          schema:
+            $ref: '#/definitions/docs.FeedbackByID'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Feedback By ID.
+      tags:
+      - Admin
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register A User.
+      parameters:
+      - description: Registration Data
+        in: body
+        name: Body
+        required: true
+        schema:
+          example: |-
+            {
+                "email": "admin@uvic.ca",
+                "password": "mysecurepw$",
+                "year_of_study": 1,
+                "faculty": "ENG"
+            }
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Registered User
+          schema:
+            $ref: '#/definitions/docs.RegisteredUser'
+        "500":
+          description: Server Error
+          schema:
+            $ref: '#/definitions/docs.ServerError'
+        "4001":
+          description: Error Extracting Domain From Email
+          schema:
+            $ref: '#/definitions/docs.ErrorExtractingDomainFromEmail'
+        "4002":
+          description: Domain Does Not Belong To A School
+          schema:
+            $ref: '#/definitions/docs.DomainDoesNotBelongToASchool'
+        "4005":
+          description: Faculty Does Not Exist
+          schema:
+            $ref: '#/definitions/docs.FacultyDoesNotExist'
+        "4006":
+          description: Email Already Exists
+          schema:
+            $ref: '#/definitions/docs.EmailAlreadyExists'
+      security:
+      - BearerAuth: []
+      - X-AppCheck-Token: []
+      summary: Register User.
+      tags:
+      - Auth
   /posts/create:
     post:
       consumes:

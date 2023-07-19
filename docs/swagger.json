@@ -8,6 +8,266 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
+        "/admin/crons": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Obtain the Ran Cron Jobs of a specific type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get Ran Crons.",
+                "parameters": [
+                    {
+                        "description": "Pagination Cursor and Type",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "{\n    \"next\": 1689156632542916,\n    \"type\": \"all\"\n}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cron Jobs Ran Result",
+                        "schema": {
+                            "$ref": "#/definitions/docs.GetCronJobs"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/daily-hottest-cron": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Attempts to execute the cron job once, for the specified date, without retries.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Trigger Daily Hottest Cron",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: 2023-07-09",
+                        "name": "day",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cron Initiated",
+                        "schema": {
+                            "$ref": "#/definitions/docs.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Post was Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.InvalidDateFormat"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/expire-fcm-tokens": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Attempts to execute the cron job once, for the specified date, without retries.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Trigger Clear Expired Tokens",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: 2023-07-09",
+                        "name": "day",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cron Initiated",
+                        "schema": {
+                            "$ref": "#/definitions/docs.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Post was Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/docs.InvalidDateFormat"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/feedback/{feedback_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Obtain specific feedback by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Feedback By ID.",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Feedback ID",
+                        "name": "feedback_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Feedback Result",
+                        "schema": {
+                            "$ref": "#/definitions/docs.FeedbackByID"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "X-AppCheck-Token": []
+                    }
+                ],
+                "description": "Register A User.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register User.",
+                "parameters": [
+                    {
+                        "description": "Registration Data",
+                        "name": "Body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "{\n    \"email\": \"admin@uvic.ca\",\n    \"password\": \"mysecurepw$\",\n    \"year_of_study\": 1,\n    \"faculty\": \"ENG\"\n}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Registered User",
+                        "schema": {
+                            "$ref": "#/definitions/docs.RegisteredUser"
+                        }
+                    },
+                    "4001": {
+                        "description": "Error Extracting Domain From Email",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ErrorExtractingDomainFromEmail"
+                        }
+                    },
+                    "4002": {
+                        "description": "Domain Does Not Belong To A School",
+                        "schema": {
+                            "$ref": "#/definitions/docs.DomainDoesNotBelongToASchool"
+                        }
+                    },
+                    "4005": {
+                        "description": "Faculty Does Not Exist",
+                        "schema": {
+                            "$ref": "#/definitions/docs.FacultyDoesNotExist"
+                        }
+                    },
+                    "4006": {
+                        "description": "Email Already Exists",
+                        "schema": {
+                            "$ref": "#/definitions/docs.EmailAlreadyExists"
+                        }
+                    },
+                    "500": {
+                        "description": "Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/docs.ServerError"
+                        }
+                    }
+                }
+            }
+        },
         "/posts/create": {
             "post": {
                 "security": [
@@ -470,6 +730,58 @@
                 }
             }
         },
+        "docs.DomainDoesNotBelongToASchool": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "domain doesn't belong to school"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.EmailAlreadyExists": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "email already exists"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.ErrorExtractingDomainFromEmail": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "error extracting domain from email"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.FacultyDoesNotExist": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "faculty doesn't exist"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
         "docs.FailedToSetCacheExpiration": {
             "type": "object",
             "properties": {
@@ -493,6 +805,78 @@
                 "value": {
                     "type": "string",
                     "example": "null"
+                }
+            }
+        },
+        "docs.FeedbackByID": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "object",
+                    "properties": {
+                        "content": {
+                            "type": "string",
+                            "example": "WOAH THIS WAS SUCH AN AMAZING APP I CAN'T BELEIVE YOU DID IT!"
+                        },
+                        "created_at": {
+                            "type": "integer",
+                            "example": 1687339205605989
+                        },
+                        "id": {
+                            "type": "integer",
+                            "example": 12
+                        },
+                        "type_id": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    }
+                }
+            }
+        },
+        "docs.GetCronJobs": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "object",
+                    "properties": {
+                        "crons": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "created_at": {
+                                        "type": "integer",
+                                        "example": 1689736231093838
+                                    },
+                                    "id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "ran": {
+                                        "type": "string",
+                                        "example": "2023-06-21T00:00:00Z"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "clear_expired_fcm_tokens"
+                                    }
+                                }
+                            }
+                        },
+                        "next": {
+                            "type": "integer",
+                            "example": 1689736231093838
+                        }
+                    }
                 }
             }
         },
@@ -697,6 +1081,19 @@
                 }
             }
         },
+        "docs.RegisteredUser": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "auth"
+                }
+            }
+        },
         "docs.SentimentAnaylsis": {
             "type": "object",
             "properties": {
@@ -733,6 +1130,19 @@
                 "error": {
                     "type": "string",
                     "example": "server error"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "null"
+                }
+            }
+        },
+        "docs.Success": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "null"
                 },
                 "value": {
                     "type": "string",

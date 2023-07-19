@@ -13,6 +13,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Register godoc
+//
+//	@Summary		Register User.
+//	@Description	Register A User.
+//	@Tags			Auth
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//	@Param			Body	body		string				true	"Registration Data"	SchemaExample({\n    "email": "admin@uvic.ca",\n    "password": "mysecurepw$",\n    "year_of_study": 1,\n    "faculty": "ENG"\n})
+//	@Success		201		{object}	docs.RegisteredUser		"Registered User"
+//	@Failure		4001		{object}	docs.ErrorExtractingDomainFromEmail	"Error Extracting Domain From Email"
+//	@Failure		4002		{object}	docs.DomainDoesNotBelongToASchool	"Domain Does Not Belong To A School"
+//	@Failure		4005		{object}	docs.FacultyDoesNotExist	"Faculty Does Not Exist"
+//	@Failure		4006		{object}	docs.EmailAlreadyExists	"Email Already Exists"
+//	@Failure		500		{object}	docs.ServerError	"Server Error"
+//
+//	@Router			/auth/register [post]
+//
 // TODO: add email verification, and route to enable checking if email is verified to pass through the middleware
 // Example creating a Firebase user
 func (h *handler) handleRegister(c *gin.Context) {
