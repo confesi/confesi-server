@@ -65,6 +65,7 @@ func main() {
 	api := r.Group("/api/v1")
 	api.Use(middleware.AppCheck)
 	api.Use(middleware.RateLimit)
+	api.Use(middleware.OptionalProfanityCensor)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
 

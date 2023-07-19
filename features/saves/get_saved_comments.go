@@ -57,6 +57,9 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 			if comment.Comment.UserID == token.UID {
 				comment.Owner = true
 			}
+			if !utils.ProfanityEnabled(c) {
+				comment.Comment = comment.Comment.CensorComment()
+			}
 			comment.Comment.ObscureIfHidden()
 		}
 	}

@@ -62,6 +62,9 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 			if post.UserID == token.UID {
 				post.Owner = true
 			}
+			if !utils.ProfanityEnabled(c) {
+				post.Post = post.Post.CensorPost()
+			}
 		}
 	}
 

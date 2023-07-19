@@ -3,6 +3,7 @@ package admin
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"errors"
 	"net/http"
 	"strconv"
@@ -50,6 +51,9 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 			return
 		}
 		report.Post = &post
+		if !utils.ProfanityEnabled(c) {
+			post = post.CensorPost()
+		}
 	}
 
 	if report.CommentID != nil {
@@ -63,6 +67,9 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 			return
 		}
 		report.Comment = &comment
+		if !utils.ProfanityEnabled(c) {
+			comment = comment.CensorComment()
+		}
 	}
 
 	response.New(http.StatusOK).Val(report).Send(c)

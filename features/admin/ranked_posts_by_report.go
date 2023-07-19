@@ -96,6 +96,9 @@ func (h *handler) handleGetRankedPostsByReport(c *gin.Context) {
 			return
 		}
 		post := &posts[i]
+		if !utils.ProfanityEnabled(c) {
+			*post = post.CensorPost()
+		}
 		// for every post, make it a post admin detail
 		adminPosts = append(adminPosts, AdminPostDetail{Post: *post, ReportCount: post.ReportCount, ReviewedByMod: post.ReviewedByMod})
 	}
