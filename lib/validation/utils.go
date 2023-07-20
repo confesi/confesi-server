@@ -11,8 +11,9 @@ func ExtractEmailDomain(email string) (string, error) {
 	pattern := `\@[A-Za-z0-9]+\.[A-Za-z]{2,6}`
 	input := []byte(email)
 	regex, err := regexp.Compile(pattern)
-	if err != nil {
+	res := regex.FindString(string(input))
+	if err != nil && len(res) > 2 { // sanity check
 		return "", err
 	}
-	return regex.FindString(string(input)), nil
+	return res, nil
 }

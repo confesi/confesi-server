@@ -76,22 +76,22 @@ func (h *handler) handleRegister(c *gin.Context) {
 	if err != nil {
 		logger.StdErr(err)
 		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val("auth").Send(c)
+		response.New(http.StatusInternalServerError).Err("sync failed").Send(c)
 		return
 	}
 
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
 	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
-		"profile_created": true,
-		"roles":           []string{}, //! default users have no roles, VERY IMPORTANT
+		"sync":  true,
+		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
 	if err != nil {
 		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val("auth").Send(c)
+		response.New(http.StatusInternalServerError).Err("sync failed").Send(c)
 		return
 	}
 
 	// if this succeeds, send back success to indicate the user should reload their account because both their account & profile
 	// has been created
-	response.New(http.StatusCreated).Val("full").Send(c)
+	response.New(http.StatusCreated).Send(c)
 }

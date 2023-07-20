@@ -25,7 +25,8 @@ const (
 	AdminPostsSortedByReportsPageSize    = 10                   // how many posts are returned in a page size in the admin posts sorted by reports page
 	AdminViewAllReportsPerCommentId      = 10                   // how many reports are returned in a page size in the view of reports for a comment given by id
 	AdminViewAllReportsPerPostId         = 10                   // how many reports are returned in a page size in the view of reports for a post given by id
-
+	iOSBundleId                          = "com.confesi.app"    // iOS bundle id // TODO: change this
+	AndroidPackageName                   = "com.confesi.app"    // Android package name // TODO: change this
 )
 
 // Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go
