@@ -22,3 +22,6 @@ FB_API_KEY=""
 
 # Enable public doc access or not, should be FALSE IN PRODUCTION!
 PUBLIC_DOC_ACCESS="true"
+
+# Amazon SES setup
+AWS_SDK_LOAD_CONFIG=true
