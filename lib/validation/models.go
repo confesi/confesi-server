@@ -63,6 +63,16 @@ type UserQuery struct {
 	UserID string `json:"user_id" validate:"required"`
 }
 
+type UpdateYearOfStudy struct {
+	// [required] year of study to update to
+	YearOfStudy string `json:"year_of_study" validate:"required"`
+}
+
+type UpdateFaculty struct {
+	// [required] year of study to update to
+	Faculty string `json:"faculty" validate:"required"`
+}
+
 type CreateComment struct {
 	// [required] the post this comment is associated with
 	PostID uint `json:"post_id" validate:"required"`

@@ -39,5 +39,10 @@ func Router(mux *gin.RouterGroup) {
 	})
 	registeredFirebaseUsersOnly.GET("/user", h.handleGetUser)
 	registeredFirebaseUsersOnly.GET("/user-standing", h.handleGetUserStanding)
-	//
+
+	registeredFirebaseUsersOnly.DELETE("/faculty", h.handleClearFaculty)
+	registeredFirebaseUsersOnly.PATCH("/faculty", h.handleSetFaculty)
+
+	registeredFirebaseUsersOnly.DELETE("/year-of-study", h.handleClearYearOfStudy)
+	registeredFirebaseUsersOnly.PATCH("/year-of-study", h.handleSetYearOfStudy)
 }

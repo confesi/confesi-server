@@ -8,6 +8,7 @@ import (
 	"time"
 
 	goaway "github.com/TwiN/go-away"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
 
@@ -28,8 +29,8 @@ type School struct {
 }
 
 type Faculty struct {
-	ID      int    `gorm:"primaryKey" json:"-"`
-	Faculty string `gorm:"column:faculty" json:"faculty"`
+	ID      int         `gorm:"primaryKey" json:"-"`
+	Faculty null.String `gorm:"column:faculty" json:"faculty"`
 }
 
 func (Faculty) TableName() string {
@@ -275,8 +276,8 @@ type FeedbackType struct {
 }
 
 type YearOfStudy struct {
-	ID   int    `gorm:"primaryKey" json:"-"`
-	Name string `gorm:"column:name" json:"type"`
+	ID   int         `gorm:"primaryKey" json:"-"`
+	Name null.String `gorm:"column:name" json:"type"`
 }
 
 func (YearOfStudy) TableName() string {
