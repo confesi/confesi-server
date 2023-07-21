@@ -48,8 +48,9 @@ func (h *handler) handleGetHideLogById(c *gin.Context) {
 	if hideLog.PostID != nil {
 		post := db.Post{}
 		err := h.db.
-			Preload("School").  // Preload the User field of the Post
-			Preload("Faculty"). // Preload the User field of the Post
+			Preload("School").
+			Preload("Faculty").
+			Preload("YearOfStudy").
 			Where("id = ?", hideLog.PostID).
 			First(&post).
 			Error

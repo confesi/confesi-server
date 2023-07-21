@@ -120,7 +120,6 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 		batchResponse, _ := s.Client.SendAll(ctx, batch)
 		// check the results for each message in the batch
 		for j, result := range batchResponse.Responses {
-			fmt.Println(result)
 			if result.Error != nil {
 				if messaging.IsRegistrationTokenNotRegistered(result.Error) {
 					deadTokens = append(deadTokens, batch[j].Token)

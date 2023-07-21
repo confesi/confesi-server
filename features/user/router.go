@@ -32,10 +32,19 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 
-	// any firebase user
-	anyFirebaseUserRoutes := mux.Group("")
-	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+	// registered firebase users only
+	registeredFirebaseUsersOnly := mux.Group("")
+	registeredFirebaseUsersOnly.Use(func(c *gin.Context) {
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-	anyFirebaseUserRoutes.GET("/user", h.handleGetUser)
+	registeredFirebaseUsersOnly.GET("/user", h.handleGetUser)
+	registeredFirebaseUsersOnly.GET("/user-standing", h.handleGetUserStanding)
+
+	registeredFirebaseUsersOnly.DELETE("/faculty", h.handleClearFaculty)
+	registeredFirebaseUsersOnly.PATCH("/faculty", h.handleSetFaculty)
+
+	registeredFirebaseUsersOnly.DELETE("/year-of-study", h.handleClearYearOfStudy)
+	registeredFirebaseUsersOnly.PATCH("/year-of-study", h.handleSetYearOfStudy)
+
+	registeredFirebaseUsersOnly.PATCH("/school", h.handleSetSchool)
 }

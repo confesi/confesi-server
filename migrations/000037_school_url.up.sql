@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE schools
+    ADD COLUMN img_url TEXT NOT NULL;
+
+END;

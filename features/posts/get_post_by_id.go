@@ -23,6 +23,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 
 	err = h.db.
 		Preload("School").
+		Preload("YearOfStudy").
 		Preload("Faculty").
 		Raw(`
 				SELECT posts.*, 

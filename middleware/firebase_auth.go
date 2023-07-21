@@ -1,11 +1,16 @@
 package middleware
 
 import (
+	"confesi/db"
+	"confesi/lib/fire"
 	"confesi/lib/response"
+	"confesi/lib/validation"
+	"errors"
 	"net/http"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AllowedUser string
@@ -45,11 +50,23 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 		return
 	}
 
+	// if they are an email-password user (like all our registered users)
 	if token.Firebase.SignInProvider == "password" {
-		if profileCreated, ok := token.Claims["profile_created"].(bool); !ok {
-			// registered user without postgres profile since the claim isn't created till after their account gets saved to postgres
-			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
-			return
+		// if their email is NOT verified, then send back not verified
+		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
+		// if !token.Claims["email_verified"].(bool) {
+		// 	response.New(http.StatusUnauthorized).Val("email not verified").Send(c)
+		// 	return
+		// }
+		// todo: add check for `disabled` users to block them, too.
+		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
+		if profileCreated, ok := token.Claims["sync"].(bool); !ok {
+			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
+			err := RetrySyncPostgresAccountCreation(c, token)
+			if err != nil {
+				response.New(http.StatusUnauthorized).Err("non-synced account").Send(c)
+				return
+			}
 		} else if profileCreated {
 			// registered user with postgres profile, now we check if they have the required roles
 			var rolesClaim interface{}
@@ -92,12 +109,96 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 			c.Next()
 			return
 		} else {
-			// registered user without postgres profile (handling the future case where the claim at "profile_created" is turned back to false for some reason)
-			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
-			return
+			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
+			err := RetrySyncPostgresAccountCreation(c, token)
+			if err != nil {
+				response.New(http.StatusUnauthorized).Err("non-synced account").Send(c)
+				return
+			}
 		}
 	} else {
 		// anon user (but resource requires registered user)
 		response.New(http.StatusUnauthorized).Err("registered users only").Send(c)
 	}
+}
+
+var (
+	errorExtractingEmailDomain = errors.New("error extracting domain from email")
+	domainDoesntBelongToSchool = errors.New("domain doesn't belong to school")
+	serverError                = errors.New("server error")
+)
+
+func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
+	// get the user's email from their token
+	userEmail := token.Claims["email"].(string)
+
+	// create postgres user
+	user := db.User{}
+	user.ID = token.UID
+
+	// extract domain from user's email
+	domain, err := validation.ExtractEmailDomain(userEmail)
+	if err != nil {
+		return errorExtractingEmailDomain
+	}
+
+	// get connections
+	dbConn := db.New()
+	authClient := fire.New().AuthClient
+
+	// start a transaction
+	tx := dbConn.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			return
+		}
+	}()
+
+	// check if user's email is valid
+	var school db.School
+	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
+	if err != nil {
+		tx.Rollback()
+		return domainDoesntBelongToSchool
+	}
+
+	// else, add the email to the user
+	user.SchoolID = school.ID
+
+	err = tx.Create(&user).Error
+	if err != nil {
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(err, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			tx.Rollback()
+			return serverError
+		}
+		switch pgErr.Code {
+		case "23505": // duplicate key value violates unique constraint
+			// dont do anything; user exists!
+		default:
+			// some other postgreSQL error
+			tx.Rollback()
+			return serverError
+		}
+	}
+
+	// update custom claims on token
+	err = authClient.SetCustomUserClaims(c, token.UID, map[string]interface{}{
+		"sync":  true,
+		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
+	})
+	// don't catch the error! if it fails, we'll just catch it next time
+
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return serverError
+	}
+
+	return nil
 }

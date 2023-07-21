@@ -41,7 +41,8 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
 		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
 	})
-	mux.PATCH("/user-standing", h.handleUserStanding)
+	mux.PATCH("/user-standing", h.handleSetUserStanding)
+	mux.GET("/user-standing", h.handleGetUserStanding)
 	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
 	mux.POST("/expire-fcm-tokens", h.handleManuallyTriggerClearExpiredFcmTokens)
 	mux.GET("/crons", h.handleGetDailyHottestCrons)

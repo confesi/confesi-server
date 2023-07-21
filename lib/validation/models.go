@@ -2,13 +2,14 @@ package validation
 
 type CreateAccountDetails struct {
 	// [required] valid email, no spaces
-	Email string `json:"email" validate:"required,email,excludes= "`
+	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 	// [required] valid password, no spaces, at least 8 characters, at most 40 characters, must contain at least one special character
 	Password string `json:"password" validate:"required,max=40,min=8,excludes= ,containsany=!@#$%^&*()_+"`
-	// [required] year of study, must be between 1 and 8 (inclusive)
-	YearOfStudy uint8 `json:"year_of_study" validate:"required,gte=1,lte=6"`
-	// [required] we'll do validation later against the postgres table
-	Faculty string `json:"faculty" validate:"required"`
+}
+
+type EmailQuery struct {
+	// [required] valid email, no spaces
+	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 }
 
 type CreatePostDetails struct {
@@ -40,9 +41,10 @@ type VoteDetail struct {
 
 type PostQuery struct {
 	Sort       string `json:"sort" validate:"oneof=trending new"`
-	School     uint   `json:"school" validate:"required"`
+	SchoolId   uint   `json:"school_id" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
+	AllSchools bool   `json:"all_schools"` // true or false, doesn't have "required" so that the zero-value is OK
 }
 
 type WatchSchool struct {
@@ -51,8 +53,30 @@ type WatchSchool struct {
 }
 
 type UserStanding struct {
-	// [required] user standing must be one of "limited", "banned", or "enabled"
-	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
+	// [required] user standing must be one of "limited", "banned", "unbanned", or "enabled"
+	Standing string `json:"standing" validate:"required,oneof=limited banned enabled unbanned"`
+	// [required] the user id to change standing for
+	UserID string `json:"user_id" validate:"required"`
+}
+
+type UserQuery struct {
+	// [required] user id to get info for
+	UserID string `json:"user_id" validate:"required"`
+}
+
+type UpdateYearOfStudy struct {
+	// [required] year of study to update to
+	YearOfStudy string `json:"year_of_study" validate:"required"`
+}
+
+type UpdateFaculty struct {
+	// [required] faculty to update to
+	Faculty string `json:"faculty" validate:"required"`
+}
+
+type UpdateSchool struct {
+	// [required] school to update to
+	FullSchoolName string `json:"full_school_name" validate:"required"`
 }
 
 type CreateComment struct {

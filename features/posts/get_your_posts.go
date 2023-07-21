@@ -35,6 +35,7 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 	err = h.db.
 		Preload("School").
 		Preload("Faculty").
+		Preload("YearOfStudy").
 		Where("user_id = ?", token.UID).
 		Where(req.Next.Cursor("created_at >")).
 		Where("hidden = ?", false).

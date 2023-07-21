@@ -28,6 +28,7 @@ func Router(r *gin.RouterGroup) {
 
 	// any user
 	r.GET("/", h.getSchools)
+	r.GET("/random", h.handleGetRandomSchool)
 
 	// any firebase user
 	anyFirebaseUser := r.Group("")

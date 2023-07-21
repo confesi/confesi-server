@@ -2,7 +2,7 @@ package auth
 
 import (
 	"confesi/db"
-	"confesi/lib/logger"
+	"confesi/lib/email"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -31,23 +31,27 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			return
+		}
+	}()
+
 	// check if user's email is valid
 	var school db.School
-	err = h.db.Select("id").Where("domain = ?", domain).First(&school).Error
+	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
 	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("domain doesn't belong to school").Send(c)
 		return
 	}
 
-	// check if user's faculty is valid (aka, the faculty exists in the database)
-	var faculty db.Faculty
-	err = h.db.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
-	if err != nil {
-		response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
-		return
-	}
-
-	// new user
+	// new firebase user
 	newUser := (&auth.UserToCreate{}).
 		Email(req.Email).
 		Password(req.Password).
@@ -56,42 +60,44 @@ func (h *handler) handleRegister(c *gin.Context) {
 	firebaseUser, err := h.fb.AuthClient.CreateUser(c, newUser)
 	if err != nil {
 		if strings.Contains(err.Error(), "EMAIL_EXISTS") {
+			tx.Rollback()
 			response.New(http.StatusConflict).Err("email already exists").Send(c)
 		} else {
+			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		}
 		return
 	}
 
-	user := db.User{
-		ID:          firebaseUser.UID,
-		SchoolID:    school.ID,
-		YearOfStudy: req.YearOfStudy,
-		FacultyID:   uint(faculty.ID),
-		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... they'll get their account nerfed pretty quickly
+	verificationEmailSent := true
+	err = email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
+	if err != nil {
+		verificationEmailSent = false
 	}
+
+	user := db.User{}
+	user.ID = firebaseUser.UID
+	user.SchoolID = school.ID
 
 	// save user to postgres
 	err = h.db.Create(&user).Error
-	if err != nil {
-		logger.StdErr(err)
-		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val("auth").Send(c)
-		return
-	}
+	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
 	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
-		"profile_created": true,
-		"roles":           []string{}, //! default users have no roles, VERY IMPORTANT
+		"sync":  true,
+		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
+	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
+
+	// commit the transaction
+	err = tx.Commit().Error
 	if err != nil {
-		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusCreated).Val("auth").Send(c)
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
-	// if this succeeds, send back success to indicate the user should reload their account because both their account & profile
-	// has been created
-	response.New(http.StatusCreated).Val("full").Send(c)
+	// send response
+	response.New(http.StatusCreated).Val(map[string]bool{"verification_sent": verificationEmailSent}).Send(c)
 }
