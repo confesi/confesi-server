@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"time"
@@ -12,69 +11,69 @@ import (
 	"gorm.io/datatypes"
 )
 
-func ModLevelToString(modLevel uint) (error, string) {
-	switch modLevel {
-	case ModEnableID:
-		return nil, ModEnable
-	case ModLimitedID:
-		return nil, ModLimited
-	case ModBannedID:
-		return nil, ModBanned
-	default:
-		return errors.New("invalid mod level"), ""
-	}
-}
+// func ModLevelToString(modLevel uint) (error, string) {
+// 	switch modLevel {
+// 	case ModEnableID:
+// 		return nil, ModEnable
+// 	case ModLimitedID:
+// 		return nil, ModLimited
+// 	case ModBannedID:
+// 		return nil, ModBanned
+// 	default:
+// 		return errors.New("invalid mod level"), ""
+// 	}
+// }
 
-func YearOfStudyToString(yearOfStudy uint) (error, string) {
-	switch yearOfStudy {
-	case YearOfStudyOneID:
-		return nil, YearOfStudyOne
-	case YearOfStudyTwoID:
-		return nil, YearOfStudyTwo
-	case YearOfStudyThreeID:
-		return nil, YearOfStudyThree
-	case YearOfStudyFourID:
-		return nil, YearOfStudyFour
-	case YearOfStudyAlumniGraduateID:
-		return nil, YearOfStudyAlumniGraduate
-	case YearOfStudyHiddenID:
-		return nil, YearOfStudyHidden
-	default:
-		return errors.New("invalid year of study"), ""
-	}
-}
+// func YearOfStudyToString(yearOfStudy uint) (error, string) {
+// 	switch yearOfStudy {
+// 	case YearOfStudyOneID:
+// 		return nil, YearOfStudyOne
+// 	case YearOfStudyTwoID:
+// 		return nil, YearOfStudyTwo
+// 	case YearOfStudyThreeID:
+// 		return nil, YearOfStudyThree
+// 	case YearOfStudyFourID:
+// 		return nil, YearOfStudyFour
+// 	case YearOfStudyAlumniGraduateID:
+// 		return nil, YearOfStudyAlumniGraduate
+// 	case YearOfStudyHiddenID:
+// 		return nil, YearOfStudyHidden
+// 	default:
+// 		return errors.New("invalid year of study"), ""
+// 	}
+// }
 
-// todo: normalize these into the database, else, it's messy?
-const (
-	ModEnableID = 1
-	ModEnable   = "enabled"
+// // todo: normalize these into the database, else, it's messy?
+// const (
+// 	ModEnableID = 1
+// 	ModEnable   = "enabled"
 
-	ModLimitedID = 2
-	ModLimited   = "limited"
+// 	ModLimitedID = 2
+// 	ModLimited   = "limited"
 
-	ModBannedID = 3
-	ModBanned   = "banned"
-)
+// 	ModBannedID = 3
+// 	ModBanned   = "banned"
+// )
 
-const (
-	YearOfStudyOneID = 1
-	YearOfStudyOne   = "one"
+// const (
+// 	YearOfStudyOneID = 1
+// 	YearOfStudyOne   = "one"
 
-	YearOfStudyTwoID = 2
-	YearOfStudyTwo   = "two"
+// 	YearOfStudyTwoID = 2
+// 	YearOfStudyTwo   = "two"
 
-	YearOfStudyThreeID = 3
-	YearOfStudyThree   = "three"
+// 	YearOfStudyThreeID = 3
+// 	YearOfStudyThree   = "three"
 
-	YearOfStudyFourID = 4
-	YearOfStudyFour   = "four"
+// 	YearOfStudyFourID = 4
+// 	YearOfStudyFour   = "four"
 
-	YearOfStudyAlumniGraduateID = 5
-	YearOfStudyAlumniGraduate   = "alumni_graduate"
+// 	YearOfStudyAlumniGraduateID = 5
+// 	YearOfStudyAlumniGraduate   = "alumni_graduate"
 
-	YearOfStudyHiddenID = 6
-	YearOfStudyHidden   = "hidden"
-)
+// 	YearOfStudyHiddenID = 6
+// 	YearOfStudyHidden   = "hidden"
+// )
 
 type ModLevel struct {
 	ID  uint   `gorm:"primaryKey" json:"id"`
@@ -139,17 +138,16 @@ func (FcmToken) TableName() string {
 }
 
 type User struct {
-	ID          string     `gorm:"primaryKey" json:"-"`
-	CreatedAt   TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt   TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudy uint8      `gorm:"column:year_of_study" json:"-"`
-	StudyYear   string     `gorm:"-" json:"study_year"` // This is not a column in the database
-	FacultyID   uint       `gorm:"column:faculty_id" json:"-"`
-	Faculty     Faculty    `gorm:"foreignKey:FacultyID" json:"faculty"`
-	SchoolID    uint       `gorm:"column:school_id" json:"-"`
-	School      School     `gorm:"foreignKey:SchoolID" json:"school"`
-	ModID       uint       `gorm:"column:mod_id" json:"-"`
-	Mod         string     `gorm:"-" json:"mod"` // This is not a column in the database
+	ID            string      `gorm:"primaryKey" json:"-"`
+	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	YearOfStudyID *uint8      `gorm:"column:year_of_study" json:"-"`
+	YearOfStudy   YearOfStudy `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
+	FacultyID     *uint       `gorm:"column:faculty_id" json:"-"`
+	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`
+	SchoolID      uint        `gorm:"column:school_id" json:"-"`
+	School        School      `gorm:"foreignKey:SchoolID" json:"school"`
+	IsLimited     bool        `gorm:"is_limited" json:"is_limited"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
@@ -169,8 +167,10 @@ type Post struct {
 	UserID        string          `gorm:"column:user_id" json:"-"`
 	SchoolID      uint            `gorm:"column:school_id" json:"-"`
 	School        School          `gorm:"foreignKey:SchoolID" json:"school"`
-	FacultyID     uint            `gorm:"column:faculty_id" json:"-"`
+	FacultyID     *uint           `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
+	YearOfStudyID *uint           `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudy   Faculty         `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	Title         string          `gorm:"column:title" json:"title"`
 	Content       string          `gorm:"column:content" json:"content"`
 	Downvote      uint            `gorm:"column:downvote" json:"downvote"`
@@ -335,6 +335,15 @@ func (ReportType) TableName() string {
 type FeedbackType struct {
 	ID   int    `gorm:"primary_key;column:id" json:"-"`
 	Type string `gorm:"column:type" json:"type"`
+}
+
+type YearOfStudy struct {
+	ID   int    `gorm:"primaryKey" json:"-"`
+	Name string `gorm:"column:type" json:"type"`
+}
+
+func (YearOfStudy) TableName() string {
+	return "year_of_study"
 }
 
 func (FeedbackType) TableName() string {
