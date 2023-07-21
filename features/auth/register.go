@@ -71,10 +71,10 @@ func (h *handler) handleRegister(c *gin.Context) {
 
 	user := db.User{
 		ID:          firebaseUser.UID,
-		SchoolID:    school.ID,
-		YearOfStudy: req.YearOfStudy,
-		FacultyID:   uint(faculty.ID),
-		ModID:       db.ModEnableID, // everyone starts off okay, but if they get sus... they'll get their account nerfed pretty quickly
+		SchoolID:    school.ID,        // todo: can be added from the claims token
+		YearOfStudy: req.YearOfStudy,  // todo: default hidden
+		FacultyID:   uint(faculty.ID), // todo: default hidden
+		ModID:       db.ModEnableID,   // everyone starts off okay, but if they get sus... they'll get their account nerfed pretty quickly
 	}
 
 	// save user to postgres

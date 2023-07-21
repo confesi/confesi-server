@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	serverError = errors.New("server error")
+	serverError       = errors.New("server error")
+	errorSendingEmail = errors.New("error sending email")
 )
 
 type handler struct {
