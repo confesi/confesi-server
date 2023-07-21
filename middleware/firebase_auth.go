@@ -6,7 +6,6 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/validation"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"firebase.google.com/go/auth"
@@ -63,7 +62,6 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
 		if profileCreated, ok := token.Claims["sync"].(bool); !ok {
 			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
-			fmt.Println("ENTRY POINT 1")
 			err := RetrySyncPostgresAccountCreation(c, token)
 			if err != nil {
 				response.New(http.StatusUnauthorized).Err("non-synced account").Send(c)
@@ -111,7 +109,6 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 			c.Next()
 			return
 		} else {
-			fmt.Println("ENTRY POINT 2")
 			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
 			err := RetrySyncPostgresAccountCreation(c, token)
 			if err != nil {
@@ -135,8 +132,6 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	// get the user's email from their token
 	userEmail := token.Claims["email"].(string)
 
-	fmt.Println("here 1")
-
 	// create postgres user
 	user := db.User{}
 	user.ID = token.UID
@@ -146,8 +141,6 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	if err != nil {
 		return errorExtractingEmailDomain
 	}
-
-	fmt.Println("here 2")
 
 	// get connections
 	dbConn := db.New()
@@ -163,8 +156,6 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 		}
 	}()
 
-	fmt.Println("here 3")
-
 	// check if user's email is valid
 	var school db.School
 	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
@@ -175,7 +166,6 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 
 	// else, add the email to the user
 	user.SchoolID = school.ID
-	fmt.Println("here 4")
 
 	err = tx.Create(&user).Error
 	if err != nil {
@@ -196,15 +186,12 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 		}
 	}
 
-	fmt.Println("here 5")
-
 	// update custom claims on token
 	err = authClient.SetCustomUserClaims(c, token.UID, map[string]interface{}{
 		"sync":  true,
 		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
 	// don't catch the error! if it fails, we'll just catch it next time
-	fmt.Println("here 6")
 
 	// commit the transaction
 	err = tx.Commit().Error
@@ -212,7 +199,6 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 		tx.Rollback()
 		return serverError
 	}
-	fmt.Println("here 7")
 
 	return nil
 }
