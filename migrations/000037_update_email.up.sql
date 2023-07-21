@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users
+    ADD COLUMN email_updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+END;

@@ -34,4 +34,5 @@ func Router(mux *gin.RouterGroup) {
 
 	registeredFirebaseUserRoutes.PATCH("/update-email", h.handleUpdateEmail)
 	registeredFirebaseUserRoutes.POST("/resend-email-verification", h.handleResendEmailVerification)
+	registeredFirebaseUserRoutes.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
 }
