@@ -39,8 +39,7 @@ func New(code int) *apiResult {
 
 func (r *apiResult) Send(c *gin.Context) {
 	if r.Error != nil {
-		errString := fmt.Sprintf("[status_code: %d], %v", r.Code, r.Error)
-		logger.StdErr(errors.New(errString))
+		logger.StdErr(errors.New(fmt.Sprintf("[status_code: %d], %v", r.Code, r.Error)))
 	}
 	c.JSON(r.Code, r)
 	c.Abort() // added back, because without it things break
