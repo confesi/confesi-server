@@ -28,6 +28,7 @@ func (h *handler) handleClearFaculty(c *gin.Context) {
 	}
 	if res.RowsAffected == 0 {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
 	}
 
 	// say 200 if all goes well

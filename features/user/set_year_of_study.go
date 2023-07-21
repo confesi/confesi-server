@@ -62,6 +62,13 @@ func (h *handler) handleSetYearOfStudy(c *gin.Context) {
 		return
 	}
 
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
 	// say 200 if all goes well
 	response.New(http.StatusOK).Send(c)
 }
