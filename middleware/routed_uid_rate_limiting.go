@@ -3,12 +3,19 @@ package middleware
 import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )
+
+type routedRequestRateLimit struct {
+	Limit             string `json:"limit"`
+	RemainingRequests string `json:"remaining_requests"`
+	ResetInSeconds    string `json:"reset_in_seconds"`
+}
 
 // Rate limit middleware based on the user's UID.
 //
@@ -42,6 +49,20 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 		return
 	}
 
+	// time until next refill
+	ttlResult := store.TTL(ctx, idSessionKey)
+	if ttlResult.Err() != nil {
+		response.New(http.StatusInternalServerError).Send(c)
+		return
+	}
+
+	// Retrieve the time left from the result
+	ttl, err := ttlResult.Result()
+	if err != nil {
+		response.New(http.StatusInternalServerError).Send(c)
+		return
+	}
+
 	// Determine whether or not user has exceeded the limit
 	if counter < tokensPerUnit {
 		store.Incr(ctx, idSessionKey).Result()
@@ -49,6 +70,11 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 	} else {
 		response.New(http.StatusTooManyRequests).
 			Err("too many routed requests").
+			Val(routedRequestRateLimit{
+				Limit:             fmt.Sprint(tokensPerUnit),
+				RemainingRequests: fmt.Sprint(tokensPerUnit - counter),
+				ResetInSeconds:    fmt.Sprint(ttl.Seconds()),
+			}).
 			Send(c)
 	}
 }
