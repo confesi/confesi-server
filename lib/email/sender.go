@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -31,9 +32,7 @@ type email struct {
 }
 
 func init() {
-	newSession, err := session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-	})
+	newSession, err := session.NewSession()
 	if err != nil {
 		panic(fmt.Sprintf("error initializing AWS SES session: %s", err))
 	}
@@ -47,10 +46,21 @@ func New() *email {
 	}
 }
 
-func (e *email) To(addresses []*string, ccs []*string) *email {
+func (e *email) To(addresses []string, ccs []string) *email {
+	// Convert the string slices to slices of pointers to strings.
+	var ccAddresses []*string
+	for _, cc := range ccs {
+		ccAddresses = append(ccAddresses, &cc)
+	}
+
+	var toAddresses []*string
+	for _, address := range addresses {
+		toAddresses = append(toAddresses, &address)
+	}
+
 	e.Destination = ses.Destination{
-		CcAddresses: ccs,
-		ToAddresses: addresses,
+		CcAddresses: ccAddresses,
+		ToAddresses: toAddresses,
 	}
 	return e
 }
@@ -64,26 +74,35 @@ func (e *email) Subject(subject string) *email {
 }
 
 func (e *email) LoadPasswordResetTemplate(link string) (*email, error) {
-	htmlTemplatePath := filepath.Join("..", "..", "..", "templates", "password_reset_email_template.html")
+	// Get the absolute path of the running executable.
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current working directory:", err)
+		return nil, errorLoadingTemplate
+	}
+
+	htmlTemplatePath := filepath.Join(currentDir, "templates", "password_reset_email_template.html")
 
 	htmlContent, err := ioutil.ReadFile(htmlTemplatePath)
 	if err != nil {
+		fmt.Println("Error loading HTML template:", err)
 		return nil, errorLoadingTemplate
 	}
 
+	// Replace the placeholder with the actual link in the HTML template.
 	htmlBody := string(htmlContent)
-
 	htmlBody = strings.Replace(htmlBody, "{{ link }}", link, -1)
 
-	textTemplatePath := filepath.Join("..", "..", "..", "templates", "password_reset_email_template.txt")
+	textTemplatePath := filepath.Join(currentDir, "templates", "password_reset_email_template.txt")
 
 	textContent, err := ioutil.ReadFile(textTemplatePath)
 	if err != nil {
+		fmt.Println("Error loading text template:", err)
 		return nil, errorLoadingTemplate
 	}
 
+	// Replace the placeholder with the actual link in the text template.
 	textBody := string(textContent)
-
 	textBody = strings.Replace(textBody, "{{ link }}", link, -1)
 
 	e.Message.Body = &ses.Body{
@@ -101,28 +120,42 @@ func (e *email) LoadPasswordResetTemplate(link string) (*email, error) {
 }
 
 func (e *email) LoadVerifyEmailTemplate(link string) (*email, error) {
-	htmlTemplatePath := filepath.Join("..", "..", "..", "templates", "verify_email_email_template.html")
+	// Get the absolute path of the running executable.
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current working directory:", err)
+		return nil, errorLoadingTemplate
+	}
 
+	htmlTemplatePath := filepath.Join(currentDir, "templates", "verify_email_email_template.html")
+	textTemplatePath := filepath.Join(currentDir, "templates", "verify_email_email_template.txt")
+
+	fmt.Println("File Path (HTML):", htmlTemplatePath)
+	fmt.Println("File Path (Text):", textTemplatePath)
+
+	// Read the content of the HTML template file.
 	htmlContent, err := ioutil.ReadFile(htmlTemplatePath)
 	if err != nil {
+		fmt.Println("Error loading HTML template:", err)
 		return nil, errorLoadingTemplate
 	}
 
+	// Replace the placeholder with the actual link in the HTML template.
 	htmlBody := string(htmlContent)
-
 	htmlBody = strings.Replace(htmlBody, "{{ link }}", link, -1)
 
-	textTemplatePath := filepath.Join("..", "..", "..", "templates", "verify_email_email_template.txt")
-
+	// Read the content of the text template file.
 	textContent, err := ioutil.ReadFile(textTemplatePath)
 	if err != nil {
+		fmt.Println("Error loading text template:", err)
 		return nil, errorLoadingTemplate
 	}
 
+	// Replace the placeholder with the actual link in the text template.
 	textBody := string(textContent)
-
 	textBody = strings.Replace(textBody, "{{ link }}", link, -1)
 
+	// Set the email body using the templates.
 	e.Message.Body = &ses.Body{
 		Html: &ses.Content{
 			Charset: aws.String(charSet),

@@ -46,10 +46,11 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 	}
 
 	if token.Firebase.SignInProvider == "password" {
-		if profileCreated, ok := token.Claims["profile_created"].(bool); !ok {
+		if profileCreated, ok := token.Claims["sync"].(bool); !ok {
 			// registered user without postgres profile since the claim isn't created till after their account gets saved to postgres
 			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
+			// todo: retry sync
 		} else if profileCreated {
 			// registered user with postgres profile, now we check if they have the required roles
 			var rolesClaim interface{}
@@ -92,9 +93,10 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 			c.Next()
 			return
 		} else {
-			// registered user without postgres profile (handling the future case where the claim at "profile_created" is turned back to false for some reason)
+			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
 			response.New(http.StatusUnauthorized).Err("registered user without profile").Send(c)
 			return
+			// todo: retry sync
 		}
 	} else {
 		// anon user (but resource requires registered user)

@@ -83,7 +83,7 @@ func main() {
 	reports.Router(api.Group("/reports"))
 	hideLog.Router(api.Group("/hide-log"))
 
-	// Start the CRON job schedulers
+	// Start the CRON job scheduler
 	dailyHottestPosts.StartDailyHottestPostsCronJob()
 	clearExpiredFcmTokens.StartClearExpiredFcmTokensCronJob()
 

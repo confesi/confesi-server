@@ -31,5 +31,5 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 
-	mux.PATCH("/update-email", h.handleUpdateEmail)
+	registeredFirebaseUserRoutes.PATCH("/update-email", h.handleUpdateEmail)
 }

@@ -27,6 +27,10 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
+**Add your AWS access tokens to the `.env` file.**
+
+Specifically what IAM roles are needed will be determined in the future. Currently, a general admin user suffices.
+
 **Add the Firebase API key:**
 
 This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY` in the `.env` file.

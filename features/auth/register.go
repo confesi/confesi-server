@@ -2,7 +2,6 @@ package auth
 
 import (
 	"confesi/db"
-	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -73,23 +72,14 @@ func (h *handler) handleRegister(c *gin.Context) {
 
 	// save user to postgres
 	err = h.db.Create(&user).Error
-	if err != nil {
-		logger.StdErr(err)
-		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusInternalServerError).Err("sync failed").Send(c)
-		return
-	}
+	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
 	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
 		"sync":  true,
 		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
-	if err != nil {
-		// If firebase account creation succeeds, but postgres profile save fails
-		response.New(http.StatusInternalServerError).Err("sync failed").Send(c)
-		return
-	}
+	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
 	// if this succeeds, send back success to indicate the user should reload their account because both their account & profile
 	// has been created
