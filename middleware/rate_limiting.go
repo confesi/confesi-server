@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"confesi/config"
+	"confesi/lib/cache"
 	"confesi/lib/response"
 	"fmt"
 	"net/http"
@@ -17,6 +18,22 @@ const (
 	unit          = time.Minute
 )
 
+var store *redis.Client
+
+func init() {
+	store = cache.New() // Redis client
+}
+
+type Bucket struct {
+	Tokens         int
+	LastRefill     time.Time
+	RefillInterval time.Duration
+}
+
+func StoreRef() *redis.Client {
+	return store
+}
+
 // Rate limit middleware.
 //
 // Limits the amount of times a user can access a resource in a given time window.
@@ -25,7 +42,7 @@ const (
 // Includes headers to let the user know how many requests they have left and when the next refill is. Unit: seconds.
 func RateLimit(c *gin.Context) {
 
-	store := config.StoreRef()
+	store := StoreRef()
 	clientIP := c.ClientIP()
 	ctx := c.Request.Context()
 

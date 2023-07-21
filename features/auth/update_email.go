@@ -6,13 +6,13 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// todo: add field like "you can only change your email once ever 90 days" in table or smth to keep track of it and enforce the restriction?
+// todo: add field like "you can only change your email once ever 90 days" in table or smth to keep track of it and enforce the restriction? or heavily rate limit?
 
 func (h *handler) handleUpdateEmail(c *gin.Context) {
 	// let user know it won't update their home uni automatically (bug -> feature)
@@ -31,17 +31,49 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		return
 	}
 
+	// get the user's current email
+	userEmail := token.Claims["email"].(string)
+
+	// if same email
+	if strings.TrimSpace(userEmail) == strings.TrimSpace(req.Email) {
+		response.New(http.StatusBadRequest).Err("current and new emails are the same").Send(c)
+		return
+	}
+
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
+	// select the `EmailUpdatedAt` field from user based on their token
+	var user db.User
+	err = tx.Select("email_updated_at").Where("id = ?", token.UID).First(&user).Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
 	// extract domain from user's email
 	domain, err := validation.ExtractEmailDomain(req.Email)
 	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("error extracting domain from email").Send(c)
 		return
 	}
 
 	// check if user's email is valid
 	var school db.School
-	err = h.db.Select("id").Where("domain = ?", domain).First(&school).Error
+	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
 	if err != nil {
+		tx.Rollback()
+
 		response.New(http.StatusBadRequest).Err("domain doesn't belong to school").Send(c)
 		return
 	}
@@ -50,12 +82,10 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 	_, err = h.fb.AuthClient.GetUserByEmail(c, req.Email)
 	if err == nil {
 		// aka, user exists
+		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("user already exists with this email").Send(c)
 		return
 	}
-
-	// get the user's current email
-	userEmail := token.Claims["email"].(string)
 
 	// generate an email verificiation link
 	link, err := h.fb.AuthClient.EmailVerificationLink(c, req.Email)
@@ -64,14 +94,24 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		Subject("Confesi Email Verification").
 		LoadVerifyEmailTemplate(link)
 	if err != nil {
+		tx.Rollback()
+
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	res, err := em.Send()
+	_, err = em.Send()
 	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	fmt.Println(res)
+
+	// commit results to postgres
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
 	response.New(http.StatusOK).Send(c)
 }

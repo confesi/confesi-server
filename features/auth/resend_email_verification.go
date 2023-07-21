@@ -22,6 +22,12 @@ func (h *handler) handleResendEmailVerification(c *gin.Context) {
 	// get the user's current email from their token
 	userEmail := token.Claims["email"].(string)
 
+	// if user already verified, ignore
+	if token.Claims["email_verified"].(bool) {
+		response.New(http.StatusBadRequest).Val("already verified").Send(c)
+		return
+	}
+
 	// resend the verification email
 	err = email.SendVerificationEmail(c, h.fb.AuthClient, userEmail)
 	if err != nil {
