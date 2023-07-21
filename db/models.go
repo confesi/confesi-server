@@ -88,6 +88,7 @@ type School struct {
 	Lon           float32 `json:"lon"`
 	DailyHottests int     `json:"daily_hottests"`
 	Domain        string  `json:"domain"`
+	ImgUrl        string  `json:"img_url"`
 }
 
 type Faculty struct {
