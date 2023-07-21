@@ -141,7 +141,7 @@ type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudyID *uint8      `gorm:"column:year_of_study" json:"-"`
+	YearOfStudyID *uint8      `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy   YearOfStudy `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	FacultyID     *uint       `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`
@@ -170,7 +170,7 @@ type Post struct {
 	FacultyID     *uint           `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
 	YearOfStudyID *uint           `gorm:"column:year_of_study_id" json:"-"`
-	YearOfStudy   Faculty         `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
+	YearOfStudy   YearOfStudy     `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	Title         string          `gorm:"column:title" json:"title"`
 	Content       string          `gorm:"column:content" json:"content"`
 	Downvote      uint            `gorm:"column:downvote" json:"downvote"`
@@ -339,7 +339,7 @@ type FeedbackType struct {
 
 type YearOfStudy struct {
 	ID   int    `gorm:"primaryKey" json:"-"`
-	Name string `gorm:"column:type" json:"type"`
+	Name string `gorm:"column:name" json:"type"`
 }
 
 func (YearOfStudy) TableName() string {

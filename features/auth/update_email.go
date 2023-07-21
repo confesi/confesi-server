@@ -6,6 +6,7 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -51,15 +52,6 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		}
 	}()
 
-	// select the `EmailUpdatedAt` field from user based on their token
-	var user db.User
-	err = tx.Select("email_updated_at").Where("id = ?", token.UID).First(&user).Error
-	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-
 	// extract domain from user's email
 	domain, err := validation.ExtractEmailDomain(req.Email)
 	if err != nil {
@@ -95,16 +87,17 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		LoadVerifyEmailTemplate(link)
 	if err != nil {
 		tx.Rollback()
-
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 	_, err = em.Send()
 	if err != nil {
+		fmt.Println("AWS email send error", err)
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+	fmt.Println("email sent", err)
 
 	// commit results to postgres
 	err = tx.Commit().Error
@@ -113,5 +106,6 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+	fmt.Println("email sent & updated", err)
 	response.New(http.StatusOK).Send(c)
 }

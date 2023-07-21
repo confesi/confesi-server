@@ -90,7 +90,7 @@ func RateLimit(c *gin.Context) {
 		c.Next()
 	} else {
 		response.New(http.StatusTooManyRequests).
-			Err("too many requests").
+			Err("too many ip requests").
 			Send(c)
 	}
 }

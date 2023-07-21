@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"confesi/config"
 	"confesi/db"
 	"confesi/lib/fire"
 	"confesi/middleware"
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -32,7 +34,11 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 
+	// route-specific rate limiting for email routes to protect against spam
+	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
+		middleware.UidRateLimit(c, 4, time.Hour, config.EmailRateLimitingRouteKey)
+	})
 	registeredFirebaseUserRoutes.PATCH("/update-email", h.handleUpdateEmail)
-	registeredFirebaseUserRoutes.POST("/resend-email-verification", h.handleResendEmailVerification)
+	registeredFirebaseUserRoutes.POST("/resend-verification-email", h.handleResendEmailVerification)
 	registeredFirebaseUserRoutes.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
 }
