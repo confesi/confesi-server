@@ -68,3 +68,17 @@ func HideReportData(reportId uint) map[string]string {
 		"post_id": fmt.Sprintf("%v", reportId),
 	}
 }
+
+func AccountStandingBannedData(isBanned bool) map[string]string {
+	return map[string]string{
+		"type":   "account_standing_banned",
+		"banned": fmt.Sprintf("%v", isBanned),
+	}
+}
+
+func AccountStandingLimitedData(isLimited bool) map[string]string {
+	return map[string]string{
+		"type":    "account_standing_limited",
+		"limited": fmt.Sprintf("%v", isLimited),
+	}
+}

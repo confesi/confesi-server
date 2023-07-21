@@ -1,7 +1,9 @@
 package admin
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
+	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -60,7 +62,35 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 		return
 	}
 
-	// if all goes well, send 200
+	// fcm notifications to affected users
+	var tokens []string
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Where("users.id = ?", req.UserID).
+		Pluck("fcm_tokens.token", &tokens).
+		Error
+	if err == nil && len(tokens) > 0 {
+		// don't handle errors here, because it's not a big deal if the notification doesn't send
+		if req.Standing == "limited" || req.Standing == "enabled" {
+			isLimited := req.Standing == "limited"
+			fcm.New(h.fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.AccountStandingLimitedNoti(isLimited)).
+				WithData(builders.AccountStandingLimitedData(isLimited)).
+				Send(*h.db)
+		} else if req.Standing == "banned" || req.Standing == "unbanned" {
+			isBanned := req.Standing == "banned"
+			fcm.New(h.fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.AccountStandingBannedNoti(isBanned)).
+				WithData(builders.AccountStandingBannedData(isBanned)).
+				Send(*h.db)
+		}
+	}
+
+	// if all goes well (ignoring fcm, because we hope it works, but it's not critical it does), send 200
 	response.New(http.StatusOK).Send(c)
 }
 

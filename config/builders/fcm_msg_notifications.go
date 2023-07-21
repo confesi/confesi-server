@@ -104,3 +104,29 @@ func HideReportNoti() *messaging.Notification {
 		Body:  "Thanks for your input. You can view the report results, if given, in-app.",
 	}
 }
+
+func AccountStandingBannedNoti(isBanned bool) *messaging.Notification {
+	var word string
+	if isBanned {
+		word = "banned"
+	} else {
+		word = "unbanned"
+	}
+	return &messaging.Notification{
+		Title: "🎱 Your account has been " + word,
+		Body:  "Contact support for more information.",
+	}
+}
+
+func AccountStandingLimitedNoti(isLimited bool) *messaging.Notification {
+	var word string
+	if isLimited {
+		word = "limited"
+	} else {
+		word = "fully re-enabled"
+	}
+	return &messaging.Notification{
+		Title: "🎱 Your account has been " + word,
+		Body:  "Contact support for more information.",
+	}
+}
