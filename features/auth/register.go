@@ -51,35 +51,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
-	user := db.User{}
-
-	if req.Faculty != "" {
-		// check if user's faculty is valid (aka, the faculty exists in the database)
-		var faculty db.Faculty
-		err = tx.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
-		if err != nil {
-			tx.Rollback()
-			response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
-			return
-		}
-		facultyID := uint(faculty.ID)
-		user.FacultyID = &facultyID
-	}
-
-	if req.YearOfStudy != "" {
-		// check if user's year of study is valid (aka, the year of study exists in the database)
-		var yearOfStudy db.YearOfStudy
-		err = tx.Select("id").Where("name = ?", req.YearOfStudy).First(&yearOfStudy).Error
-		if err != nil {
-			tx.Rollback()
-			response.New(http.StatusBadRequest).Err("year of study doesn't exist").Send(c)
-			return
-		}
-		yearOfStudyID := uint8(yearOfStudy.ID)
-		user.YearOfStudyID = &yearOfStudyID
-	}
-
-	// new user
+	// new firebase user
 	newUser := (&auth.UserToCreate{}).
 		Email(req.Email).
 		Password(req.Password).
@@ -103,6 +75,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 		verificationEmailSent = false
 	}
 
+	user := db.User{}
 	user.ID = firebaseUser.UID
 	user.SchoolID = school.ID
 
