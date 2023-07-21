@@ -52,8 +52,15 @@ type WatchSchool struct {
 }
 
 type UserStanding struct {
-	// [required] user standing must be one of "limit", "ban", or "enable"
-	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
+	// [required] user standing must be one of "limited", "banned", "unbanned", or "enabled"
+	Standing string `json:"standing" validate:"required,oneof=limited banned enabled unbanned"`
+	// [required] the user id to change standing for
+	UserID string `json:"user_id" validate:"required"`
+}
+
+type UserQuery struct {
+	// [required] user id to get info for
+	UserID string `json:"user_id" validate:"required"`
 }
 
 type CreateComment struct {

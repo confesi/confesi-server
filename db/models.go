@@ -84,7 +84,7 @@ type User struct {
 	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`
 	SchoolID      uint        `gorm:"column:school_id" json:"-"`
 	School        School      `gorm:"foreignKey:SchoolID" json:"school"`
-	IsLimited     bool        `gorm:"is_limited" json:"is_limited"`
+	IsLimited     bool        `gorm:"is_limited" json:"-"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
