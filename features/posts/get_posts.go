@@ -22,6 +22,7 @@ const (
 	seenPostsCacheExpiry = 24 * time.Hour // one day
 )
 
+// `all_schools` takes precedence over `school_id`
 func (h *handler) handleGetPosts(c *gin.Context) {
 	// extract request
 	var req validation.PostQuery
@@ -96,15 +97,20 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		Preload("YearOfStudy").
 		Preload("Faculty").
 		Order(sortField).
-		Where("school_id = ?", req.School).
-		Where("hidden = ?", false).
-		Limit(config.FeedPostsPageSize)
+		Where("hidden = ?", false)
 
 	if len(ids) > 0 {
 		query = query.Where("posts.id NOT IN (?)", ids)
 	}
 
-	err = query.Find(&posts).Error
+	// if `all_schools` is true, then we don't need to filter by school
+	if !req.AllSchools {
+		query = query.Where("school_id = ?", req.SchoolId)
+	}
+
+	err = query.
+		Limit(config.FeedPostsPageSize).
+		Find(&posts).Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return

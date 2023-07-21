@@ -41,9 +41,10 @@ type VoteDetail struct {
 
 type PostQuery struct {
 	Sort       string `json:"sort" validate:"oneof=trending new"`
-	School     uint   `json:"school" validate:"required"`
+	SchoolId   uint   `json:"school_id" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
+	AllSchools bool   `json:"all_schools"` // true or false, doesn't have "required" so that the zero-value is OK
 }
 
 type WatchSchool struct {
