@@ -93,6 +93,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		) AS user_vote
 		`, token.UID).
 		Preload("School").
+		Preload("YearOfStudy").
 		Preload("Faculty").
 		Order(sortField).
 		Where("school_id = ?", req.School).

@@ -31,20 +31,52 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			return
+		}
+	}()
+
 	// check if user's email is valid
 	var school db.School
-	err = h.db.Select("id").Where("domain = ?", domain).First(&school).Error
+	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
 	if err != nil {
+		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("domain doesn't belong to school").Send(c)
 		return
 	}
 
-	// check if user's faculty is valid (aka, the faculty exists in the database)
-	var faculty db.Faculty
-	err = h.db.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
-	if err != nil {
-		response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
-		return
+	user := db.User{}
+
+	if req.Faculty != "" {
+		// check if user's faculty is valid (aka, the faculty exists in the database)
+		var faculty db.Faculty
+		err = tx.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
+		if err != nil {
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
+			return
+		}
+		facultyID := uint(faculty.ID)
+		user.FacultyID = &facultyID
+	}
+
+	if req.YearOfStudy != "" {
+		// check if user's year of study is valid (aka, the year of study exists in the database)
+		var yearOfStudy db.YearOfStudy
+		err = tx.Select("id").Where("name = ?", req.YearOfStudy).First(&yearOfStudy).Error
+		if err != nil {
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("year of study doesn't exist").Send(c)
+			return
+		}
+		yearOfStudyID := uint8(yearOfStudy.ID)
+		user.YearOfStudyID = &yearOfStudyID
 	}
 
 	// new user
@@ -56,8 +88,10 @@ func (h *handler) handleRegister(c *gin.Context) {
 	firebaseUser, err := h.fb.AuthClient.CreateUser(c, newUser)
 	if err != nil {
 		if strings.Contains(err.Error(), "EMAIL_EXISTS") {
+			tx.Rollback()
 			response.New(http.StatusConflict).Err("email already exists").Send(c)
 		} else {
+			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		}
 		return
@@ -69,13 +103,8 @@ func (h *handler) handleRegister(c *gin.Context) {
 		verificationEmailSent = false
 	}
 
-	user := db.User{
-		ID:          firebaseUser.UID,
-		SchoolID:    school.ID,        // todo: can be added from the claims token
-		YearOfStudy: req.YearOfStudy,  // todo: default hidden
-		FacultyID:   uint(faculty.ID), // todo: default hidden
-		ModID:       db.ModEnableID,   // everyone starts off okay, but if they get sus... they'll get their account nerfed pretty quickly
-	}
+	user.ID = firebaseUser.UID
+	user.SchoolID = school.ID
 
 	// save user to postgres
 	err = h.db.Create(&user).Error
@@ -87,6 +116,14 @@ func (h *handler) handleRegister(c *gin.Context) {
 		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
 	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
+
+	// commit the transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
 
 	// send response
 	response.New(http.StatusCreated).Val(map[string]bool{"verification_sent": verificationEmailSent}).Send(c)

@@ -103,3 +103,9 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 		response.New(http.StatusUnauthorized).Err("registered users only").Send(c)
 	}
 }
+
+func retryPostgresAccountCreation(token *auth.Token) error {
+	// get the user's email from their token
+	// 
+	return nil
+}

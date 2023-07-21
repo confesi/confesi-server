@@ -22,7 +22,11 @@ type sentimentAnalysis struct {
 func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	postID := c.Query("id")
 	var post db.Post
-	err := h.db.Preload("School").Preload("Faculty").First(&post, postID).Error
+	err := h.db.
+		Preload("School").
+		Preload("Faculty").
+		Preload("YearOfStudy").
+		First(&post, postID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)

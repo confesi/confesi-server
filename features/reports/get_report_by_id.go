@@ -49,6 +49,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 	if report.PostID != nil {
 		post := db.Post{}
 		err := h.db.
+			Preload("YearOfStudy").
 			Preload("School").  // Preload the User field of the Post
 			Preload("Faculty"). // Preload the User field of the Post
 			Where("id = ?", *report.PostID).
