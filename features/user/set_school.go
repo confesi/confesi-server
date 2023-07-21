@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleSetYearOfStudy(c *gin.Context) {
+func (h *handler) handleSetSchool(c *gin.Context) {
 
 	// validate the json body from request
-	var req validation.UpdateYearOfStudy
+	var req validation.UpdateSchool
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -36,21 +36,22 @@ func (h *handler) handleSetYearOfStudy(c *gin.Context) {
 		}
 	}()
 
-	// check if user's year of study is valid (aka, the year of study exists in the database)
-	yearOfStudy := db.YearOfStudy{}
-	err = tx.Raw("SELECT id FROM year_of_study WHERE name ILIKE ?", req.YearOfStudy).First(&yearOfStudy).Error
+	// check if user's school is valid (aka, the school exists in the database)
+	school := db.School{}
+	err = tx.Select("id").Where("name ILIKE ?", req.FullSchoolName).First(&school).Error
 	if err != nil {
 		tx.Rollback()
-		response.New(http.StatusBadRequest).Err("year of study doesn't exist").Send(c)
+		response.New(http.StatusBadRequest).Err("school doesn't exist").Send(c)
 		return
 	}
-	yearOfStudyID := uint8(yearOfStudy.ID)
 
-	// update the user's year of study
+	schoolID := uint8(school.ID)
+
+	// update the user's school
 	res := tx.
 		Model(&db.User{}).
 		Where("id = ?", token.UID).
-		Update("year_of_study_id", yearOfStudyID)
+		Update("school_id", schoolID)
 	if res.Error != nil {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)

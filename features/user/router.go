@@ -45,4 +45,6 @@ func Router(mux *gin.RouterGroup) {
 
 	registeredFirebaseUsersOnly.DELETE("/year-of-study", h.handleClearYearOfStudy)
 	registeredFirebaseUsersOnly.PATCH("/year-of-study", h.handleSetYearOfStudy)
+
+	registeredFirebaseUsersOnly.PATCH("/school", h.handleSetSchool)
 }

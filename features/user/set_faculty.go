@@ -6,6 +6,7 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +39,7 @@ func (h *handler) handleSetFaculty(c *gin.Context) {
 
 	// check if user's faculty is valid (aka, the faculty exists in the database)
 	faculty := db.Faculty{}
-	err = tx.Select("id").Where("faculty = ?", req.Faculty).First(&faculty).Error
+	err = tx.Where("LOWER(faculty) ILIKE ?", strings.ToLower(req.Faculty)).First(&faculty).Error
 	if err != nil {
 		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)

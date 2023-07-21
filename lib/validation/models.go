@@ -69,8 +69,13 @@ type UpdateYearOfStudy struct {
 }
 
 type UpdateFaculty struct {
-	// [required] year of study to update to
+	// [required] faculty to update to
 	Faculty string `json:"faculty" validate:"required"`
+}
+
+type UpdateSchool struct {
+	// [required] school to update to
+	FullSchoolName string `json:"full_school_name" validate:"required"`
 }
 
 type CreateComment struct {
