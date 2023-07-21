@@ -2,6 +2,7 @@ package auth
 
 import (
 	"confesi/db"
+	"confesi/lib/email"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -62,6 +63,12 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
+	verificationEmailSent := true
+	err = email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
+	if err != nil {
+		verificationEmailSent = false
+	}
+
 	user := db.User{
 		ID:          firebaseUser.UID,
 		SchoolID:    school.ID,
@@ -81,7 +88,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 	})
 	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
-	// if this succeeds, send back success to indicate the user should reload their account because both their account & profile
-	// has been created
-	response.New(http.StatusCreated).Send(c)
+	// send response
+	response.New(http.StatusCreated).Val(map[string]bool{"verification_sent": verificationEmailSent}).Send(c)
 }

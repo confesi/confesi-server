@@ -11,7 +11,7 @@ type CreateAccountDetails struct {
 	Faculty string `json:"faculty" validate:"required"`
 }
 
-type UpdateEmail struct {
+type EmailQuery struct {
 	// [required] valid email, no spaces
 	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 }

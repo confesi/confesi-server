@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"firebase.google.com/go/auth"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ses"
+	"github.com/gin-gonic/gin"
 )
 
 // todo: update addresses to be correct
@@ -77,7 +79,6 @@ func (e *email) LoadPasswordResetTemplate(link string) (*email, error) {
 	// Get the absolute path of the running executable.
 	currentDir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Error getting current working directory:", err)
 		return nil, errorLoadingTemplate
 	}
 
@@ -85,7 +86,6 @@ func (e *email) LoadPasswordResetTemplate(link string) (*email, error) {
 
 	htmlContent, err := ioutil.ReadFile(htmlTemplatePath)
 	if err != nil {
-		fmt.Println("Error loading HTML template:", err)
 		return nil, errorLoadingTemplate
 	}
 
@@ -97,7 +97,6 @@ func (e *email) LoadPasswordResetTemplate(link string) (*email, error) {
 
 	textContent, err := ioutil.ReadFile(textTemplatePath)
 	if err != nil {
-		fmt.Println("Error loading text template:", err)
 		return nil, errorLoadingTemplate
 	}
 
@@ -123,20 +122,15 @@ func (e *email) LoadVerifyEmailTemplate(link string) (*email, error) {
 	// Get the absolute path of the running executable.
 	currentDir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("Error getting current working directory:", err)
 		return nil, errorLoadingTemplate
 	}
 
 	htmlTemplatePath := filepath.Join(currentDir, "templates", "verify_email_email_template.html")
 	textTemplatePath := filepath.Join(currentDir, "templates", "verify_email_email_template.txt")
 
-	fmt.Println("File Path (HTML):", htmlTemplatePath)
-	fmt.Println("File Path (Text):", textTemplatePath)
-
 	// Read the content of the HTML template file.
 	htmlContent, err := ioutil.ReadFile(htmlTemplatePath)
 	if err != nil {
-		fmt.Println("Error loading HTML template:", err)
 		return nil, errorLoadingTemplate
 	}
 
@@ -147,7 +141,6 @@ func (e *email) LoadVerifyEmailTemplate(link string) (*email, error) {
 	// Read the content of the text template file.
 	textContent, err := ioutil.ReadFile(textTemplatePath)
 	if err != nil {
-		fmt.Println("Error loading text template:", err)
 		return nil, errorLoadingTemplate
 	}
 
@@ -178,21 +171,30 @@ func (e *email) Send() (*ses.SendEmailOutput, error) {
 	})
 }
 
-// ! different kinds of errors; worth noting for the future?
+// Short-hand email sender
 
-// if err != nil {
-// 	if aerr, ok := err.(awserr.Error); ok {
-// 		switch aerr.Code() {
-// 		case ses.ErrCodeMessageRejected:
-// 			fmt.Println(ses.ErrCodeMessageRejected, aerr.Error())
-// 		case ses.ErrCodeMailFromDomainNotVerifiedException:
-// 			fmt.Println(ses.ErrCodeMailFromDomainNotVerifiedException, aerr.Error())
-// 		case ses.ErrCodeConfigurationSetDoesNotExistException:
-// 			fmt.Println(ses.ErrCodeConfigurationSetDoesNotExistException, aerr.Error())
-// 		default:
-// 			fmt.Println(aerr.Error())
-// 		}
-// 	} else {
+func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
+	link, err := authClient.EmailVerificationLink(c, userEmail)
+	em, err := New().
+		To([]string{userEmail}, []string{}).
+		Subject("Confesi Email Verification").
+		LoadVerifyEmailTemplate(link)
+	if err != nil {
+		return err
+	}
+	_, err = em.Send()
+	return err
+}
 
-// 		fmt.Println(err.Error())
-// 	}
+func SendPasswordResetEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
+	link, err := authClient.PasswordResetLink(c, userEmail)
+	em, err := New().
+		To([]string{userEmail}, []string{}).
+		Subject("Confesi Password Reset").
+		LoadPasswordResetTemplate(link)
+	if err != nil {
+		return err
+	}
+	_, err = em.Send()
+	return err
+}

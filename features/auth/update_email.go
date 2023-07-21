@@ -18,7 +18,7 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 	// let user know it won't update their home uni automatically (bug -> feature)
 
 	// extract request body
-	var req validation.UpdateEmail
+	var req validation.EmailQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
