@@ -10,7 +10,7 @@ ALTER TABLE users
 
 DROP TABLE IF EXISTS year_of_study;
 
-CREATE TABLE mod_levls (
+CREATE TABLE mod_levels (
     id INTEGER PRIMARY KEY UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL
 );

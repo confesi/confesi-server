@@ -52,7 +52,7 @@ type WatchSchool struct {
 }
 
 type UserStanding struct {
-	// [required] user standing must be one of "limited", "banned", or "enabled"
+	// [required] user standing must be one of "limit", "ban", or "enable"
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled"`
 }
 
