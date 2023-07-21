@@ -125,6 +125,11 @@ type EmailAlreadyExists struct {
 	Value string  `json:"value" example:"null"`
 }
 
+type ParentCommentDoesNotExist struct {
+	Error *string `json:"error" example:"parent-comment and post combo doesn't exist"`
+	Value string  `json:"value" example:"null"`
+}
+
 type PostFound struct {
 	Error *string `json:"error" example:"null"`
 	Value struct {

@@ -52,6 +52,22 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
 	}
 }
 
+// CreateComment godoc
+//
+//	@Summary		Create a Comment.
+//	@Description	Create a comment with the given content.
+//	@Tags			Comments
+//	@Accept			application/json
+//	@Produce		application/json
+//	@Security		BearerAuth
+//	@Security		X-AppCheck-Token
+//	@Param			Body	body		string				true	"The content of the comment"	SchemaExample({\n    "post_id": 23,\n    "parent_comment_id": 135,\n    "content": "admin"\n})
+//	@Success		201		{object}	docs.Created		"Created"
+//	@Failure		500		{object}	docs.ServerError	"Server Error"
+//	@Failure		4001		{object}	docs.PostNotFound	"Post Not Found"
+//	@Failure		4002		{object}	docs.ParentCommentDoesNotExist	"Parent Comment Does Not Exist"
+//
+//	@Router			/comments/create [post]
 func (h *handler) handleCreate(c *gin.Context) {
 
 	// validate the json body from request

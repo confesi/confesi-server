@@ -18,6 +18,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 		return
 	}
 
+	// besdlfhajsdf
 	var comment CommentDetail
 
 	err = h.db.
