@@ -1,5 +1,7 @@
 package config
 
+// ----- APPLICATION CONSTANTS
+
 const (
 	MaxCommentThreadDepthExcludingRoot   = 1                     // how many levels of comments are allowed (depth)
 	RootCommentsLoadedInitially          = 5                     // how many root comments are returned at once
@@ -16,6 +18,7 @@ const (
 	RedisCommentsCacheByReports          = "comments_by_report"  // redis key for comments cache by reports
 	RedisPostsCacheByReports             = "posts_by_report"     // redis key for posts cache by reports
 	RedisRateLimitingCache               = "ip_rate_limiting"    // redis key for ip-based rate limiting cache
+	RedisEmailRateLimitingRouteKey       = "email_rate_limiting" // redis key for email rate limiting cache
 	YourPostsPageSize                    = 3                     // how many posts are returned in a page size in the your posts page
 	YourCommentsPageSize                 = 3                     // how many comments are returned in a page size in the your comments page
 	SavedPostsAndCommentsPageSize        = 2                     // how many posts and comments are returned in a page size in the saved posts and comments page
@@ -25,9 +28,16 @@ const (
 	AdminPostsSortedByReportsPageSize    = 10                    // how many posts are returned in a page size in the admin posts sorted by reports page
 	AdminViewAllReportsPerCommentId      = 10                    // how many reports are returned in a page size in the view of reports for a comment given by id
 	AdminViewAllReportsPerPostId         = 10                    // how many reports are returned in a page size in the view of reports for a post given by id
-	iOSBundleId                          = "com.confesi.app"     // iOS bundle id // TODO: change this
-	AndroidPackageName                   = "com.confesi.app"     // Android package name // TODO: change this
-	EmailRateLimitingRouteKey            = "email_rate_limiting" // redis key for email rate limiting cache
 )
 
-// Other constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go
+// ----- DEPLOYMENT CONSTANTS
+
+const (
+	iOSBundleId        = "com.confesi.app"    // iOS bundle id // TODO: change this
+	AndroidPackageName = "com.confesi.app"    // Android package name // TODO: change this
+	FirebaseProjectID  = "confesi-server-dev" // Firebase project id // TODO: change this
+)
+
+// ----- ALT CONSTANTS
+
+// -> pther constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go

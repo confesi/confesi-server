@@ -36,7 +36,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// route-specific rate limiting for email routes to protect against spam
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UidRateLimit(c, 4, time.Hour, config.EmailRateLimitingRouteKey)
+		middleware.UidRateLimit(c, 4, time.Hour, config.RedisEmailRateLimitingRouteKey)
 	})
 	registeredFirebaseUserRoutes.PATCH("/update-email", h.handleUpdateEmail)
 	registeredFirebaseUserRoutes.POST("/resend-verification-email", h.handleResendEmailVerification)
