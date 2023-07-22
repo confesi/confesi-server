@@ -1,59 +1,40 @@
 package cipher
 
 import (
-	"crypto/aes"
-	c "crypto/cipher"
-	"encoding/hex"
+	"errors"
+	"hash"
 	"os"
 )
 
-func Encrypt(plainText string) string {
-	aesgcm, nonce := getAesGCM()
-	encrypted := aesgcm.Seal(nil, nonce, []byte(plainText), nil)
-	return string(encrypted)
+const (
+	MasterKeyLen = 16
+)
+
+var (
+	ErrInvalidMasterKey = errors.New("invalid master key length")
+	ErrInvalidKey       = errors.New("illegal key")
+	ErrInvalidSalt      = errors.New("invalid salt")
+	hkdf_secret         string
+)
+
+type Serializer interface {
+	// length of the key has to be 32 bytes
+	Key() []byte
 }
 
-func Decrypt(encryptedText string) (string, error) {
-	aesgcm, nonce := getAesGCM()
-	plainText, err := aesgcm.Open(nil, nonce, []byte(encryptedText), nil)
-	if err != nil {
-		return "", err
-	}
-
-	return string(plainText), nil
+type CipherResult struct {
+	Ciphertext []byte
+	Nonce      []byte
 }
 
-// NOTE: `cipher.Block` is not threadsafe, initialize a new one every
-// function call instead of a global `init()`
-func getAesGCM() (c.AEAD, []byte) {
-	key := os.Getenv("CIPHER_KEY")
-	if key == "" {
-		panic("`CIPHER_KEY` env not set")
-	}
+type KDF struct {
+	algo func() hash.Hash
+	salt []byte
+}
 
-	block, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		// NOTE: valid key has the length of 16, 24, or 32 bytes to generate
-		// a AES-128, AES-192 or AES-256 respectively.
-		// and `panic(err)` since err is returned when they key has an invalid
-		// length (ie, not of 16, 24, or 32 bytes.)
-		panic(err)
+func init() {
+	hkdf_secret = os.Getenv("HKDF_SECRET")
+	if hkdf_secret == "" {
+		panic("`HKDF_SECRET` not set")
 	}
-
-	nonceHex := os.Getenv("CIPHER_NONCE")
-	if nonceHex == "" {
-		panic("`CIPHER_NONCE` env not set")
-	}
-
-	nonce, err := hex.DecodeString(nonceHex)
-	if err != nil {
-		panic("invalid `CIPHER_NONCE`:" + nonceHex)
-	}
-
-	aesgcm, err := c.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	return aesgcm, nonce
 }
