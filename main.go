@@ -11,6 +11,7 @@ import (
 	"confesi/features/reports"
 	"confesi/features/saves"
 	"confesi/features/schools"
+	"confesi/features/stats"
 	"confesi/features/user"
 	"confesi/features/votes"
 	"confesi/lib/cronJobs/clearExpiredFcmTokens"
@@ -82,6 +83,7 @@ func main() {
 	user.Router(api.Group("/user"))
 	reports.Router(api.Group("/reports"))
 	hideLog.Router(api.Group("/hide-log"))
+	stats.Router(api.Group("/stats"))
 
 	// Start the CRON job scheduler
 	dailyHottestPosts.StartDailyHottestPostsCronJob()
