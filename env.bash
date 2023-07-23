@@ -43,12 +43,12 @@ function db() {
 }
 
 function requests() {
-    sh $CONFESI_ROOT/scripts/requests
+    sh $CONFESI_ROOT/scripts/requests $1
 }
 
 function gotest() {
     if [ -z "${1}" ]; then
-        echo "Testing al packages"
+        echo "Testing all packages"
         go test ./... -coverprofile cover.out -v
     else
         echo "Testing ${1}"
@@ -59,5 +59,6 @@ function gotest() {
 }
 
 function token() {
-    sh $CONFESI_ROOT/scripts/token
+    shift 1
+    sh $CONFESI_ROOT/scripts/token "$@"
 }
