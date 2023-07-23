@@ -16,6 +16,7 @@ const (
 	RedisCommentsCacheByReports          = "comments_by_report"  // redis key for comments cache by reports
 	RedisPostsCacheByReports             = "posts_by_report"     // redis key for posts cache by reports
 	RedisRateLimitingCache               = "ip_rate_limiting"    // redis key for ip-based rate limiting cache
+	RedisGlobalUserStats                 = "global_user_stats"   // redis key for global user stats cache
 	YourPostsPageSize                    = 3                     // how many posts are returned in a page size in the your posts page
 	YourCommentsPageSize                 = 3                     // how many comments are returned in a page size in the your comments page
 	SavedPostsAndCommentsPageSize        = 2                     // how many posts and comments are returned in a page size in the saved posts and comments page
