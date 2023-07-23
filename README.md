@@ -3,10 +3,6 @@
 ![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
 ![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
 
-## Notes
-
-- All scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
-
 ## Requirements
 
 - Go 1.20.
@@ -84,37 +80,37 @@ docker-compose up
 
 ## Scripts
 
-- the `env.bash` has functions needed for development.
+**The `env.bash` file has functions needed for development:**
 
 ```sh
 source env.bash
 ```
 
-- The following scripts are now available
+**The following scripts are now available:**
 
-**Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour.**
+Replaces all instances of bearer tokens in `requests.http` files with a new token. Useful for testing API routes since Firebase's tokens refresh every hour:
 
 ```sh
 requests <my_new_token>
 ```
 
-**Get an access token for a user:**
+Get an access token for a user:
 
 ```sh
 token <email> <password>
 ```
 
-**Fetch new token for user and update it for all `requests.http` files at once:**
+Fetch new token for user and update it for all `requests.http` files at once:
 
 ```sh
-token <email> <password> | ./scripts/requests
+token <email> <password> | requests
 ```
 
 ## PostgreSQL
 
 - [DB Diagram](https://dbdiagram.io/d/64727d587764f72fcff5bc9a).
 
-- Scripts (These are also available in the `env.bash`):
+- Scripts (these are made available through the `env.bash`):
 
 ```sh
 # accessing postgres

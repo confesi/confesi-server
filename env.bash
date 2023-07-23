@@ -42,7 +42,7 @@ function db() {
     esac
 }
 
-function request() {
+function requests() {
     sh $CONFESI_ROOT/scripts/requests
 }
 
