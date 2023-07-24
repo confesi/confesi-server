@@ -15,6 +15,7 @@ import (
 	"confesi/features/votes"
 	"confesi/lib/cronJobs/clearExpiredFcmTokens"
 	"confesi/lib/cronJobs/dailyHottestPosts"
+	"confesi/lib/crypto"
 	"confesi/lib/fire"
 	"confesi/middleware"
 	"fmt"
@@ -52,6 +53,7 @@ func init() {
 // @externalDocs.description  GitHub
 // @externalDocs.url          https://github.com/mattrltrent/confesi-server
 func main() {
+	go crypto.RefreshCounterMap()
 	r := gin.Default()
 
 	if publicDocAccess == "true" {
