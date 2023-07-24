@@ -4,6 +4,7 @@ import (
 	"confesi/lib/crypto"
 	"database/sql/driver"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -91,6 +92,38 @@ type User struct {
 	IsLimited     bool        `gorm:"is_limited" json:"-"`
 }
 
+// Cipher the plaintext id with `CreatedAt` value being the additional data.
+// Mutates the struct `ID`.
+func (u *User) MaskID() error {
+	if u.ID == "" {
+		return errors.New("user id not found")
+	}
+	// `ad` here is the CreatedAt.MicroSeconds,
+	// which is a int64 = uint32 -> 4 in length
+	var ad [4]byte
+	binary.LittleEndian.PutUint32(ad[:], uint32(u.CreatedAt.UnixNano()))
+	ciphertext, err := crypto.Cipher([]byte(u.ID), ad[:])
+	if err != nil {
+		return err
+	}
+	u.ID = base64.StdEncoding.EncodeToString(ciphertext)
+	return nil
+}
+
+// Cipher the plaintext id with `CreatedAt` value being the additional data.
+// Returns the id deciphered. Since this is likely going to be used to query data.
+// Does not mutate `User.ID`.
+func (u *User) UnmaskID() (string, error) {
+	var ad [4]byte
+	binary.LittleEndian.PutUint32(ad[:], uint32(u.CreatedAt.UnixNano()))
+	ciphertext, err := base64.StdEncoding.DecodeString(u.ID)
+	if err != nil {
+		return "", err
+	}
+	pt, err := crypto.Decipher(ciphertext, ad[:])
+	return string(pt), err
+}
+
 // ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
 	ID        uint       `gorm:"primary_key;column:id" json:"id"`
@@ -129,71 +162,6 @@ func (p *Post) CensorPost() Post {
 	p.Title = goaway.Censor(p.Title)
 	p.Content = goaway.Censor(p.Content)
 	return *p
-}
-
-// Returns an error if an id is already set, if the user id is not set,
-// of if the `crypto.NewID` function failed.
-//
-// Writes the id to the struct itself.
-//
-// Since each post belongs to a user, we'll use the raw id from firebase as the
-// `ad`. This is 1 way op, no worries about leaking.
-func (p *Post) GenID() error {
-	if p.ID == "" {
-		return errors.New("id exists")
-	}
-	if p.UserID == "" {
-		return errors.New("id exists")
-	}
-
-	id, err := crypto.NewID(p.UserID)
-	if err != nil {
-		return err
-	}
-
-	p.ID = id
-
-	return nil
-}
-
-// Returns an error if either the post id or the user id is not set
-// cipher user id and write it in place
-func (p *Post) MaskUserID() error {
-	if p.ID == "" {
-		return errors.New("post id not set")
-	}
-
-	if p.UserID == "" {
-		return errors.New("associated user id not set")
-	}
-
-	ciphertext, err := crypto.Cipher([]byte(p.UserID), []byte(p.ID))
-	if err != nil {
-		return err
-	}
-
-	p.UserID = base64.StdEncoding.EncodeToString(ciphertext)
-	return nil
-}
-
-// Returns an error if either the post id or the user id is not set
-// decipher user id and return the string, does not mutate the struct
-func (p *Post) UnMaskUserID() (string, error) {
-	if p.ID == "" {
-		return "", errors.New("post id not set")
-	}
-
-	if p.UserID == "" {
-		return "", errors.New("associated user id not set")
-	}
-
-	ciphertext, err := base64.StdEncoding.DecodeString(p.UserID)
-	if err != nil {
-		return "", err
-	}
-
-	pt, err := crypto.Decipher(ciphertext, []byte(p.ID))
-	return string(pt), err
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
