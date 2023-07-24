@@ -1,8 +1,11 @@
 package db
 
 import (
+	"confesi/lib/crypto"
 	"database/sql/driver"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"time"
@@ -99,7 +102,7 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	ID            int             `gorm:"primary_key;column:id" json:"id"`
+	ID            string          `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
@@ -128,9 +131,69 @@ func (p *Post) CensorPost() Post {
 	return *p
 }
 
-func (c *Comment) CensorComment() Comment {
-	c.Content = goaway.Censor(c.Content)
-	return *c
+// Returns an error if an id is already set, if the user id is not set,
+// of if the `crypto.NewID` function failed.
+//
+// Writes the id to the struct itself.
+//
+// Since each post belongs to a user, we'll use the raw id from firebase as the
+// `ad`. This is 1 way op, no worries about leaking.
+func (p *Post) GenID() error {
+	if p.ID == "" {
+		return errors.New("id exists")
+	}
+	if p.UserID == "" {
+		return errors.New("id exists")
+	}
+
+	id, err := crypto.NewID(p.UserID)
+	if err != nil {
+		return err
+	}
+
+	p.ID = id
+
+	return nil
+}
+
+// Returns an error if either the post id or the user id is not set
+// cipher user id and write it in place
+func (p *Post) MaskUserID() error {
+	if p.ID == "" {
+		return errors.New("post id not set")
+	}
+
+	if p.UserID == "" {
+		return errors.New("associated user id not set")
+	}
+
+	ciphertext, err := crypto.Cipher([]byte(p.UserID), []byte(p.ID))
+	if err != nil {
+		return err
+	}
+
+	p.UserID = base64.StdEncoding.EncodeToString(ciphertext)
+	return nil
+}
+
+// Returns an error if either the post id or the user id is not set
+// decipher user id and return the string, does not mutate the struct
+func (p *Post) UnMaskUserID() (string, error) {
+	if p.ID == "" {
+		return "", errors.New("post id not set")
+	}
+
+	if p.UserID == "" {
+		return "", errors.New("associated user id not set")
+	}
+
+	ciphertext, err := base64.StdEncoding.DecodeString(p.UserID)
+	if err != nil {
+		return "", err
+	}
+
+	pt, err := crypto.Decipher(ciphertext, []byte(p.ID))
+	return string(pt), err
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
@@ -155,6 +218,11 @@ type Comment struct {
 	ReportCount               uint       `gorm:"column:report_count" json:"-"`
 	ReviewedByMod             bool       `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited                    bool       `gorm:"column:edited" json:"edited"`
+}
+
+func (c *Comment) CensorComment() Comment {
+	c.Content = goaway.Censor(c.Content)
+	return *c
 }
 
 func (c *Comment) ObscureIfHidden() Comment {
