@@ -3,15 +3,12 @@ package fire
 //! Package named `fire` because `firebase` is already taken many times by official packages.
 
 import (
-	"confesi/config"
 	"context"
 	"log"
 
 	fb "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"firebase.google.com/go/messaging"
-	"firebase.google.com/go/v4/appcheck"
-	"firebase.google.com/go/v4/internal"
 	"google.golang.org/api/option"
 )
 
@@ -21,7 +18,6 @@ type FirebaseApp struct {
 	App        *fb.App
 	AuthClient *auth.Client
 	MsgClient  *messaging.Client
-	AppCheck   *appcheck.Client
 }
 
 func init() {
@@ -45,13 +41,6 @@ func InitFirebase(secretsPath string) error {
 		return err
 	}
 
-	appCheck, err := appcheck.NewClient(context.Background(), &internal.AppCheckConfig{
-		ProjectID: config.FirebaseProjectID,
-	})
-	if err != nil {
-		return err
-	}
-
 	msgClient, err := app.Messaging(context.Background())
 	if err != nil {
 		return err
@@ -61,7 +50,6 @@ func InitFirebase(secretsPath string) error {
 		App:        app,
 		AuthClient: authClient,
 		MsgClient:  msgClient,
-		AppCheck:   appCheck,
 	}
 	return nil
 }

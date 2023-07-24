@@ -17,7 +17,7 @@ import (
 
 // todo: update addresses to be correct
 const (
-	sender  = "matthew.rl.trent@gmail.com"
+	sender  = "mail@confesi.com"
 	charSet = "UTF-8"
 	profile = "confesi"
 )
@@ -43,7 +43,7 @@ func init() {
 
 func New() *email {
 	return &email{
-		Source:  sender,
+		Source:  "Confesi" + " " + "<" + sender + ">",
 		Message: ses.Message{},
 	}
 }
@@ -52,12 +52,14 @@ func (e *email) To(addresses []string, ccs []string) *email {
 	// Convert the string slices to slices of pointers to strings.
 	var ccAddresses []*string
 	for _, cc := range ccs {
-		ccAddresses = append(ccAddresses, &cc)
+		email := cc // Create a new variable inside the loop scope
+		ccAddresses = append(ccAddresses, &email)
 	}
 
 	var toAddresses []*string
 	for _, address := range addresses {
-		toAddresses = append(toAddresses, &address)
+		email := address // Create a new variable inside the loop scope
+		toAddresses = append(toAddresses, &email)
 	}
 
 	e.Destination = ses.Destination{
@@ -174,10 +176,13 @@ func (e *email) Send() (*ses.SendEmailOutput, error) {
 // Short-hand email sender
 
 func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
+	if userEmail == "" {
+		return errors.New("link is empty, likely user doesn't exist")
+	}
 	link, err := authClient.EmailVerificationLink(c, userEmail)
 	em, err := New().
 		To([]string{userEmail}, []string{}).
-		Subject("Confesi Email Verification").
+		Subject("Email Verification").
 		LoadVerifyEmailTemplate(link)
 	if err != nil {
 		return err
@@ -187,10 +192,13 @@ func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail st
 }
 
 func SendPasswordResetEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
+	if userEmail == "" {
+		return errors.New("link is empty, likely user doesn't exist")
+	}
 	link, err := authClient.PasswordResetLink(c, userEmail)
 	em, err := New().
 		To([]string{userEmail}, []string{}).
-		Subject("Confesi Password Reset").
+		Subject("Password Reset").
 		LoadPasswordResetTemplate(link)
 	if err != nil {
 		return err
