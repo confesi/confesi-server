@@ -4,10 +4,10 @@ import (
 	"confesi/lib/crypto"
 	"database/sql/driver"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
 	"time"
 
@@ -15,6 +15,17 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
+
+var (
+	userAD []byte
+)
+
+func init() {
+	userAD = []byte(os.Getenv("USER_KEY"))
+	if len(userAD) == 0 {
+		panic("`USER_KEY` not set")
+	}
+}
 
 type ModLevel struct {
 	ID  uint   `gorm:"primaryKey" json:"id"`
@@ -92,17 +103,13 @@ type User struct {
 	IsLimited     bool        `gorm:"is_limited" json:"-"`
 }
 
-// Cipher the plaintext id with `CreatedAt` value being the additional data.
+// Cipher the plaintext id with `userAD` value being the additional data.
 // Mutates the struct `ID`.
 func (u *User) MaskID() error {
 	if u.ID == "" {
 		return errors.New("user id not found")
 	}
-	// `ad` here is the CreatedAt.MicroSeconds,
-	// which is a int64 = uint32 -> 4 in length
-	var ad [4]byte
-	binary.LittleEndian.PutUint32(ad[:], uint32(u.CreatedAt.UnixNano()))
-	ciphertext, err := crypto.Cipher([]byte(u.ID), ad[:])
+	ciphertext, err := crypto.Cipher([]byte(u.ID), userAD)
 	if err != nil {
 		return err
 	}
@@ -114,13 +121,11 @@ func (u *User) MaskID() error {
 // Returns the id deciphered. Since this is likely going to be used to query data.
 // Does not mutate `User.ID`.
 func (u *User) UnmaskID() (string, error) {
-	var ad [4]byte
-	binary.LittleEndian.PutUint32(ad[:], uint32(u.CreatedAt.UnixNano()))
 	ciphertext, err := base64.StdEncoding.DecodeString(u.ID)
 	if err != nil {
 		return "", err
 	}
-	pt, err := crypto.Decipher(ciphertext, ad[:])
+	pt, err := crypto.Decipher(ciphertext, userAD)
 	return string(pt), err
 }
 
@@ -135,7 +140,7 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	ID            string          `gorm:"primary_key;column:id" json:"id"`
+	ID            uint            `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
