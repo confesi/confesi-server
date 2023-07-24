@@ -35,10 +35,10 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 
 	counter, err := store.Get(ctx, idSessionKey).Int64()
 
-	// Check whether a cache exists or not
+	// check whether a cache exists or not
 	if err == redis.Nil {
-		//If no cache exists create one
-		err = store.Set(ctx, idSessionKey, 0, unit).Err()
+		// if no cache exists create one
+		err = store.Set(ctx, idSessionKey, 0, time.Minute*30).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Send(c)
 			return
@@ -56,7 +56,7 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 		return
 	}
 
-	// Retrieve the time left from the result
+	// retrieve the time left from the result
 	ttl, err := ttlResult.Result()
 	if err != nil {
 		response.New(http.StatusInternalServerError).Send(c)
@@ -73,7 +73,7 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 			Val(routedRequestRateLimit{
 				Limit:             fmt.Sprint(tokensPerUnit),
 				RemainingRequests: fmt.Sprint(tokensPerUnit - counter),
-				ResetInSeconds:    fmt.Sprint(ttl.Seconds()),
+				ResetInSeconds:    fmt.Sprintf("%.0f", ttl.Seconds()),
 			}).
 			Send(c)
 	}

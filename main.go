@@ -15,7 +15,6 @@ import (
 	"confesi/features/votes"
 	"confesi/lib/cronJobs/clearExpiredFcmTokens"
 	"confesi/lib/cronJobs/dailyHottestPosts"
-	"confesi/lib/fire"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -64,9 +63,10 @@ func main() {
 
 	// Version 1 api group
 	api := r.Group("/api/v1")
-	api.Use(func(c *gin.Context) {
-		middleware.FirebaseAppCheck(c, fire.New().AppCheck)
-	})
+	//! Not used for now, since: https://github.com/firebase/firebase-admin-go/issues/572
+	// api.Use(func(c *gin.Context) {
+	// 	middleware.FirebaseAppCheck(c, fire.New().AppCheck)
+	// })
 	api.Use(middleware.RateLimit)
 	api.Use(middleware.OptionalProfanityCensor)
 	api.Use(middleware.Cors)
