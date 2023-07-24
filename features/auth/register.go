@@ -6,7 +6,6 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -73,7 +72,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 	verificationEmailSent := true
 	err = email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
 	if err != nil {
-		fmt.Println("error, email not sent", err)
 		verificationEmailSent = false
 	}
 

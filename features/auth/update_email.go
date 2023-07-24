@@ -6,14 +6,13 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// todo: add field like "you can only change your email once ever 90 days" in table or smth to keep track of it and enforce the restriction? or heavily rate limit?
+//! INCORRECT. NOT PART OF THE API. BUT, I'M KEEPING IT HERE FOR REFERENCE.
 
 func (h *handler) handleUpdateEmail(c *gin.Context) {
 	// let user know it won't update their home uni automatically (bug -> feature)
@@ -87,8 +86,6 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("email sent", err)
-
 	// commit results to postgres
 	err = tx.Commit().Error
 	if err != nil {
@@ -96,6 +93,5 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	fmt.Println("email sent & updated", err)
 	response.New(http.StatusOK).Send(c)
 }

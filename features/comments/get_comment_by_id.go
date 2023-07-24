@@ -4,7 +4,6 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,8 +37,6 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 			`, token.UID, commentID).
 		First(&comment).
 		Error
-
-	fmt.Println(comment)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
