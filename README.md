@@ -7,6 +7,8 @@
 
 - All scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
 
+- Please be **very** cautious about signing up using the assorted `requests.http` files. The ones that invoke email actions (reseting password, updating email, creating account, etc.) are **live**. So, only try them using addresses you actually own.
+
 ## Requirements
 
 - Go 1.20.

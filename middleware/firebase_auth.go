@@ -54,10 +54,10 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 	if token.Firebase.SignInProvider == "password" {
 		// if their email is NOT verified, then send back not verified
 		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
-		// if !token.Claims["email_verified"].(bool) {
-		// 	response.New(http.StatusUnauthorized).Val("email not verified").Send(c)
-		// 	return
-		// }
+		if !token.Claims["email_verified"].(bool) {
+			response.New(http.StatusUnauthorized).Val("email not verified").Send(c)
+			return
+		}
 		// todo: add check for `disabled` users to block them, too.
 		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
 		if profileCreated, ok := token.Claims["sync"].(bool); !ok {

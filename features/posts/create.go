@@ -51,7 +51,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err = tx.Create(&post).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New("server error")
+		return errors.New(serverError.Error())
 	}
 
 	// commit the transaction
