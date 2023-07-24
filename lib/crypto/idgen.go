@@ -1,8 +1,10 @@
 package crypto
 
 import (
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -27,7 +29,7 @@ func RefreshCounterMap() {
 	}
 }
 
-func NewID(id string) string {
+func NewID(id string) (string, error) {
 	d := []byte(id)
 	dLen := len(d)
 
@@ -35,6 +37,7 @@ func NewID(id string) string {
 	bufSize += 4 // time stamp utc is uint32
 	bufSize += 2 // pid is uint16
 	bufSize += 2 // counter variable is uint16
+	bufSize += 2 // random bytes array
 
 	buf := make([]byte, bufSize)
 	copy(buf, d)
@@ -49,7 +52,12 @@ func NewID(id string) string {
 	m.Lock()
 	counterMap[id] = counter + 1
 	m.Unlock()
-	binary.BigEndian.PutUint16(buf[dLen+6:], uint16(counter))
+	binary.BigEndian.PutUint16(buf[dLen+6:dLen+8], uint16(counter))
 
-	return base64.StdEncoding.EncodeToString(buf)
+	_, err := io.ReadFull(rand.Reader, buf[dLen+8:])
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(buf), nil
 }

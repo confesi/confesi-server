@@ -9,6 +9,7 @@ import (
 )
 
 func TestCryptoGenID(t *testing.T) {
+	t.Parallel()
 	go RefreshCounterMap()
 
 	iter := math.MaxUint16
@@ -16,14 +17,18 @@ func TestCryptoGenID(t *testing.T) {
 	idSet := make(map[string]bool)
 
 	for i := 0; i < iter; i++ {
-		idSet[NewID(userID)] = true
+		id, err := NewID(userID)
+		assert.Nil(t, err)
+		idSet[id] = true
 	}
 	assert.Equal(t, iter, len(idSet))
 
 	time.Sleep(time.Second)
 
 	for i := 0; i < iter; i++ {
-		idSet[NewID(userID)] = true
+		id, err := NewID(userID)
+		assert.Nil(t, err)
+		idSet[id] = true
 	}
 	assert.Equal(t, iter*2, len(idSet))
 }
