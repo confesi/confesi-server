@@ -65,13 +65,13 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 	err = tx.Select("id").Where("domain = ?", domain).First(&school).Error
 	if err != nil {
 		tx.Rollback()
-
 		response.New(http.StatusBadRequest).Err("domain doesn't belong to school").Send(c)
 		return
 	}
 
 	// is the new email already in use?
 	_, err = h.fb.AuthClient.GetUserByEmail(c, req.Email)
+	// if no error
 	if err == nil {
 		// aka, user exists
 		tx.Rollback()
@@ -80,23 +80,13 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 	}
 
 	// generate an email verificiation link
-	link, err := h.fb.AuthClient.EmailVerificationLink(c, req.Email)
-	em, err := email.New().
-		To([]string{userEmail}, []string{}).
-		Subject("Confesi Email Verification").
-		LoadVerifyEmailTemplate(link)
+	err = email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
 	if err != nil {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	_, err = em.Send()
-	if err != nil {
-		fmt.Println("AWS email send error", err)
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
+
 	fmt.Println("email sent", err)
 
 	// commit results to postgres

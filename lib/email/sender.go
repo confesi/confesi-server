@@ -176,10 +176,11 @@ func (e *email) Send() (*ses.SendEmailOutput, error) {
 // Short-hand email sender
 
 func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
-	if userEmail == "" {
+
+	link, err := authClient.EmailVerificationLink(c, userEmail)
+	if err != nil {
 		return errors.New("link is empty, likely user doesn't exist")
 	}
-	link, err := authClient.EmailVerificationLink(c, userEmail)
 	em, err := New().
 		To([]string{userEmail}, []string{}).
 		Subject("Email Verification").
@@ -192,10 +193,10 @@ func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail st
 }
 
 func SendPasswordResetEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
-	if userEmail == "" {
+	link, err := authClient.PasswordResetLink(c, userEmail)
+	if err != nil {
 		return errors.New("link is empty, likely user doesn't exist")
 	}
-	link, err := authClient.PasswordResetLink(c, userEmail)
 	em, err := New().
 		To([]string{userEmail}, []string{}).
 		Subject("Password Reset").
