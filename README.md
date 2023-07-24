@@ -29,9 +29,11 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
-**Add your AWS access tokens to the `.env` file.**
+**Add your AWS data to the `.env` file.**
 
 Specifically what IAM roles are needed will be determined in the future. Currently, a general admin user suffices.
+
+This includes your: access key, secret access key, and region.
 
 **Add the Firebase API key:**
 
