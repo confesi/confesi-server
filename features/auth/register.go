@@ -78,17 +78,21 @@ func (h *handler) handleRegister(c *gin.Context) {
 	user := db.User{}
 	user.ID = firebaseUser.UID
 	user.SchoolID = school.ID
+	if err := user.MaskID(); err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
 
 	// save user to postgres
-	err = h.db.Create(&user).Error
 	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
+	h.db.Create(&user)
 
 	// on success of both user being created in firebase and postgres, change their token to "double verified"
-	err = h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
+	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
+	h.fb.AuthClient.SetCustomUserClaims(c, firebaseUser.UID, map[string]interface{}{
 		"sync":  true,
 		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
-	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
 	// commit the transaction
 	err = tx.Commit().Error

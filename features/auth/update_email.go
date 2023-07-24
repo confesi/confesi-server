@@ -81,6 +81,9 @@ func (h *handler) handleUpdateEmail(c *gin.Context) {
 
 	// generate an email verificiation link
 	link, err := h.fb.AuthClient.EmailVerificationLink(c, req.Email)
+	if err != nil {
+		panic("HANDLE ME")
+	}
 	em, err := email.New().
 		To([]string{userEmail}, []string{}).
 		Subject("Confesi Email Verification").
