@@ -9,6 +9,7 @@ import (
 	"os"
 )
 
+// a 32 byte secret for ciphering, will panic if it has a none 32 length
 var key []byte
 
 func init() {
@@ -17,12 +18,14 @@ func init() {
 		panic("`CIPHER_KEY` not set")
 	}
 
-	key = []byte(k) // TODO: pull this from env
+	key = []byte(k)
 	if len(key) != 32 {
 		panic("invalid key length")
 	}
 }
 
+// `ad` must be the same for both Cipher and Decipher.it i
+// stands for Additional Data, use something unique to it (ie: user id)
 func Cipher(plaintext []byte, ad []byte) ([]byte, error) {
 	if len(ad) == 0 {
 		return nil, fmt.Errorf("invalid length for additional data: %d", len(ad))
@@ -53,6 +56,8 @@ func Cipher(plaintext []byte, ad []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// `ad` must be the same for both Cipher and Decipher.it i
+// stands for Additional Data, use something unique to it (ie: user id)
 func Decipher(ciphertext []byte, ad []byte) ([]byte, error) {
 	if len(ad) == 0 {
 		return nil, fmt.Errorf("invalid length for additional data: %d", len(ad))

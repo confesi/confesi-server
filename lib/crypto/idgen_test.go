@@ -16,20 +16,14 @@ func TestCryptoGenID(t *testing.T) {
 	idSet := make(map[string]bool)
 
 	for i := 0; i < iter; i++ {
-		id := NewID(userID)
-		_, ok := idSet[id]
-		assert.False(t, ok)
-		idSet[id] = true
+		idSet[NewID(userID)] = true
 	}
-
 	assert.Equal(t, iter, len(idSet))
+
 	time.Sleep(time.Second)
 
 	for i := 0; i < iter; i++ {
-		id := NewID(userID)
-		_, ok := idSet[id]
-		assert.False(t, ok)
-		idSet[id] = true
+		idSet[NewID(userID)] = true
 	}
 	assert.Equal(t, iter*2, len(idSet))
 }
