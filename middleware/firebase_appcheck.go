@@ -1,26 +1,28 @@
 package middleware
 
-import (
-	"confesi/lib/logger"
-	"confesi/lib/response"
-	"fmt"
-	"net/http"
+//! Not used for now, since: https://github.com/firebase/firebase-admin-go/issues/572
 
-	"firebase.google.com/go/v4/appcheck"
-	"github.com/gin-gonic/gin"
-)
+// import (
+// 	"confesi/lib/logger"
+// 	"confesi/lib/response"
+// 	"fmt"
+// 	"net/http"
 
-func FirebaseAppCheck(c *gin.Context, appCheck *appcheck.Client) {
-	appCheckToken := c.GetHeader("X-Firebase-AppCheck")
+// 	"firebase.google.com/go/v4/appcheck"
+// 	"github.com/gin-gonic/gin"
+// )
 
-	_, err := appCheck.VerifyToken(appCheckToken)
-	if err != nil {
-		url := c.Request.URL.String()
-		ip := c.ClientIP()
-		logger.StdErr(fmt.Errorf("unauthorized firebase appcheck request:\nfrom %s\nto: %s", ip, url))
-		response.New(http.StatusUnauthorized).Err("fails appcheck").Send(c)
-		return
-	}
+// func FirebaseAppCheck(c *gin.Context, appCheck *appcheck.Client) {
+// 	appCheckToken := c.GetHeader("X-Firebase-AppCheck")
 
-	c.Next()
-}
+// 	_, err := appCheck.VerifyToken(appCheckToken)
+// 	if err != nil {
+// 		url := c.Request.URL.String()
+// 		ip := c.ClientIP()
+// 		logger.StdErr(fmt.Errorf("unauthorized firebase appcheck request:\nfrom %s\nto: %s", ip, url))
+// 		response.New(http.StatusUnauthorized).Err("fails appcheck").Send(c)
+// 		return
+// 	}
+
+// 	c.Next()
+// }

@@ -9,8 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// todo: add custom rate limiting to this? or via redis?
-
 func (h *handler) handleSendPasswordResetEmail(c *gin.Context) {
 	// get the user's token
 	token, err := utils.UserTokenFromContext(c)

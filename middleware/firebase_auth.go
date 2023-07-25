@@ -53,13 +53,11 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 	// if they are an email-password user (like all our registered users)
 	if token.Firebase.SignInProvider == "password" {
 		// if their email is NOT verified, then send back not verified
-		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
-		// if !token.Claims["email_verified"].(bool) {
-		// 	response.New(http.StatusUnauthorized).Val("email not verified").Send(c)
-		// 	return
-		// }
-		// todo: add check for `disabled` users to block them, too.
-		// todo: UNCOMMENT IN REAL IMPLEMENTATION; COMMENTED OUT FOR TESTING
+		if !token.Claims["email_verified"].(bool) {
+			response.New(http.StatusUnauthorized).Val("email not verified").Send(c)
+			return
+		}
+		// disabled users will get locked out after at most 1 hour
 		if profileCreated, ok := token.Claims["sync"].(bool); !ok {
 			// registered user without postgres profile (handling the future case where the claim at "sync" is turned back to false for some reason)
 			err := RetrySyncPostgresAccountCreation(c, token)

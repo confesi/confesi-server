@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-// `ad` must be the same for both Cipher and Decipher.it i
+// `ad` must be the same for both Cipher and Decipher. It
 // stands for Additional Data, use something unique to it (ie: user id)
 func Cipher(plaintext []byte, ad []byte) ([]byte, error) {
 	if len(ad) == 0 {
