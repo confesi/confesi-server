@@ -3,14 +3,16 @@ package admin
 import (
 	"confesi/db"
 	"confesi/lib/response"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func (h *handler) handleFeedbackID(c *gin.Context) {
-	feedbackID := c.Param("id")
+	feedbackID := c.Param("feedbackID")
 
 	_, err := strconv.ParseInt(feedbackID, 10, 64)
 	if err != nil {
@@ -19,8 +21,11 @@ func (h *handler) handleFeedbackID(c *gin.Context) {
 	}
 	feedback := db.Feedback{}
 	err = h.db.Model(&db.Feedback{}).Where("id = ?", feedbackID).First(&feedback).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		response.New(http.StatusBadRequest).Err("feedback not found").Send(c)
+		return
 	}
 
 	// if all goes well, send 200

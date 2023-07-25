@@ -259,7 +259,7 @@ type Feedback struct {
 	UserID    string        `gorm:"column:user_id" json:"-"`
 	Content   string        `gorm:"column:content" json:"content"`
 	Type      *FeedbackType `gorm:"foreignKey:TypeID" json:"type,omitempty"` // Use "omitempty" here
-	TypeID    uint          `gorm:"column:type_id" json:"type_id"`           // references the feedback_type table
+	TypeID    uint          `gorm:"column:type_id" json:"-"`                 // references the feedback_type table
 }
 
 type ReportType struct {
