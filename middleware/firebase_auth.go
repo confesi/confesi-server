@@ -126,6 +126,7 @@ var (
 	serverError                = errors.New("server error")
 )
 
+// retries creating a postgres account for a user, defaults to a level 0 user, aka, no special roles.
 func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	// get the user's email from their token
 	userEmail := token.Claims["email"].(string)

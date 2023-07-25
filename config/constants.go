@@ -28,6 +28,7 @@ const (
 	AdminPostsSortedByReportsPageSize    = 10                    // how many posts are returned in a page size in the admin posts sorted by reports page
 	AdminViewAllReportsPerCommentId      = 10                    // how many reports are returned in a page size in the view of reports for a comment given by id
 	AdminViewAllReportsPerPostId         = 10                    // how many reports are returned in a page size in the view of reports for a post given by id
+	AdminFeedbackPageSize                = 10                    // how many feedbacks are returned in a page size in the admin feedback page
 )
 
 // ----- DEPLOYMENT CONSTANTS

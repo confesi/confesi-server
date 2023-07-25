@@ -254,11 +254,12 @@ type SavedComment struct {
 
 // ! Important not to serialize some fields!!
 type Feedback struct {
-	ID        int        `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UserID    string     `gorm:"column:user_id" json:"-"`
-	Content   string     `gorm:"column:content" json:"content"`
-	TypeID    uint       `gorm:"column:type_id" json:"type_id"` // references the feedback_type table
+	ID        int           `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt TimeMicros    `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UserID    string        `gorm:"column:user_id" json:"-"`
+	Content   string        `gorm:"column:content" json:"content"`
+	Type      *FeedbackType `gorm:"foreignKey:TypeID" json:"type,omitempty"` // Use "omitempty" here
+	TypeID    uint          `gorm:"column:type_id" json:"-"`                 // references the feedback_type table
 }
 
 type ReportType struct {
