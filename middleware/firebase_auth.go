@@ -134,6 +134,10 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	user := db.User{}
 	user.ID = token.UID
 
+	if err := user.MaskID(); err != nil {
+		return serverError
+	}
+
 	// extract domain from user's email
 	domain, err := validation.ExtractEmailDomain(userEmail)
 	if err != nil {
