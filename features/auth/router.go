@@ -28,6 +28,16 @@ func Router(mux *gin.RouterGroup) {
 	// any user
 	mux.POST("/register", h.handleRegister)
 
+	anyFirebaseUser := mux.Group("")
+	anyFirebaseUser.Use(func(c *gin.Context) {
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+	})
+	// protect against email spam
+	anyFirebaseUser.Use(func(c *gin.Context) {
+		middleware.UidRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey)
+	})
+	anyFirebaseUser.POST("/resend-verification-email", h.handleResendEmailVerification)
+
 	// registered firebase users only
 	registeredFirebaseUserRoutes := mux.Group("")
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
@@ -38,6 +48,5 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
 		middleware.UidRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey)
 	})
-	registeredFirebaseUserRoutes.POST("/resend-verification-email", h.handleResendEmailVerification)
 	registeredFirebaseUserRoutes.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
 }
