@@ -7,7 +7,7 @@ Content-Type: application/json
 
 {
     "email": "matthew.rl.trent@gmail.com",
-    "password": "mysecurepw$"
+    "password": "mysec"
 }
 
 ### Resend email verification

@@ -183,7 +183,7 @@ func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail st
 	}
 	em, err := New().
 		To([]string{userEmail}, []string{}).
-		Subject("Email Verification").
+		Subject("Confesi Email Verification").
 		LoadVerifyEmailTemplate(link)
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ func SendPasswordResetEmail(c *gin.Context, authClient *auth.Client, userEmail s
 	}
 	em, err := New().
 		To([]string{userEmail}, []string{}).
-		Subject("Password Reset").
+		Subject("Confesi Password Reset").
 		LoadPasswordResetTemplate(link)
 	if err != nil {
 		return err
