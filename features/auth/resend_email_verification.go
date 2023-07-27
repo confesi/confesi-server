@@ -32,6 +32,7 @@ func (h *handler) handleResendEmailVerification(c *gin.Context) {
 	err = email.SendVerificationEmail(c, h.fb.AuthClient, userEmail)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(errorSendingEmail.Error()).Send(c)
+		return
 	}
 
 	response.New(http.StatusOK).Send(c)
