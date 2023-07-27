@@ -33,7 +33,7 @@ func Router(mux *gin.RouterGroup) {
 
 	anyFirebaseUserWithRateLimiting := mux.Group("")
 	anyFirebaseUserWithRateLimiting.Use(func(c *gin.Context) {
-		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey, c.ClientIP(), "too many emails sent")
+		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKeySendPwReset, c.ClientIP(), "too many emails sent")
 	})
 	anyFirebaseUserWithRateLimiting.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
 
@@ -48,7 +48,7 @@ func Router(mux *gin.RouterGroup) {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
-		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey, token.UID, "too many emails sent")
+		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKeyResendVerification, token.UID, "too many emails sent")
 	})
 	anyFirebaseUser.POST("/resend-verification-email", h.handleResendEmailVerification)
 
