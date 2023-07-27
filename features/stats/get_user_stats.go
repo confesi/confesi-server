@@ -74,6 +74,7 @@ type GlobalUserStats struct {
 func GetGlobalStats(c *gin.Context, redis_store *redis.Client, database *gorm.DB) (*GlobalUserStats, error) {
 	store := redis_store
 	idSessionKey := config.RedisGlobalUserStats
+	tx := store.TxPipeline()
 	ctx := c.Request.Context()
 	stats := GlobalUserStats{}
 
@@ -100,7 +101,9 @@ func GetGlobalStats(c *gin.Context, redis_store *redis.Client, database *gorm.DB
 			return nil, err
 		}
 		// Store the stats in the cache
-		err = store.Set(ctx, idSessionKey, string(statsString), time.Hour*24).Err()
+		tx.Set(ctx, idSessionKey, string(statsString), time.Hour*24)
+
+		_, err = tx.Exec(ctx)
 		if err != nil {
 			return nil, err
 		}
