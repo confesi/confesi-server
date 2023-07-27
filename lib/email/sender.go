@@ -25,6 +25,7 @@ const (
 var (
 	svc                  *ses.SES
 	errorLoadingTemplate = errors.New("error loading email template")
+	ErrorUserDoesntExist = errors.New("user doesn't exist")
 )
 
 type email struct {
@@ -179,7 +180,7 @@ func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail st
 
 	link, err := authClient.EmailVerificationLink(c, userEmail)
 	if err != nil {
-		return errors.New("link is empty, likely user doesn't exist")
+		return ErrorUserDoesntExist
 	}
 	em, err := New().
 		To([]string{userEmail}, []string{}).
@@ -195,7 +196,7 @@ func SendVerificationEmail(c *gin.Context, authClient *auth.Client, userEmail st
 func SendPasswordResetEmail(c *gin.Context, authClient *auth.Client, userEmail string) error {
 	link, err := authClient.PasswordResetLink(c, userEmail)
 	if err != nil {
-		return errors.New("link is empty, likely user doesn't exist")
+		return ErrorUserDoesntExist
 	}
 	em, err := New().
 		To([]string{userEmail}, []string{}).

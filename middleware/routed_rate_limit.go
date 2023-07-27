@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"confesi/lib/response"
-	"confesi/lib/utils"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,18 +19,12 @@ type routedRequestRateLimit struct {
 // Rate limit middleware based on the user's UID.
 //
 // ! Assumes the "user" will be set into context already!!
-func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootKey string) {
+func RoutedRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootKey string, identifier string, tooManyRequestsErrMsg string) {
 
 	store := StoreRef()
 	ctx := c.Request.Context()
 
-	token, err := utils.UserTokenFromContext(c)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-
-	idSessionKey := rootKey + ":" + token.UID
+	idSessionKey := rootKey + ":" + identifier
 
 	counter, err := store.Get(ctx, idSessionKey).Int64()
 
@@ -69,7 +62,7 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 		c.Next()
 	} else {
 		response.New(http.StatusTooManyRequests).
-			Err("too many routed requests").
+			Err(tooManyRequestsErrMsg).
 			Val(routedRequestRateLimit{
 				Limit:             fmt.Sprint(tokensPerUnit),
 				RemainingRequests: fmt.Sprint(tokensPerUnit - counter),

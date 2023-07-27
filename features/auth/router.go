@@ -4,8 +4,11 @@ import (
 	"confesi/config"
 	"confesi/db"
 	"confesi/lib/fire"
+	"confesi/lib/response"
+	"confesi/lib/utils"
 	"confesi/middleware"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,13 +31,24 @@ func Router(mux *gin.RouterGroup) {
 	// any user
 	mux.POST("/register", h.handleRegister)
 
+	anyFirebaseUserWithRateLimiting := mux.Group("")
+	anyFirebaseUserWithRateLimiting.Use(func(c *gin.Context) {
+		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey, c.ClientIP(), "too many emails sent")
+	})
+	anyFirebaseUserWithRateLimiting.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
+
 	anyFirebaseUser := mux.Group("")
 	anyFirebaseUser.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
-	// protect against email spam
+	// protect against email spam by UID
 	anyFirebaseUser.Use(func(c *gin.Context) {
-		middleware.UidRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey)
+		token, err := utils.UserTokenFromContext(c)
+		if err != nil {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		middleware.RoutedRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey, token.UID, "too many emails sent")
 	})
 	anyFirebaseUser.POST("/resend-verification-email", h.handleResendEmailVerification)
 
@@ -43,10 +57,4 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
-
-	// route-specific rate limiting for email routes to protect against spam
-	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UidRateLimit(c, 3, time.Hour, config.RedisEmailRateLimitingRouteKey)
-	})
-	registeredFirebaseUserRoutes.POST("/send-password-reset-email", h.handleSendPasswordResetEmail)
 }
