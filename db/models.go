@@ -65,7 +65,7 @@ type FcmTopicPref struct {
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmToken struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
-	UserID    string     `gorm:"column:user_id" json:"-"`
+	UserID    *string    `gorm:"column:user_id" json:"-"`
 	Token     string     `gorm:"column:token" json:"token"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
