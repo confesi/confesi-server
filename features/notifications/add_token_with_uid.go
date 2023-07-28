@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleSetToken(c *gin.Context) {
+func (h *handler) handleSetTokenWithUid(c *gin.Context) {
 
 	// validate request
 	var req validation.FcmTokenQuery
@@ -46,14 +46,17 @@ func (h *handler) handleSetToken(c *gin.Context) {
 	}()
 
 	fcmToken := db.FcmToken{
-		UserID: token.UID,
+		UserID: &token.UID,
 		Token:  req.Token,
 	}
 
 	// Update the existing record if it exists
 	result := tx.Model(&fcmToken).
-		Where("user_id = ? AND token = ?", token.UID, req.Token).
-		Update("updated_at", time.Now())
+		Where("(user_id = ? OR user_id IS NULL) AND token = ?", token.UID, req.Token).
+		Updates(map[string]interface{}{
+			"user_id":    token.UID,  // set new value for user_id
+			"updated_at": time.Now(), // set new value for updated_at
+		})
 	if result.Error != nil {
 		// Handle the error
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

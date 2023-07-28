@@ -1,6 +1,6 @@
 BEGIN;
 
 ALTER TABLE fcm_tokens
-    ALTER COLUMN token SET NOT NULL;
+    ALTER COLUMN user_id SET NOT NULL;
 
 END;

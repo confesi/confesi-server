@@ -24,12 +24,14 @@ type handler struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New()}
 
+	mux.POST("/token-anon", h.handleSetTokenAnon)
+
 	// any firebase users
 	mux.Use(func(c *gin.Context) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
 	})
 
-	mux.POST("/token", h.handleSetToken)
+	mux.POST("/token-uid", h.handleSetTokenWithUid)
 	mux.DELETE("/token", h.handleRemoveToken)
 	mux.GET("/topic-prefs", h.handleGetTopicPrefs)
 	mux.PUT("/topic-prefs", h.handleSetTopicPrefs)
