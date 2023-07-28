@@ -6,10 +6,12 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func (h *handler) handleSetTokenAnon(c *gin.Context) {
@@ -49,15 +51,39 @@ func (h *handler) handleSetTokenAnon(c *gin.Context) {
 		Updates(map[string]interface{}{
 			"updated_at": time.Now(), // set new value for updated_at
 		})
-	if result.Error != nil {
-		// Handle the error
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
+	if err != nil {
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle duplicate errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(err, &pgErr); !ok {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		switch pgErr.Code {
+		case "23505": // duplicate key value violates unique constraint
+			err = tx.Commit().Error
+			if err != nil {
+				tx.Rollback()
+				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+				return
+			}
+			response.New(http.StatusCreated).Send(c)
+			return
+		default:
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
 	}
 	if result.RowsAffected == 0 {
 		// Record not found, create a new one
 		fcmToken.UpdatedAt.Time = time.Now()
-		tx.Create(&fcmToken)
+		err = tx.Create(&fcmToken).Error
+		if err != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
 	}
 
 	// if all goes well, respond with a 201 & commit the transaction

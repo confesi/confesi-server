@@ -2,6 +2,7 @@ package auth
 
 import (
 	"confesi/lib/email"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -22,11 +23,13 @@ func (h *handler) handleSendPasswordResetEmail(c *gin.Context) {
 
 	// resend the verification email
 	err = email.SendPasswordResetEmail(c, h.fb.AuthClient, req.Email)
-	if err != nil && !errors.Is(err, email.ErrorUserDoesntExist) {
+	if err != nil && !errors.Is(err, email.ErrorNoLinkGeneratedError) {
+		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err(errorSendingEmail.Error()).Send(c)
 		return
-	} else if errors.Is(err, email.ErrorUserDoesntExist) {
-		response.New(http.StatusBadRequest).Err(email.ErrorUserDoesntExist.Error()).Send(c)
+	} else if errors.Is(err, email.ErrorNoLinkGeneratedError) {
+		logger.StdErr(err)
+		response.New(http.StatusBadRequest).Err(email.ErrorNoLinkGeneratedError.Error()).Send(c)
 		return
 	}
 
