@@ -2,8 +2,11 @@ package auth
 
 import (
 	"confesi/lib/email"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +34,7 @@ func (h *handler) handleResendEmailVerification(c *gin.Context) {
 	// resend the verification email
 	err = email.SendVerificationEmail(c, h.fb.AuthClient, userEmail)
 	if err != nil {
+		logger.StdErr(errors.New(fmt.Sprintf("error sending email to %s: %v", userEmail, err)))
 		response.New(http.StatusInternalServerError).Err(errorSendingEmail.Error()).Send(c)
 		return
 	}
