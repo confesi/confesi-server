@@ -29,18 +29,17 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		//! UNCOMMENT THIS WHEN TOKENS ARE BACK UP
-		// response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		// return
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
 	}
 	fmt.Println(token)
 	//! REMOVE THIS HARDCODED UID
-	UID := "KoO2S3suuPbYeIzwcN6ekYVIGtJ2"
+
 
 	// query the database for the user stats
 	query := h.db.Model(db.Post{}).
 		Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest").
-		Where("user_id = ?", UID)
+		Where("user_id = ?", token.UID).
 
 	if query.Error != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
