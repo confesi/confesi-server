@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE fcm_tokens
+    ALTER COLUMN token SET NOT NULL;
+
+END;
