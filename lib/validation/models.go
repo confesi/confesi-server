@@ -5,6 +5,8 @@ type CreateAccountDetails struct {
 	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 	// [required] valid password, no spaces, at least 8 characters, at most 40 characters, must contain at least one special character
 	Password string `json:"password" validate:"required,max=40,min=8,excludes= ,containsany=!@#$%^&*()_+"`
+	// [optional] valid firebase token of a pre-existing account
+	AlreadyExistingAccToken string `json:"already_existing_acc_token"`
 }
 
 type EmailQuery struct {
