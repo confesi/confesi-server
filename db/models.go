@@ -75,6 +75,17 @@ func (FcmToken) TableName() string {
 	return "fcm_tokens"
 }
 
+type PostCategory struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	Name      string     `gorm:"column:name" json:"name"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+func (PostCategory) TableName() string {
+	return "post_categories"
+}
+
 type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
@@ -120,6 +131,8 @@ type Post struct {
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
+	CategoryID    uint            `gorm:"column:category_id" json:"-"`
+	Category      School          `gorm:"foreignKey:CategoryID" json:"category"`
 }
 
 func (p *Post) CensorPost() Post {

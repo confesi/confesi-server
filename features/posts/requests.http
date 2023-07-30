@@ -6,7 +6,8 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImIyZGZmNzhhMGJkZDVhMDIyMTIwNj
 
 {
     "title": "blah this is a title",
-    "body": "this is some body"
+    "body": "this is some body",
+    "category": "general"
 }
 
 ### Fetch hottest posts from a specific day

@@ -37,7 +37,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}()
@@ -63,11 +63,22 @@ func (h *handler) handleRegister(c *gin.Context) {
 	// ensure the token is valid, aka, there is some valid user
 	if req.AlreadyExistingAccToken != "" {
 
+		fmt.Println("has already existing acc. token")
+
 		token, err := h.fb.AuthClient.VerifyIDToken(c, req.AlreadyExistingAccToken)
 		if err != nil {
 			response.New(http.StatusBadRequest).Err("invalid existing user token").Send(c)
 			return
 		}
+
+		// check if this user has already been registered by email
+		_, err = h.fb.AuthClient.GetUserByEmail(c, req.Email)
+		if err == nil {
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("account already upgraded").Send(c)
+			return
+		}
+
 		// get firebase account by this UID
 		_, err = h.fb.AuthClient.GetUser(c, token.UID)
 		if err != nil {
@@ -88,23 +99,13 @@ func (h *handler) handleRegister(c *gin.Context) {
 			Password(req.Password).
 			Disabled(false)
 
-		h.fb.AuthClient.UpdateUser(c, token.UID, userToUpdate)
-		if err != nil {
-			if strings.Contains(err.Error(), "EMAIL_EXISTS") {
-				tx.Rollback()
-				response.New(http.StatusConflict).Err("email already exists").Send(c)
-			} else {
-				fmt.Println(err)
-				tx.Rollback()
-				response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-			}
-			return
-		}
+		_, err = h.fb.AuthClient.UpdateUser(c, token.UID, userToUpdate)
 		userIdForPostgres = token.UID
 	} else {
 		firebaseUser, err = h.fb.AuthClient.CreateUser(c, newUser)
-		userIdForPostgres = firebaseUser.UID
-
+		if err == nil {
+			userIdForPostgres = firebaseUser.UID
+		}
 	}
 
 	if err != nil {
@@ -119,12 +120,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
-	verificationEmailSent := true
-	err = email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
-	if err != nil {
-		verificationEmailSent = false
-	}
-
 	userToSaveToPostgres.SchoolID = school.ID
 	userToSaveToPostgres.ID = userIdForPostgres
 
@@ -132,8 +127,8 @@ func (h *handler) handleRegister(c *gin.Context) {
 	err = h.db.Create(&userToSaveToPostgres).Error
 	// we don't catch this error, because it will just show itself in the user's token as "sync: false" or DNE
 
-	// on success of both user being created in firebase and postgres, change their token to "double verified"
-	_ = h.fb.AuthClient.SetCustomUserClaims(c, userIdForPostgres, map[string]interface{}{
+	// on success of both user being created in firebase and postgres, change their token to "double verified" via the "sync" field
+	h.fb.AuthClient.SetCustomUserClaims(c, userIdForPostgres, map[string]interface{}{
 		"sync":  true,
 		"roles": []string{}, //! default users have no roles, VERY IMPORTANT
 	})
@@ -148,6 +143,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
-	// send response
-	response.New(http.StatusCreated).Val(map[string]bool{"verification_sent": verificationEmailSent}).Send(c)
+	// send response & don't care if email sends
+	go email.SendVerificationEmail(c, h.fb.AuthClient, req.Email)
+	response.New(http.StatusCreated).Send(c)
 }
