@@ -6,7 +6,6 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -32,22 +31,52 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	fmt.Println(token)
-	//! REMOVE THIS HARDCODED UID
-
 
 	// query the database for the user stats
-	query := h.db.Model(db.Post{}).
-		Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest").
-		Where("user_id = ?", token.UID).
+	store := h.redis
+	idSessionKey := "stats:" + token.UID
+	ctx := c.Request.Context()
+	userStats := UserStats{}
 
-	if query.Error != nil {
+	// query the database for the user stats
+	jsonString, err := store.Get(ctx, idSessionKey).Result()
+
+	// Check whether a cache exists or not
+	if err == redis.Nil {
+		//If no cache exists create one
+		// query the database for the global stats
+		query := h.db.Model(db.Post{}).
+			Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest").
+			Where("user_id = ?", token.UID)
+		if query.Error != nil {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+
+		// obtain the values from the query
+
+		query.Scan(&userStats)
+		// Convert stats to string
+		statsString, err := json.Marshal(userStats)
+		if err != nil {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		// Store the stats in the cache
+		store.Set(ctx, idSessionKey, string(statsString), time.Hour*24)
+
+	} else if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	} else {
+		// If cache exists, unmarshal it (convert it to a struct)
+		err = json.Unmarshal([]byte(jsonString), &userStats)
+		if err != nil {
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
 	}
 
-	// Initialize the user stats struct and obtain the values from the query
-	userStats := UserStats{}
-	query.Scan(&userStats)
 	// Obtain the global stats
 	globalStats, err := GetGlobalStats(c, h.redis, h.db)
 	if err != nil {
