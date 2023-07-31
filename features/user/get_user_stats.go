@@ -1,4 +1,4 @@
-package stats
+package user
 
 import (
 	"confesi/config"
@@ -34,9 +34,16 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 
 	// query the database for the user stats
 	store := h.redis
-	idSessionKey := "stats:" + token.UID
+	idSessionKey := "user_stats:" + token.UID
 	ctx := c.Request.Context()
 	userStats := UserStats{}
+
+	// Obtain the global stats
+	globalStats, err := GetGlobalStats(c, h.redis, h.db)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
 
 	// query the database for the user stats
 	jsonString, err := store.Get(ctx, idSessionKey).Result()
@@ -44,7 +51,6 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 	// Check whether a cache exists or not
 	if err == redis.Nil {
 		//If no cache exists create one
-		// query the database for the global stats
 		query := h.db.Model(db.Post{}).
 			Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest").
 			Where("user_id = ?", token.UID)
@@ -56,6 +62,11 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 		// obtain the values from the query
 
 		query.Scan(&userStats)
+
+		// Calculate the percentages relative to the user
+		userStats.Likes_Perc = float64(userStats.Likes) / float64(globalStats.Likes)
+		userStats.Dislikes_Perc = float64(userStats.Dislikes) / float64(globalStats.Dislikes)
+		userStats.Hottest_Perc = float64(userStats.Hottest) / float64(globalStats.Hottest)
 		// Convert stats to string
 		statsString, err := json.Marshal(userStats)
 		if err != nil {
@@ -77,18 +88,7 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 		}
 	}
 
-	// Obtain the global stats
-	globalStats, err := GetGlobalStats(c, h.redis, h.db)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
-		return
-	}
-
-	// Calculate the percentages relative to the user
-	userStats.Likes_Perc = float64(userStats.Likes) / float64(globalStats.Likes)
-	userStats.Dislikes_Perc = float64(userStats.Dislikes) / float64(globalStats.Dislikes)
-	userStats.Hottest_Perc = float64(userStats.Hottest) / float64(globalStats.Hottest)
-
+	// Return the user stats
 	response.New(http.StatusOK).Val(userStats).Send(c)
 }
 
