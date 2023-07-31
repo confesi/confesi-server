@@ -7,6 +7,8 @@
 
 - All scripts are run from the _root_ directory, (ie, `./scripts/database migrate up`.)
 
+- Please be **very** cautious about signing up using the assorted `requests.http` files. The ones that invoke email actions (reseting password, updating email, creating account, etc.) are **live**. So, only try them using addresses you actually own.
+
 ## Requirements
 
 - Go 1.20.
@@ -27,9 +29,11 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
-**Add your AWS access tokens to the `.env` file.**
+**Add your AWS data to the `.env` file.**
 
 Specifically what IAM roles are needed will be determined in the future. Currently, a general admin user suffices.
+
+This includes your: access key, secret access key, and region.
 
 **Add the Firebase API key:**
 

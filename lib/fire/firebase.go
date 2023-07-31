@@ -6,16 +6,16 @@ import (
 	"context"
 	"log"
 
-	firebase "firebase.google.com/go"
+	fb "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"firebase.google.com/go/messaging"
 	"google.golang.org/api/option"
 )
 
-var fb *FirebaseApp
+var fbApp *FirebaseApp
 
 type FirebaseApp struct {
-	App        *firebase.App
+	App        *fb.App
 	AuthClient *auth.Client
 	MsgClient  *messaging.Client
 }
@@ -31,7 +31,7 @@ func init() {
 
 func InitFirebase(secretsPath string) error {
 	opt := option.WithCredentialsFile(secretsPath)
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	app, err := fb.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func InitFirebase(secretsPath string) error {
 		return err
 	}
 
-	fb = &FirebaseApp{
+	fbApp = &FirebaseApp{
 		App:        app,
 		AuthClient: authClient,
 		MsgClient:  msgClient,
@@ -55,5 +55,5 @@ func InitFirebase(secretsPath string) error {
 }
 
 func New() *FirebaseApp {
-	return fb
+	return fbApp
 }

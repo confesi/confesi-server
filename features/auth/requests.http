@@ -1,8 +1,9 @@
-### Register
+###! BE CAREFUL THIS IS LIVE!!! DON'T SEND EMAILS TO REAL PEOPLE!!!
+
+### Register 
 
 POST http://127.0.0.1:8080/api/v1/auth/register
 Content-Type: application/json
-X-AppCheck-Token: kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
 
 {
     "email": "oober@uvic.ca",

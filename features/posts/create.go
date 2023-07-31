@@ -13,24 +13,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token) error {
+var (
+	errorInvalidCategory = errors.New("invalid category")
+)
+
+func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token, category string) error {
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}()
 
-	// fetch the user's facultyId, and schoolId
-	var userData db.User
-	err := tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	// check if category is valid
+	var postCategory db.PostCategory
+	err := tx.Select("id").Where("name = ?", postCategory).First(&postCategory).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New("server error")
+		return errorInvalidCategory
+	}
+
+	// fetch the user's facultyId, and schoolId
+	var userData db.User
+	err = tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	if err != nil {
+		tx.Rollback()
+		return serverError
 	}
 
 	// post to save to postgres
@@ -51,7 +63,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err = tx.Create(&post).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New("server error")
+		return errors.New(serverError.Error())
 	}
 
 	// commit the transaction
@@ -82,10 +94,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	err = h.createPost(c, title, body, token)
+	err = h.createPost(c, title, body, token, req.Category)
 	if err != nil {
-		// all returned errors are just general client-facing "server errors"
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
 		return
 	}
 

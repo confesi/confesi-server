@@ -65,7 +65,7 @@ type FcmTopicPref struct {
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmToken struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
-	UserID    string     `gorm:"column:user_id" json:"-"`
+	UserID    *string    `gorm:"column:user_id" json:"-"`
 	Token     string     `gorm:"column:token" json:"token"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
@@ -73,6 +73,17 @@ type FcmToken struct {
 
 func (FcmToken) TableName() string {
 	return "fcm_tokens"
+}
+
+type PostCategory struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	Name      string     `gorm:"column:name" json:"name"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+}
+
+func (PostCategory) TableName() string {
+	return "post_categories"
 }
 
 type User struct {
@@ -120,6 +131,8 @@ type Post struct {
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
+	CategoryID    uint            `gorm:"column:category_id" json:"-"`
+	Category      School          `gorm:"foreignKey:CategoryID" json:"category"`
 }
 
 func (p *Post) CensorPost() Post {
@@ -254,11 +267,12 @@ type SavedComment struct {
 
 // ! Important not to serialize some fields!!
 type Feedback struct {
-	ID        int        `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UserID    string     `gorm:"column:user_id" json:"-"`
-	Content   string     `gorm:"column:content" json:"content"`
-	TypeID    uint       `gorm:"column:type_id" json:"type_id"` // references the feedback_type table
+	ID        int           `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt TimeMicros    `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UserID    string        `gorm:"column:user_id" json:"-"`
+	Content   string        `gorm:"column:content" json:"content"`
+	Type      *FeedbackType `gorm:"foreignKey:TypeID" json:"type,omitempty"` // Use "omitempty" here
+	TypeID    uint          `gorm:"column:type_id" json:"-"`                 // references the feedback_type table
 }
 
 type ReportType struct {

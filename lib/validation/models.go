@@ -5,6 +5,8 @@ type CreateAccountDetails struct {
 	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 	// [required] valid password, no spaces, at least 8 characters, at most 40 characters, must contain at least one special character
 	Password string `json:"password" validate:"required,max=40,min=8,excludes= ,containsany=!@#$%^&*()_+"`
+	// [optional] valid firebase token of a pre-existing account
+	AlreadyExistingAccToken string `json:"already_existing_acc_token"`
 }
 
 type EmailQuery struct {
@@ -17,6 +19,8 @@ type CreatePostDetails struct {
 	Title string `json:"title" validate:"max=100,required_without=Body"`
 	// [required if Title empty/null] at most 2000 characters
 	Body string `json:"body" validate:"max=2000,required_without=Title"`
+	// [required] the category of post
+	Category string `json:"category" validate:"required"`
 }
 
 type SaveContentDetails struct {
@@ -105,8 +109,13 @@ type InitialCommentQuery struct {
 	SessionKey string `json:"session_key" validate:"required"`
 }
 
+type FeedbackCursor struct {
+	// [required] timestamp of last seen feedback (microseconds since epoch)
+	Next NullableNext `json:"next"`
+}
+
 type RepliesCommentQuery struct {
-	// [required] timestamp of last seen replied comment (ms since epoch)
+	// [required] timestamp of last seen replied comment (microseconds since epoch)
 	Next NullableNext `json:"next"`
 	// [required] the comment to load replies for
 	ParentComment uint `json:"parent_comment" validate:"required"`
@@ -128,17 +137,17 @@ type SchoolRankQuery struct {
 }
 
 type YourPostsQuery struct {
-	// [required] timestamp of last viewed post content (ms since epoch)
+	// [required] timestamp of last viewed post content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
 
 type YourCommentsQuery struct {
-	// [required] timestamp of last viewed comment content (ms since epoch)
+	// [required] timestamp of last viewed comment content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
 
 type UserCommentsQueryAdmin struct {
-	// [required] timestamp of last viewed comment content (ms since epoch)
+	// [required] timestamp of last viewed comment content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 	// [required] user id to get comments for
 	UserID string `json:"user_id" validate:"required"`
@@ -165,7 +174,7 @@ type HideContent struct {
 type FetchRanCrons struct {
 	// [required] type of cron to fetch
 	Type string `json:"type" validate:"required,oneof=clear_expired_fcm_tokens daily_hottest all"`
-	// [required] timestamp of last viewed cron job content (ms since epoch)
+	// [required] timestamp of last viewed cron job content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
 
@@ -203,7 +212,7 @@ type UpdateReviewedByModQuery struct {
 type FetchReports struct {
 	// [required] type of report to fetch (accepts anything because we have the options defined in the db)
 	Type string `json:"type" validate:"required"`
-	// [required] timestamp of last viewed report (ms since epoch)
+	// [required] timestamp of last viewed report (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
 

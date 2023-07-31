@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"confesi/lib/response"
-	"confesi/lib/utils"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,25 +19,19 @@ type routedRequestRateLimit struct {
 // Rate limit middleware based on the user's UID.
 //
 // ! Assumes the "user" will be set into context already!!
-func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootKey string) {
+func RoutedRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootKey string, identifier string, tooManyRequestsErrMsg string) {
 
 	store := StoreRef()
 	ctx := c.Request.Context()
 
-	token, err := utils.UserTokenFromContext(c)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-
-	idSessionKey := rootKey + ":" + token.UID
+	idSessionKey := rootKey + ":" + identifier
 
 	counter, err := store.Get(ctx, idSessionKey).Int64()
 
-	// Check whether a cache exists or not
+	// check whether a cache exists or not
 	if err == redis.Nil {
-		//If no cache exists create one
-		err = store.Set(ctx, idSessionKey, 0, unit).Err()
+		// if no cache exists create one
+		err = store.Set(ctx, idSessionKey, 0, time.Minute*30).Err()
 		if err != nil {
 			response.New(http.StatusInternalServerError).Send(c)
 			return
@@ -56,7 +49,7 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 		return
 	}
 
-	// Retrieve the time left from the result
+	// retrieve the time left from the result
 	ttl, err := ttlResult.Result()
 	if err != nil {
 		response.New(http.StatusInternalServerError).Send(c)
@@ -69,11 +62,11 @@ func UidRateLimit(c *gin.Context, tokensPerUnit int64, unit time.Duration, rootK
 		c.Next()
 	} else {
 		response.New(http.StatusTooManyRequests).
-			Err("too many routed requests").
+			Err(tooManyRequestsErrMsg).
 			Val(routedRequestRateLimit{
 				Limit:             fmt.Sprint(tokensPerUnit),
 				RemainingRequests: fmt.Sprint(tokensPerUnit - counter),
-				ResetInSeconds:    fmt.Sprint(ttl.Seconds()),
+				ResetInSeconds:    fmt.Sprintf("%.0f", ttl.Seconds()),
 			}).
 			Send(c)
 	}
