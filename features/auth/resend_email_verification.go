@@ -33,11 +33,11 @@ func (h *handler) handleResendEmailVerification(c *gin.Context) {
 	// resend the verification email
 	err = email.SendVerificationEmail(c, h.fb.AuthClient, userEmail)
 	if err != nil && !errors.Is(err, email.ErrorNoLinkGeneratedError) {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		response.New(http.StatusInternalServerError).Err(errorSendingEmail.Error()).Send(c)
 		return
 	} else if errors.Is(err, email.ErrorNoLinkGeneratedError) {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		response.New(http.StatusBadRequest).Err(email.ErrorNoLinkGeneratedError.Error()).Send(c)
 		return
 	}

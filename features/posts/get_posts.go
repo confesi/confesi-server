@@ -72,7 +72,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		sortField = "trending_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
-		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)))
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)), nil, nil, nil, nil)
 		response.New(http.StatusBadRequest).Err("invalid sort field").Send(c)
 		return
 	}
@@ -133,7 +133,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		id := fmt.Sprint(post.ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {
-			logger.StdErr(err)
+			logger.StdErr(err, nil, nil, nil, nil)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
 		}
@@ -142,7 +142,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	// set the expiration for the cache
 	err = h.redis.Expire(c, idSessionKey, seenPostsCacheExpiry).Err()
 	if err != nil {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}

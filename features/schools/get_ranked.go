@@ -151,7 +151,7 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 		id := fmt.Sprint(schoolResult.Schools[i].ID)
 		err := h.redis.SAdd(c, idSessionKey, id).Err()
 		if err != nil {
-			logger.StdErr(err)
+			logger.StdErr(err, nil, nil, nil, nil)
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
@@ -161,7 +161,7 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	// set the expiration for the cache
 	err = h.redis.Expire(c, idSessionKey, seenSchoolsCacheExpiry).Err()
 	if err != nil {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return

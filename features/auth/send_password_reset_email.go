@@ -24,11 +24,11 @@ func (h *handler) handleSendPasswordResetEmail(c *gin.Context) {
 	// resend the verification email
 	err = email.SendPasswordResetEmail(c, h.fb.AuthClient, req.Email)
 	if err != nil && !errors.Is(err, email.ErrorNoLinkGeneratedError) {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		response.New(http.StatusInternalServerError).Err(errorSendingEmail.Error()).Send(c)
 		return
 	} else if errors.Is(err, email.ErrorNoLinkGeneratedError) {
-		logger.StdErr(err)
+		logger.StdErr(err, nil, nil, nil, nil)
 		response.New(http.StatusBadRequest).Err(email.ErrorNoLinkGeneratedError.Error()).Send(c)
 		return
 	}
