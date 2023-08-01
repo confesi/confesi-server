@@ -89,7 +89,7 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	for i := range comments {
 		err := h.redis.SAdd(c, commentSpecificKey, comments[i].ID).Err()
 		if err != nil {
-			logger.StdErr(err, nil, nil, nil, nil)
+			logger.StdErr(err)
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
 		}
@@ -104,7 +104,7 @@ func (h *handler) handleGetRankedCommentsByReport(c *gin.Context) {
 	// set the expiration for the cache
 	err = h.redis.Expire(c, commentSpecificKey, seenCommentsCacheExpiry).Err()
 	if err != nil {
-		logger.StdErr(err, nil, nil, nil, nil)
+		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}

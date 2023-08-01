@@ -32,7 +32,7 @@ func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.
 		err = h.db.Create(&savedComment).Error
 	} else {
 		// should never happen with validated struct, but to be defensive
-		logger.StdErr(errors.New(fmt.Sprintf("invalid content type: %s", req.ContentType)), nil, nil, nil, nil)
+		logger.StdErr(errors.New(fmt.Sprintf("invalid content type: %s", req.ContentType)))
 		return serverError
 	}
 	if err != nil {

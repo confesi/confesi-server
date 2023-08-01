@@ -18,7 +18,7 @@ func RetryLoop(initialDelayMs int, additionalDelayPerAttemptMs int, hoursAfterOr
 		err := executeCronJob()
 		if err != nil {
 			// job failed, so retry
-			logger.StdErr(errors.New("daily hottest posts cron job errored on attempt (attempt "+strconv.Itoa(attempt)+", after "+time.Since(dateTime).String()+")"), nil, nil, nil, nil)
+			logger.StdErr(errors.New("daily hottest posts cron job errored on attempt (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
 			delay := time.Duration(baseDelayMs) * time.Millisecond
 			if time.Since(dateTime)+delay > time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour {
 				time.Sleep(time.Duration(hoursAfterOriginalAttemptToRetryFor)*time.Hour - time.Since(dateTime))
@@ -29,7 +29,7 @@ func RetryLoop(initialDelayMs int, additionalDelayPerAttemptMs int, hoursAfterOr
 			// if we're past a certain preset number of hours, or are passed our maxRetries, then give up
 			if time.Since(dateTime).Hours() > hoursAfterOriginalAttemptToRetryFor || attempt > maxRetries {
 				// job failed
-				logger.StdErr(errors.New("daily hottest posts cron job failed and exited (attempt "+strconv.Itoa(attempt)+", after "+time.Since(dateTime).String()+")"), nil, nil, nil, nil)
+				logger.StdErr(errors.New("daily hottest posts cron job failed and exited (attempt " + strconv.Itoa(attempt) + ", after " + time.Since(dateTime).String() + ")"))
 				break
 			}
 		} else {

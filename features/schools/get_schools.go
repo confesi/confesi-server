@@ -73,7 +73,7 @@ func (h *handler) getSchools(c *gin.Context) {
 	if schoolName != "" {
 		var schools []db.School
 		if err := h.getBySchoolName(&schools, schoolName, pagination); err != nil {
-			logger.StdErr(err, nil, nil, nil, nil)
+			logger.StdErr(err)
 			response.
 				New(http.StatusInternalServerError).
 				Err(err.Error()).
@@ -96,7 +96,7 @@ func (h *handler) getSchools(c *gin.Context) {
 	/* If `lat` and `lon` is supplied */
 	var schools []School
 	if err := h.getAllSchools(&schools); err != nil {
-		logger.StdErr(err, nil, nil, nil, nil)
+		logger.StdErr(err)
 		response.
 			New(http.StatusInternalServerError).
 			Err(err.Error()).

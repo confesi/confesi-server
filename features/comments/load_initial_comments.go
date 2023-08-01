@@ -43,7 +43,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 		sortField = "trending_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
-		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)), nil, nil, nil, nil)
+		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", sort)))
 		return nil, errors.New("invalid sort field")
 	}
 	// query written in raw SQL over pure Gorm because... well this would be a nightmare otherwise and likely impossible
@@ -103,7 +103,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 			id := fmt.Sprint(comment.Comment.ID)
 			err := h.redis.SAdd(c, commentSpecificKey, id).Err()
 			if err != nil {
-				logger.StdErr(err, nil, nil, nil, nil)
+				logger.StdErr(err)
 				return nil, errors.New("failed to update redis cache")
 			}
 		}
@@ -184,7 +184,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	// set the expiration for the cache
 	err = h.redis.Expire(c, commentSpecificKey, seenCommentsCacheExpiry).Err()
 	if err != nil {
-		logger.StdErr(err, nil, nil, nil, nil)
+		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
 	}
