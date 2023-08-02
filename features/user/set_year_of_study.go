@@ -6,7 +6,6 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +53,6 @@ func (h *handler) handleSetYearOfStudy(c *gin.Context) {
 	yearOfStudyID := uint8(yearOfStudy.ID)
 
 	// update the user's year of study
-	fmt.Println("YOS: ", yearOfStudyID)
 	res := tx.
 		Model(&db.User{}).
 		Where("id = ?", token.UID).

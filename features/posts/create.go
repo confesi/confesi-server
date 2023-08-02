@@ -57,12 +57,21 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 		FacultyID:     userData.FacultyID,
 		Title:         title,
 		Content:       body,
+		Sentiment:     nil,
 		Downvote:      0,
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
 		// `HottestOn` not included so that it defaults to NULL
 	}
+
+	// sentiment analysis of post
+	sentiment := AnalyzeText(title + "\n" + body)
+	sentimentValue := sentiment.Compound
+	if sentimentValue == 0 {
+		sentimentValue = sentiment.Neutral
+	}
+	post.Sentiment = &sentimentValue
 
 	// save user to postgres
 	err = tx.Create(&post).Error

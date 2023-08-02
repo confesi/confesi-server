@@ -2,13 +2,12 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/logger"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grassmudhorses/vader-go/lexicon"
-	"github.com/grassmudhorses/vader-go/sentitext"
 	"gorm.io/gorm"
 )
 
@@ -42,14 +41,18 @@ func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	}
 
 	// sentiment analysis
-	parsedtext := sentitext.Parse(post.Title+"\n"+post.Content, lexicon.DefaultLexicon)
-	sentiment := sentitext.PolarityScore(parsedtext)
 
-	analysis := sentimentAnalysis{
-		Positive: sentiment.Positive,
-		Negative: sentiment.Negative,
-		Neutral:  sentiment.Neutral,
-		Compound: sentiment.Compound,
+	analysis := AnalyzeText(post.Title + "\n" + post.Content)
+
+	if *post.Sentiment == 0.0 {
+		updates := map[string]interface{}{
+			"sentiment": analysis.Compound,
+		}
+		err = h.db.Model(&post).Updates(updates).Error
+		if err != nil {
+			logger.StdErr(err)
+		}
+
 	}
 
 	// if all goes well, send status 200

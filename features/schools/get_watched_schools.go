@@ -1,6 +1,7 @@
 package schools
 
 import (
+	"confesi/config"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -9,22 +10,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// value that gets sent back to client for each of their watched schools
-type schoolResult struct {
-	ID     uint   `json:"id"`
-	Name   string `json:"name"`
-	Abbr   string `json:"abbr"`
-	Lat    string `json:"lat"`
-	Lon    string `json:"lon"`
-	Domain string `json:"domain"`
-}
-
-func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token) ([]schoolResult, error) {
-	schools := []schoolResult{}
+func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token) ([]SchoolDetail, error) {
+	schools := []SchoolDetail{}
 	err := h.DB.
-		Table("school_follows").
-		Select("schools.id as id, schools.name, schools.abbr, schools.lat, schools.lon, schools.domain").
-		Joins("JOIN schools ON school_follows.school_id = schools.id").
+		Raw(`
+			SELECT s.*, 
+				COALESCE(u.school_id = s.id, false) as home,
+				CASE 
+					WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
+					THEN true
+					ELSE false
+				END as watched
+			FROM schools as s
+			LEFT JOIN (
+				SELECT DISTINCT school_id
+				FROM users
+				WHERE id = ?
+			) as u ON u.school_id = s.id;
+		`, token.UID, token.UID).
 		Find(&schools).Error
 	if err != nil {
 		return nil, serverError
@@ -44,6 +47,16 @@ func (h *handler) handleGetWatchedSchools(c *gin.Context) {
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
+	}
+	// loop through schools
+	for i := range schools {
+		schoolDetail := &schools[i]
+		latlong, err := utils.GetLatLong(c)
+		if err == nil {
+			coord := Coordinate{lat: latlong.Lat, lon: latlong.Long, radius: config.DefaultRange}
+			distance := coord.getDistance(schoolDetail.School)
+			schoolDetail.Distance = &distance
+		}
 	}
 	response.New(http.StatusOK).Val(schools).Send(c)
 }

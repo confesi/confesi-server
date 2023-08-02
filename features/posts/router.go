@@ -10,8 +10,24 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/grassmudhorses/vader-go/lexicon"
+	"github.com/grassmudhorses/vader-go/sentitext"
 	"gorm.io/gorm"
 )
+
+func AnalyzeText(text string) sentimentAnalysis {
+	parsedtext := sentitext.Parse(text, lexicon.DefaultLexicon)
+	sentiment := sentitext.PolarityScore(parsedtext)
+
+	analysis := sentimentAnalysis{
+		Positive: sentiment.Positive,
+		Negative: sentiment.Negative,
+		Neutral:  sentiment.Neutral,
+		Compound: sentiment.Compound,
+	}
+
+	return analysis
+}
 
 var (
 	serverError = errors.New("server error")

@@ -68,7 +68,7 @@ func main() {
 	// 	middleware.FirebaseAppCheck(c, fire.New().AppCheck)
 	// })
 	api.Use(middleware.RateLimit)
-	api.Use(middleware.OptionalProfanityCensor)
+	api.Use(middleware.LatLong)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
 

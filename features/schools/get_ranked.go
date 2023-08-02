@@ -2,7 +2,6 @@ package schools
 
 import (
 	"confesi/config"
-	"confesi/db"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -20,8 +19,8 @@ const (
 )
 
 type rankedSchoolsResult struct {
-	Schools    []db.School `json:"schools"`
-	UserSchool *db.School  `json:"user_school"`
+	Schools    []SchoolDetail `json:"schools"`
+	UserSchool *SchoolDetail  `json:"user_school"`
 }
 
 func (h *handler) handleGetRankedSchools(c *gin.Context) {
@@ -114,12 +113,25 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 			return
 		}
 	}
-
 	schoolResult := rankedSchoolsResult{}
 
-	query := tx.
-		Order("daily_hottests DESC").
-		Limit(config.RankedSchoolsPageSize)
+	query := h.DB.Raw(`
+		SELECT s.*, 
+			COALESCE(u.school_id = s.id, false) as home,
+			CASE 
+				WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
+				THEN true
+				ELSE false
+			END as watched
+		FROM schools as s
+		LEFT JOIN (
+			SELECT DISTINCT school_id
+			FROM users
+			WHERE id = ?
+		) as u ON u.school_id = s.id
+		ORDER BY daily_hottests DESC
+		LIMIT ?;
+	`, token.UID, token.UID, config.RankedSchoolsPageSize)
 
 	if len(ids) > 0 {
 		query = query.Where("schools.id NOT IN (?)", ids)
@@ -134,17 +146,43 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 
 	// retrieve the user's school if desired, but don't add to cache!
 	if req.IncludeUsersSchool {
-		err := tx.
-			Table("schools").
-			Joins("JOIN users ON schools.id = users.school_id").
-			Where("users.school_id = schools.id"). // redundant `where` clause?
-			First(&schoolResult.UserSchool).
-			Error
+		err := h.DB.Raw(`
+		SELECT s.*, 
+			COALESCE(u.school_id = s.id, false) as home,
+			CASE 
+				WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
+				THEN true
+				ELSE false
+			END as watched
+		FROM schools as s
+		LEFT JOIN (
+			SELECT DISTINCT school_id
+			FROM users
+			WHERE id = ?
+		) as u ON u.school_id = s.id
+		JOIN users ON s.id = users.school_id
+		WHERE users.school_id = s.id
+		LIMIT 1;
+	`, token.UID, token.UID).Scan(&schoolResult.UserSchool).Error
+
 		if err != nil {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+
+		latlong, err := utils.GetLatLong(c)
+		if err == nil {
+			coord := Coordinate{lat: latlong.Lat, lon: latlong.Long, radius: config.DefaultRange}
+			distance := coord.getDistance(schoolResult.UserSchool.School)
+			schoolResult.UserSchool.Distance = &distance
+		}
+	}
+
+	addLatLong := false
+	latlong, err := utils.GetLatLong(c)
+	if err == nil {
+		addLatLong = true
 	}
 
 	// update the cache with the retrieved schools IDs
@@ -156,6 +194,12 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err("failed to update cache").Send(c)
 			return
+		}
+		if addLatLong {
+			coord := Coordinate{lat: latlong.Lat, lon: latlong.Long, radius: config.DefaultRange}
+			school := &schoolResult.Schools[i]
+			distance := coord.getDistance(school.School)
+			school.Distance = &distance
 		}
 	}
 

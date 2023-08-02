@@ -126,6 +126,7 @@ type Post struct {
 	TrendingScore float64         `gorm:"column:trending_score" json:"trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
 	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
+	Sentiment     *float64        `gorm:"column:sentiment" json:"sentiment"`
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
