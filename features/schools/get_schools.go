@@ -1,9 +1,10 @@
 package schools
 
 import (
-	"confesi/db"
+	"confesi/config"
 	"confesi/lib/logger"
 	"confesi/lib/response"
+	"confesi/lib/utils"
 	"errors"
 	"fmt"
 	"math"
@@ -21,18 +22,13 @@ const (
 	latValueMax = 90
 	latValueMin = -90
 
-	lonValueMax = 180
-	lonValueMin = -180
+	longValueMax = 180
+	longValueMin = -180
 )
 
 type Response struct {
 	*Pagination
-	Schools []School `json:"schools"`
-}
-
-type School struct {
-	db.School
-	Distance *float64 `json:"distance"`
+	Schools []SchoolDetail `json:"schools"`
 }
 
 type Pagination struct {
@@ -40,10 +36,8 @@ type Pagination struct {
 	Limit  int `json:"limit"`
 }
 
-
-
-// NOTE: ignoring `lat` param and `lon` param query if `school` is provided
-func (h *handler) getSchools(c *gin.Context) {
+// NOTE: ignoring `lat` param and `long` param query if `school` is provided
+func (h *handler) handleGetSchools(c *gin.Context) {
 	pagination, err := getPagination(c)
 	if err != nil {
 		response.
@@ -55,11 +49,11 @@ func (h *handler) getSchools(c *gin.Context) {
 
 	schoolName := c.Query("school")
 	latStr := c.Query("lat")
-	lonStr := c.Query("lon")
+	longStr := c.Query("long")
 	radiusStr := c.Query("radius")
 
-	missingLatLon := latStr == "" || lonStr == ""
-	if schoolName == "" && missingLatLon {
+	missingLatLong := latStr == "" || longStr == ""
+	if schoolName == "" && missingLatLong {
 		response.
 			New(http.StatusBadRequest).
 			Err("not using location for schools list: no peer address").
@@ -67,10 +61,16 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
 	/* If `school` param is found */
 	if schoolName != "" {
-		var schools []db.School
-		if err := h.getBySchoolName(&schools, schoolName, pagination); err != nil {
+		var schools []SchoolDetail
+		if err := h.getBySchoolName(&schools, schoolName, pagination, token.UID); err != nil {
 			logger.StdErr(err)
 			response.
 				New(http.StatusInternalServerError).
@@ -79,9 +79,9 @@ func (h *handler) getSchools(c *gin.Context) {
 			return
 		}
 
-		var schoolReponse []School
+		var schoolReponse []SchoolDetail
 		for _, school := range schools {
-			schoolReponse = append(schoolReponse, School{school, nil})
+			schoolReponse = append(schoolReponse, school)
 		}
 
 		response.
@@ -91,8 +91,8 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	/* If `lat` and `lon` is supplied */
-	var schools []School
+	/* If `lat` and `long` is supplied */
+	var schools []SchoolDetail
 	if err := h.getAllSchools(&schools); err != nil {
 		logger.StdErr(err)
 		response.
@@ -102,7 +102,12 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	coord, err := getCoord(latStr, lonStr, radiusStr)
+	// default value
+	if radiusStr == "" {
+		radiusStr = fmt.Sprintf("%d", config.DefaultRange)
+	}
+
+	coord, err := getCoord(latStr, longStr, radiusStr)
 	if err != nil {
 		response.
 			New(http.StatusBadRequest).
@@ -111,11 +116,10 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	var schoolsInRange []School // Use slice instead of an array
+	var schoolsInRange []SchoolDetail // Use slice instead of an array
 
 	for _, school := range schools {
-		distance := coord.getDistance(school)
-		fmt.Println(distance)
+		distance := coord.getDistance(school.School)
 		if distance <= coord.radius {
 			school.Distance = &distance
 			schoolsInRange = append(schoolsInRange, school) // Append the school to the slice
@@ -126,8 +130,6 @@ func (h *handler) getSchools(c *gin.Context) {
 	sort.Slice(schoolsInRange, func(i, j int) bool {
 		return *schoolsInRange[i].Distance < *schoolsInRange[j].Distance
 	})
-
-	fmt.Println("GOT HERE!!!!!!")
 
 	start := pagination.Offset
 	if start > len(schoolsInRange) {
@@ -143,7 +145,7 @@ func (h *handler) getSchools(c *gin.Context) {
 	if len(schoolsInRange) == 0 {
 		response.
 			New(http.StatusOK).
-			Val(Response{pagination, []School{}}).
+			Val(Response{pagination, []SchoolDetail{}}).
 			Send(c)
 	} else {
 		response.
@@ -154,29 +156,11 @@ func (h *handler) getSchools(c *gin.Context) {
 
 }
 
-// Algo from:
-// https://stackoverflow.com/a/365853
-func (c *Coordinate) getDistance(dest School) float64 {
-	const r float64 = 6371 // earth radius
-	destLat := degreeToRad(float64(dest.Lat))
-	originLat := degreeToRad(c.lat)
-
-	deltaLat := degreeToRad(float64(dest.Lat) - c.lat)
-	deltaLon := degreeToRad(float64(dest.Lon) - c.lon)
-
-	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
-		math.Sin(deltaLon/2)*math.Sin(deltaLon/2)*math.Cos(destLat)*math.Cos(originLat)
-
-	b := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-
-	return r * b // in km
-}
-
 func degreeToRad(deg float64) float64 {
 	return (float64(deg) * (math.Pi / 180))
 }
 
-func getCoord(latStr, lonStr, radiusStr string) (*Coordinate, error) {
+func getCoord(latStr, longStr, radiusStr string) (*Coordinate, error) {
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		return nil, errors.New("invalid lat value")
@@ -185,12 +169,12 @@ func getCoord(latStr, lonStr, radiusStr string) (*Coordinate, error) {
 		return nil, errors.New("lat value out of bound")
 	}
 
-	lon, err := strconv.ParseFloat(lonStr, 64)
+	long, err := strconv.ParseFloat(longStr, 64)
 	if err != nil {
-		return nil, errors.New("invalid lon value")
+		return nil, errors.New("invalid long value")
 	}
-	if lon < lonValueMin || lon > lonValueMax {
-		return nil, errors.New("lon value out of bound")
+	if long < longValueMin || long > longValueMax {
+		return nil, errors.New("long value out of bound")
 	}
 
 	radius, err := strconv.ParseFloat(radiusStr, 64)
@@ -198,27 +182,58 @@ func getCoord(latStr, lonStr, radiusStr string) (*Coordinate, error) {
 		return nil, errors.New("invalid radius value")
 	}
 
-	return &Coordinate{lat, lon, radius}, nil
+	return &Coordinate{lat, long, radius}, nil
 }
 
-func (h *handler) getAllSchools(schools *[]School) error {
-	return h.Table("schools").Scan(schools).Error
+func (h *handler) getAllSchools(schools *[]SchoolDetail) error {
+	rawQuery := `
+        SELECT schools.*, 
+            COALESCE(u.school_id = schools.id, false) as home,
+            CASE 
+                WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = schools.id)
+                THEN true
+                ELSE false
+            END as watched
+        FROM schools
+        LEFT JOIN (
+            SELECT DISTINCT school_id
+            FROM users
+            WHERE id = ?
+        ) as u ON u.school_id = schools.id
+    `
+
+	err := h.DB.Raw(rawQuery, "rBnKpDJKqigNd53ScRABKHmtwTj1", "rBnKpDJKqigNd53ScRABKHmtwTj1").Scan(schools).Error
+	return err
 }
 
 func (h *handler) getBySchoolName(
-	schools *[]db.School,
+	schools *[]SchoolDetail,
 	schoolName string,
 	pag *Pagination,
+	userID string,
 ) error {
 	schoolSql := "%" + strings.ToUpper(schoolName) + "%"
-	err := h.DB.
-		Table("schools").
-		Where("name LIKE ? OR abbr LIKE ?", schoolName, schoolSql).
-		Offset(pag.Offset).
-		Limit(pag.Limit).
-		Scan(&schools).
-		Error
-	fmt.Println("SJD LFKJ SKDLFJSKLD FS:DLJFLJSDF")
+
+	rawQuery := `
+		SELECT schools.*, 
+			COALESCE(u.school_id = schools.id, false) as home,
+			CASE 
+				WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = schools.id)
+				THEN true
+				ELSE false
+			END as watched
+		FROM schools
+		LEFT JOIN (
+			SELECT DISTINCT school_id
+			FROM users
+			WHERE id = ?
+		) as u ON u.school_id = schools.id
+		WHERE name LIKE ? OR abbr LIKE ?
+		OFFSET ? 
+		LIMIT ?;
+	`
+
+	err := h.DB.Raw(rawQuery, userID, userID, schoolName, schoolSql, pag.Offset, pag.Limit).Scan(schools).Error
 	return err
 }
 

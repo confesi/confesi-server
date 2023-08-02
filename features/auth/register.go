@@ -6,7 +6,6 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -63,8 +62,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 	// ensure the token is valid, aka, there is some valid user
 	if req.AlreadyExistingAccToken != "" {
 
-		fmt.Println("has already existing acc. token")
-
 		token, err := h.fb.AuthClient.VerifyIDToken(c, req.AlreadyExistingAccToken)
 		if err != nil {
 			response.New(http.StatusBadRequest).Err("invalid existing user token").Send(c)
@@ -113,7 +110,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 			tx.Rollback()
 			response.New(http.StatusConflict).Err("email already exists").Send(c)
 		} else {
-			fmt.Println(err)
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		}
@@ -137,7 +133,6 @@ func (h *handler) handleRegister(c *gin.Context) {
 	// commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
-		fmt.Println(err)
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
