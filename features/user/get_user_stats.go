@@ -6,6 +6,7 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"encoding/json"
+	"math"
 	"net/http"
 	"time"
 
@@ -34,12 +35,12 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 
 	// query the database for the user stats
 	store := h.redis
-	idSessionKey := "user_stats:" + token.UID
+	idSessionKey := "user_stats:" + "[" + token.UID + "]"
 	ctx := c.Request.Context()
 	userStats := UserStats{}
 
 	// Obtain the global stats
-	globalStats, err := GetGlobalStats(c, h.redis, h.db)
+	globalStats, err := getGlobalStats(c, h.redis, h.db)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
@@ -50,9 +51,9 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 
 	// Check whether a cache exists or not
 	if err == redis.Nil {
-		//If no cache exists create one
+		// If no cache exists, create one
 		query := h.db.Model(db.Post{}).
-			Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest").
+			Select("COALESCE(SUM(upvote), 0) AS likes, COALESCE(SUM(downvote), 0) AS dislikes, COALESCE(COUNT(hottest_on), 0) AS hottest").
 			Where("user_id = ?", token.UID)
 		if query.Error != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -64,15 +65,17 @@ func (h *handler) handleGetUserStats(c *gin.Context) {
 		query.Scan(&userStats)
 
 		// Calculate the percentages relative to the user
-		userStats.Likes_Perc = float64(userStats.Likes) / float64(globalStats.Likes)
-		userStats.Dislikes_Perc = float64(userStats.Dislikes) / float64(globalStats.Dislikes)
-		userStats.Hottest_Perc = float64(userStats.Hottest) / float64(globalStats.Hottest)
+		userStats.Likes_Perc = math.Min(float64(userStats.Likes)/float64(math.Max(float64(globalStats.Likes), 1)), 1)
+		userStats.Dislikes_Perc = math.Min(float64(userStats.Dislikes)/float64(math.Max(float64(globalStats.Dislikes), 1)), 1)
+		userStats.Hottest_Perc = math.Min(float64(userStats.Hottest)/float64(math.Max(float64(globalStats.Hottest), 1)), 1)
 		// Convert stats to string
+
 		statsString, err := json.Marshal(userStats)
 		if err != nil {
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+
 		// Store the stats in the cache
 		store.Set(ctx, idSessionKey, string(statsString), time.Hour*24)
 
@@ -98,8 +101,8 @@ type GlobalUserStats struct {
 	Hottest  int `json:"hottest"`
 }
 
-// GetGlobalStats returns the global stats of the entire app
-func GetGlobalStats(c *gin.Context, redis_store *redis.Client, database *gorm.DB) (*GlobalUserStats, error) {
+// getGlobalStats returns the global stats of the entire app
+func getGlobalStats(c *gin.Context, redis_store *redis.Client, database *gorm.DB) (*GlobalUserStats, error) {
 	store := redis_store
 	idSessionKey := config.RedisGlobalUserStats
 	tx := store.TxPipeline()
@@ -111,10 +114,10 @@ func GetGlobalStats(c *gin.Context, redis_store *redis.Client, database *gorm.DB
 
 	// Check whether a cache exists or not
 	if err == redis.Nil {
-		//If no cache exists create one
+		// If no cache exists create one
 		// query the database for the global stats
 		query := database.Model(db.Post{}).
-			Select("SUM(upvote) AS likes, SUM(downvote) AS dislikes, COUNT(hottest_on) AS hottest")
+			Select("COALESCE(SUM(upvote), 0) AS likes, COALESCE(SUM(downvote), 0) AS dislikes, COALESCE(COUNT(hottest_on), 0) AS hottest")
 
 		if query.Error != nil {
 			return nil, query.Error
