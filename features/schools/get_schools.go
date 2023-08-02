@@ -40,11 +40,7 @@ type Pagination struct {
 	Limit  int `json:"limit"`
 }
 
-type coordinate struct {
-	lat    float64
-	lon    float64
-	radius float64
-}
+
 
 // NOTE: ignoring `lat` param and `lon` param query if `school` is provided
 func (h *handler) getSchools(c *gin.Context) {
@@ -160,7 +156,7 @@ func (h *handler) getSchools(c *gin.Context) {
 
 // Algo from:
 // https://stackoverflow.com/a/365853
-func (c *coordinate) getDistance(dest School) float64 {
+func (c *Coordinate) getDistance(dest School) float64 {
 	const r float64 = 6371 // earth radius
 	destLat := degreeToRad(float64(dest.Lat))
 	originLat := degreeToRad(c.lat)
@@ -180,7 +176,7 @@ func degreeToRad(deg float64) float64 {
 	return (float64(deg) * (math.Pi / 180))
 }
 
-func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
+func getCoord(latStr, lonStr, radiusStr string) (*Coordinate, error) {
 	lat, err := strconv.ParseFloat(latStr, 64)
 	if err != nil {
 		return nil, errors.New("invalid lat value")
@@ -202,7 +198,7 @@ func getCoord(latStr, lonStr, radiusStr string) (*coordinate, error) {
 		return nil, errors.New("invalid radius value")
 	}
 
-	return &coordinate{lat, lon, radius}, nil
+	return &Coordinate{lat, lon, radius}, nil
 }
 
 func (h *handler) getAllSchools(schools *[]School) error {
