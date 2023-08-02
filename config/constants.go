@@ -11,7 +11,7 @@ const (
 	CronJobPageSize                                  = 10                                       // how many cron job results are returned in a page size
 	ReportsPageSize                                  = 10                                       // how many reports are returned in a page size
 	FeedPostsPageSize                                = 10                                       // how many posts are returned in a page size in the regular feed
-	RankedSchoolsPageSize                            = 10                                       // how many schools are returned in a page size in the ranked schools page
+	RankedSchoolsPageSize                            = 2                                        // how many schools are returned in a page size in the ranked schools page
 	RedisPostsCache                                  = "posts"                                  // redis key for posts cache
 	RedisSchoolsRankCache                            = "schools_rank"                           // redis key for schools rank cache
 	RedisCommentsCache                               = "comments"                               // redis key for comments cache
@@ -30,6 +30,8 @@ const (
 	AdminViewAllReportsPerCommentId                  = 10                                       // how many reports are returned in a page size in the view of reports for a comment given by id
 	AdminViewAllReportsPerPostId                     = 10                                       // how many reports are returned in a page size in the view of reports for a post given by id
 	AdminFeedbackPageSize                            = 10                                       // how many feedbacks are returned in a page size in the admin feedback page
+	QueryForSchoolsBySearchPageSize                  = 10                                       // how many schools are returned in a page size in the search schools page
+	QueryForSchoolsBySearchFloorSimilarityMatchValue = 0.05                                     // how much similarity is required for a school to be considered a match between ABBR and NAME columns
 )
 
 // ----- DEPLOYMENT CONSTANTS
