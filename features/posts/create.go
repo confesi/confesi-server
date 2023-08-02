@@ -11,6 +11,7 @@ import (
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 var (
@@ -31,8 +32,11 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 
 	// check if category is valid
 	var postCategory db.PostCategory
-	err := tx.Select("id").Where("name = ?", postCategory).First(&postCategory).Error
-	if err != nil {
+	err := tx.Select("id").Where("name ILIKE ?", category).First(&postCategory).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		tx.Rollback()
+		return serverError
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		return errorInvalidCategory
 	}
@@ -49,6 +53,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	post := db.Post{
 		UserID:        token.UID,
 		SchoolID:      userData.SchoolID,
+		CategoryID:    postCategory.ID,
 		FacultyID:     userData.FacultyID,
 		Title:         title,
 		Content:       body,
