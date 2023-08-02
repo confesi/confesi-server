@@ -24,6 +24,7 @@ func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	var post db.Post
 	err := h.db.
 		Preload("School").
+		Preload("Category").
 		Preload("Faculty").
 		Preload("YearOfStudy").
 		First(&post, postID).Error

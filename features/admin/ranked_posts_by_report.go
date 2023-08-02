@@ -76,6 +76,7 @@ func (h *handler) handleGetRankedPostsByReport(c *gin.Context) {
 	err = h.db.
 		Preload("Faculty").
 		Preload("School").
+		Preload("Category").
 		Preload("YearOfStudy").
 		Where("reviewed_by_mod = ?"+excludedIDQuery, req.ReviewedByMod).
 		Order("report_count DESC").

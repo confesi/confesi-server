@@ -76,7 +76,7 @@ func (FcmToken) TableName() string {
 }
 
 type PostCategory struct {
-	ID   uint   `gorm:"primaryKey" json:"id"`
+	ID   uint   `gorm:"primaryKey" json:"-"`
 	Name string `gorm:"column:name" json:"name"`
 }
 
@@ -130,7 +130,7 @@ type Post struct {
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
 	CategoryID    uint            `gorm:"column:category_id" json:"-"`
-	Category      School          `gorm:"foreignKey:CategoryID" json:"category"`
+	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 }
 
 func (p *Post) CensorPost() Post {

@@ -94,6 +94,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		) AS user_vote
 		`, token.UID).
 		Preload("School").
+		Preload("Category").
 		Preload("YearOfStudy").
 		Preload("Faculty").
 		Order(sortField).
