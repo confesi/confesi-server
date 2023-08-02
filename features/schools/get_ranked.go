@@ -67,8 +67,9 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	err = tx.Raw(`
 		SELECT EXISTS (
 			SELECT 1
-			FROM daily_hottest_cron_jobs
-			WHERE daily_hottest_cron_jobs.successfully_ran = ?
+			FROM cron_jobs
+			WHERE cron_jobs.ran = ?
+			AND type = 'daily_hottest'
 		) AS exists
 	`, nextDate).Scan(&result).Error
 

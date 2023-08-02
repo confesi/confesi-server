@@ -11,7 +11,7 @@ const (
 	CronJobPageSize                                  = 10                                       // how many cron job results are returned in a page size
 	ReportsPageSize                                  = 10                                       // how many reports are returned in a page size
 	FeedPostsPageSize                                = 10                                       // how many posts are returned in a page size in the regular feed
-	RankedSchoolsPageSize                            = 10                                       // how many schools are returned in a page size in the ranked schools page
+	RankedSchoolsPageSize                            = 2                                        // how many schools are returned in a page size in the ranked schools page
 	RedisPostsCache                                  = "posts"                                  // redis key for posts cache
 	RedisSchoolsRankCache                            = "schools_rank"                           // redis key for schools rank cache
 	RedisCommentsCache                               = "comments"                               // redis key for comments cache

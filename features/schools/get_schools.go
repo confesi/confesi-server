@@ -5,8 +5,10 @@ import (
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -113,31 +115,47 @@ func (h *handler) getSchools(c *gin.Context) {
 		return
 	}
 
-	schoolCount := len(schools)
-	schoolsInRange := make([]School, schoolCount)
+	var schoolsInRange []School // Use slice instead of an array
 
-	for i, school := range schools {
+	for _, school := range schools {
 		distance := coord.getDistance(school)
+		fmt.Println(distance)
 		if distance <= coord.radius {
 			school.Distance = &distance
-			schoolsInRange[i] = school
+			schoolsInRange = append(schoolsInRange, school) // Append the school to the slice
 		}
 	}
 
+	// Sort the schoolsInRange slice by distance in ascending order (closest first)
+	sort.Slice(schoolsInRange, func(i, j int) bool {
+		return *schoolsInRange[i].Distance < *schoolsInRange[j].Distance
+	})
+
+	fmt.Println("GOT HERE!!!!!!")
+
 	start := pagination.Offset
-	if start > schoolCount {
+	if start > len(schoolsInRange) {
 		start = 0
 	}
 
 	end := pagination.Offset + pagination.Limit
-	if end > schoolCount {
-		end = schoolCount
+	if end > len(schoolsInRange) {
+		end = len(schoolsInRange)
 	}
 
-	response.
-		New(http.StatusOK).
-		Val(Response{pagination, schoolsInRange[start:end]}).
-		Send(c)
+	// Check if the schoolsInRange slice is empty and return an empty slice
+	if len(schoolsInRange) == 0 {
+		response.
+			New(http.StatusOK).
+			Val(Response{pagination, []School{}}).
+			Send(c)
+	} else {
+		response.
+			New(http.StatusOK).
+			Val(Response{pagination, schoolsInRange[start:end]}).
+			Send(c)
+	}
+
 }
 
 // Algo from:
@@ -202,9 +220,9 @@ func (h *handler) getBySchoolName(
 		Where("name LIKE ? OR abbr LIKE ?", schoolName, schoolSql).
 		Offset(pag.Offset).
 		Limit(pag.Limit).
-		Scan(schools).
+		Scan(&schools).
 		Error
-
+	fmt.Println("SJD LFKJ SKDLFJSKLD FS:DLJFLJSDF")
 	return err
 }
 
