@@ -47,4 +47,6 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUsersOnly.PATCH("/year-of-study", h.handleSetYearOfStudy)
 
 	registeredFirebaseUsersOnly.PATCH("/school", h.handleSetSchool)
+
+	registeredFirebaseUsersOnly.GET("/user-stats", h.handleGetUserStats)
 }
