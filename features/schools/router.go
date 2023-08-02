@@ -23,12 +23,19 @@ type handler struct {
 	redis *redis.Client
 }
 
+type Coordinate struct {
+	lat    float64
+	lon    float64
+	radius float64
+}
+
 func Router(r *gin.RouterGroup) {
 	h := handler{db.New(), fire.New(), cache.New()}
 
 	// any user
 	r.GET("/", h.getSchools)
 	r.GET("/random", h.handleGetRandomSchool)
+	r.GET("/search", h.handleGetSchoolsByQuery)
 
 	// any firebase user
 	anyFirebaseUser := r.Group("")

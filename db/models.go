@@ -76,10 +76,8 @@ func (FcmToken) TableName() string {
 }
 
 type PostCategory struct {
-	ID        uint       `gorm:"primaryKey" json:"id"`
-	Name      string     `gorm:"column:name" json:"name"`
-	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	ID   uint   `gorm:"primaryKey" json:"id"`
+	Name string `gorm:"column:name" json:"name"`
 }
 
 func (PostCategory) TableName() string {

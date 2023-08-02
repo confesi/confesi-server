@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"log"
 	"os"
 	"time"
 
@@ -37,6 +38,9 @@ func init() {
 	})
 	if err != nil {
 		panic(err)
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 

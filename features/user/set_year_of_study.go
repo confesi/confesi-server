@@ -5,9 +5,12 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func (h *handler) handleSetYearOfStudy(c *gin.Context) {
@@ -39,14 +42,19 @@ func (h *handler) handleSetYearOfStudy(c *gin.Context) {
 	// check if user's year of study is valid (aka, the year of study exists in the database)
 	yearOfStudy := db.YearOfStudy{}
 	err = tx.Raw("SELECT id FROM year_of_study WHERE name ILIKE ?", req.YearOfStudy).First(&yearOfStudy).Error
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		response.New(http.StatusBadRequest).Err("year of study doesn't exist").Send(c)
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		tx.Rollback()
+		response.New(http.StatusBadRequest).Err("invalid year of study").Send(c)
 		return
 	}
 	yearOfStudyID := uint8(yearOfStudy.ID)
 
 	// update the user's year of study
+	fmt.Println("YOS: ", yearOfStudyID)
 	res := tx.
 		Model(&db.User{}).
 		Where("id = ?", token.UID).
