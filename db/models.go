@@ -84,6 +84,10 @@ func (PostCategory) TableName() string {
 	return "post_categories"
 }
 
+func (Draft) TableName() string {
+	return "drafts"
+}
+
 type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
@@ -131,6 +135,16 @@ type Post struct {
 	Edited        bool            `gorm:"column:edited" json:"edited"`
 	CategoryID    uint            `gorm:"column:category_id" json:"-"`
 	Category      School          `gorm:"foreignKey:CategoryID" json:"category"`
+}
+
+// ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
+type Draft struct {
+	ID        int        `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UserID    string     `gorm:"column:user_id" json:"-"`
+	Title     string     `gorm:"column:title" json:"title"`
+	Content   string     `gorm:"column:content" json:"content"`
 }
 
 func (p *Post) CensorPost() Post {

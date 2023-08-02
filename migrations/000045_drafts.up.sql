@@ -1,14 +1,12 @@
 BEGIN;
 
-CREATE TABLE feedback_types (
+CREATE TABLE drafts (
     id SERIAL PRIMARY KEY,
-    type TEXT
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE feedbacks
-    ADD COLUMN type_id INT,
-    ADD CONSTRAINT fk_feedbacks_type
-    FOREIGN KEY (type_id)
-    REFERENCES feedback_types (id);
 
 END;

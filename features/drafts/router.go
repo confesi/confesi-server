@@ -18,11 +18,8 @@ var (
 	notFound    = errors.New("not found")
 )
 
-type PostDetail struct {
-	db.Post  `json:"post"`
-	UserVote int      `json:"user_vote"`
-	Owner    bool     `json:"owner"`
-	Emojis   []string `json:"emojis" gorm:"-"`
+type DraftDetail struct {
+	db.Draft `json:"draft"`
 }
 
 type handler struct {
@@ -40,8 +37,8 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
-	registeredFirebaseUserRoutes.GET("/your-posts", h.handleGetYourDrafts)
+	registeredFirebaseUserRoutes.GET("/your-drafts", h.handleGetYourDrafts)
 	registeredFirebaseUserRoutes.PATCH("/edit", h.handleEditDraft)
-	// registeredFirebaseUserRoutes.DELETE("/delete", h.handleDeleteDraft)
+	registeredFirebaseUserRoutes.DELETE("/delete", h.handleDeleteDraft)
 
 }
