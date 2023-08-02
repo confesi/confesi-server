@@ -93,7 +93,7 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 
 	/* If `lat` and `long` is supplied */
 	var schools []SchoolDetail
-	if err := h.getAllSchools(&schools); err != nil {
+	if err := h.getAllSchools(&schools, token.UID); err != nil {
 		logger.StdErr(err)
 		response.
 			New(http.StatusInternalServerError).
@@ -126,9 +126,9 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 		}
 	}
 
-	// Sort the schoolsInRange slice by distance in ascending order (closest first)
+	// Sort the schoolsInRange slice by "distance" in ascending order (smallest first)
 	sort.Slice(schoolsInRange, func(i, j int) bool {
-		return *schoolsInRange[i].Distance < *schoolsInRange[j].Distance
+		return schoolsInRange[i].Distance != nil && schoolsInRange[j].Distance != nil && *schoolsInRange[i].Distance < *schoolsInRange[j].Distance
 	})
 
 	start := pagination.Offset
@@ -153,7 +153,6 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 			Val(Response{pagination, schoolsInRange[start:end]}).
 			Send(c)
 	}
-
 }
 
 func degreeToRad(deg float64) float64 {
@@ -185,7 +184,7 @@ func getCoord(latStr, longStr, radiusStr string) (*Coordinate, error) {
 	return &Coordinate{lat, long, radius}, nil
 }
 
-func (h *handler) getAllSchools(schools *[]SchoolDetail) error {
+func (h *handler) getAllSchools(schools *[]SchoolDetail, uid string) error {
 	rawQuery := `
         SELECT schools.*, 
             COALESCE(u.school_id = schools.id, false) as home,
@@ -202,7 +201,7 @@ func (h *handler) getAllSchools(schools *[]SchoolDetail) error {
         ) as u ON u.school_id = schools.id
     `
 
-	err := h.DB.Raw(rawQuery, "rBnKpDJKqigNd53ScRABKHmtwTj1", "rBnKpDJKqigNd53ScRABKHmtwTj1").Scan(schools).Error
+	err := h.DB.Raw(rawQuery, uid, uid).Scan(schools).Error
 	return err
 }
 
