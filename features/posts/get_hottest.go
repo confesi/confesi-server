@@ -18,6 +18,7 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time, userID string)
 		Where("hidden = ?", false).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").
+		Preload("Category").
 		Preload("Faculty").
 		Preload("YearOfStudy").
 		Order("trending_score DESC").

@@ -52,6 +52,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 			Preload("YearOfStudy").
 			Preload("School").  // Preload the User field of the Post
 			Preload("Faculty"). // Preload the User field of the Post
+			Preload("Category").
 			Where("id = ?", *report.PostID).
 			First(&post).
 			Error

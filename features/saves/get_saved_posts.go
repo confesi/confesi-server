@@ -44,6 +44,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 
 	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
 		Preload("School").
+		Preload("Category").
 		Preload("YearOfStudy").
 		Preload("Faculty").
 		Find(&fetchResult.Posts).Error

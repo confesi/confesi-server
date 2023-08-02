@@ -34,6 +34,7 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 
 	err = h.db.
 		Preload("School").
+		Preload("Category").
 		Preload("Faculty").
 		Preload("YearOfStudy").
 		Where("user_id = ?", token.UID).

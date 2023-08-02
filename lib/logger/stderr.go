@@ -38,7 +38,7 @@ func ResErr(m error, ctx *gin.Context, statusCode int) {
 		uid = token.UID
 	}
 
-	//month-date-year hour:minute | statusCode | handler | ip | uid | error/message
+	// month-date-year hour:minute | statusCode | handler | ip | uid | error/message
 
 	str := fmt.Sprintf("%v-%v-%v %v:%v | %v | %s | %s | %s | %s \n", year, int(month), date, hour, minute, statusCode, endpoint, ip, uid, m.Error())
 	os.Stderr.Write([]byte(str))

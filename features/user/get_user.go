@@ -23,6 +23,7 @@ func (h *handler) handleGetUser(c *gin.Context) {
 	err = h.db.
 		Preload("School").
 		Preload("Faculty").
+		Preload("Category").
 		Preload("YearOfStudy").
 		Find(&user, "id = ?", token.UID).
 		Error
