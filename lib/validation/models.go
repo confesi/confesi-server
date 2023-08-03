@@ -30,6 +30,11 @@ type SaveContentDetails struct {
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
 
+type WatchedSchoolQuery struct {
+	// [required] if true also return the user's home school
+	IncludeHomeSchool bool `json:"include_home_school"` // not required so that the zero-value is OK
+}
+
 type SaveContentCursor struct {
 	Next NullableNext `json:"next"`
 }
