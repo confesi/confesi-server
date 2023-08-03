@@ -70,6 +70,7 @@ func main() {
 	api.Use(middleware.RateLimit)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
+	api.Use(middleware.OptionalProfanityCensor)
 
 	// Separate handler groups
 	comments.Router(api.Group("/comments"))
