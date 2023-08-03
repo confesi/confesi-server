@@ -80,7 +80,7 @@ type UpdateFaculty struct {
 
 type UpdateSchool struct {
 	// [required] school to update to
-	FullSchoolName string `json:"full_school_name" validate:"required"`
+	SchoolID uint `json:"school_id" validate:"required"`
 }
 
 type CreateComment struct {
