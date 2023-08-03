@@ -42,6 +42,7 @@ const (
 	iOSBundleId        = "com.confesi.app"    // iOS bundle id // TODO: change this
 	AndroidPackageName = "com.confesi.app"    // Android package name // TODO: change this
 	FirebaseProjectID  = "confesi-server-dev" // Firebase project id // TODO: change this
+	Development        = true                 // development mode
 )
 
 // ----- ALT CONSTANTS
