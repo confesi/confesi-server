@@ -61,9 +61,6 @@ func (c *Coordinate) getDistance(dest db.School) float64 {
 func Router(r *gin.RouterGroup) {
 	h := handler{db.New(), fire.New(), cache.New()}
 
-	// add lat long to context if it exists
-	r.Use(middleware.LatLong)
-
 	// any firebase user
 	anyFirebaseUser := r.Group("")
 	anyFirebaseUser.Use(func(c *gin.Context) {

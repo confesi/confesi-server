@@ -2,13 +2,17 @@ package utils
 
 import (
 	"confesi/config"
-	"confesi/middleware"
 	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ip2location/ip2location-go/v9"
 )
+
+type LatLongCoord struct {
+	Lat  float64
+	Long float64
+}
 
 var ipDb *ip2location.DB
 
@@ -24,10 +28,10 @@ func init() {
 	}
 }
 
-func GetLatLong(c *gin.Context) (*middleware.LatLongCoord, error) {
+func GetLatLong(c *gin.Context) (*LatLongCoord, error) {
 
 	// Create lat long struct
-	latLong := middleware.LatLongCoord{}
+	latLong := LatLongCoord{}
 
 	// Obtain client IP address
 	ip := c.ClientIP()
