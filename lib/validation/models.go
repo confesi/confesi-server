@@ -23,6 +23,13 @@ type CreatePostDetails struct {
 	Category string `json:"category" validate:"required"`
 }
 
+type CreateDraftDetails struct {
+	// [required if Body empty/null] at most 100 characters
+	Title string `json:"title" validate:"max=100,required_without=Body"`
+	// [required if Title empty/null] at most 2000 characters
+	Body string `json:"body" validate:"max=2000,required_without=Title"`
+}
+
 type SaveContentDetails struct {
 	// [required] content id to save/unsave
 	ContentID uint `json:"content_id" validate:"required"`
@@ -142,6 +149,11 @@ type SchoolRankQuery struct {
 }
 
 type YourPostsQuery struct {
+	// [required] timestamp of last viewed post content (microseconds since epoch)
+	Next NullableNext `json:"next"`
+}
+
+type YourDraftsQuery struct {
 	// [required] timestamp of last viewed post content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
@@ -269,4 +281,18 @@ type EditPost struct {
 	Title string `json:"title" validate:"max=100,required_without=Body"`
 	// [required if Title empty/null] at most 2000 characters
 	Body string `json:"body" validate:"max=2000,required_without=Title"`
+}
+
+type EditDraft struct {
+	// [required] post id
+	DraftID uint `json:"draft_id" validate:"required"`
+	// [required if Body empty/null] at most 100 characters
+	Title string `json:"title" validate:"max=100,required_without=Body"`
+	// [required if Title empty/null] at most 2000 characters
+	Body string `json:"body" validate:"max=2000,required_without=Title"`
+}
+
+type DeleteDraft struct {
+	// [required] post id
+	DraftID uint `json:"draft_id" validate:"required"`
 }

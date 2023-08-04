@@ -1,4 +1,4 @@
-package posts
+package drafts
 
 import (
 	"confesi/db"
@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) handleEditPost(c *gin.Context) {
+func (h *handler) handleEditDraft(c *gin.Context) {
 	// validate the json body from request
-	var req validation.EditPost
+	var req validation.EditDraft
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
@@ -26,15 +26,12 @@ func (h *handler) handleEditPost(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"edited":  true,
 		"title":   req.Title,
 		"content": req.Body,
 	}
 
-	// Update the `Title`/`Body` and `Edited` fields of the post in a single query
-	results := h.db.Model(&db.Post{}).
-		Where("id = ?", req.PostID).
-		Where("hidden = false").
+	results := h.db.Model(&db.Draft{}).
+		Where("id = ?", req.DraftID).
 		Where("user_id = ?", token.UID).
 		Updates(updates)
 
