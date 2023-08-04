@@ -36,10 +36,5 @@ func (h *handler) handleDeleteDraft(c *gin.Context) {
 		return
 	}
 
-	if results.RowsAffected == 0 {
-		response.New(http.StatusNotFound).Err(notFound.Error()).Send(c)
-		return
-	}
-
 	response.New(http.StatusOK).Send(c)
 }

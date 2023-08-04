@@ -34,8 +34,8 @@ func (h *handler) handleGetYourDrafts(c *gin.Context) {
 	err = h.db.
 		Where("user_id = ?", token.UID).
 		Order("updated_at DESC").
+		Where(req.Next.Cursor("updated_at <")).
 		Find(&fetchResults.Drafts).
-		Where(req.Next.Cursor("updated_at >")).
 		Limit(config.YourDraftsPageSize).
 		Error
 
@@ -44,7 +44,7 @@ func (h *handler) handleGetYourDrafts(c *gin.Context) {
 		return
 	}
 	if len(fetchResults.Drafts) > 0 {
-		timeMicros := (fetchResults.Drafts[len(fetchResults.Drafts)-1].CreatedAt.Time).UnixMicro()
+		timeMicros := (fetchResults.Drafts[len(fetchResults.Drafts)-1].UpdatedAt.Time).UnixMicro()
 		fetchResults.Next = &timeMicros
 	}
 

@@ -40,5 +40,4 @@ func Router(mux *gin.RouterGroup) {
 	registeredFirebaseUserRoutes.GET("/your-drafts", h.handleGetYourDrafts)
 	registeredFirebaseUserRoutes.PATCH("/edit", h.handleEditDraft)
 	registeredFirebaseUserRoutes.DELETE("/delete", h.handleDeleteDraft)
-
 }
