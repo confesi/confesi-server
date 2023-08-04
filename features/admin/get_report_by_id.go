@@ -43,6 +43,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 		err := h.db.
 			Preload("YearOfStudy").
 			Preload("School").
+			Preload("Category").
 			Preload("Faculty").
 			Where("id = ?", *report.PostID).
 			First(&post).

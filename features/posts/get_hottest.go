@@ -5,6 +5,7 @@ import (
 	tags "confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,6 +19,7 @@ func (h *handler) getHottestPosts(c *gin.Context, date time.Time, userID string)
 		Where("hidden = ?", false).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").
+		Preload("Category").
 		Preload("Faculty").
 		Preload("YearOfStudy").
 		Order("trending_score DESC").
@@ -72,6 +74,7 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 			post.Owner = true
 		}
 		if !utils.ProfanityEnabled(c) {
+			fmt.Println("Profanity is disabled")
 			post.Post = post.Post.CensorPost()
 		}
 		post.Emojis = tags.GetEmojis(&post.Post)

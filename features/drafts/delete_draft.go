@@ -25,7 +25,6 @@ func (h *handler) handleDeleteDraft(c *gin.Context) {
 		return
 	}
 
-	// Update the `Title`/`Body` and `Edited` fields of the comment in a single query
 	results := h.db.
 		Where("id = ?", req.DraftID).
 		Where("user_id = ?", token.UID).

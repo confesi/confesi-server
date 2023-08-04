@@ -30,7 +30,6 @@ func (h *handler) handleEditDraft(c *gin.Context) {
 		"content": req.Body,
 	}
 
-	// Update the `Title`/`Body` and `Edited` fields of the comment in a single query
 	results := h.db.Model(&db.Draft{}).
 		Where("id = ?", req.DraftID).
 		Where("user_id = ?", token.UID).

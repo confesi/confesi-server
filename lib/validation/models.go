@@ -37,6 +37,11 @@ type SaveContentDetails struct {
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
 
+type WatchedSchoolQuery struct {
+	// [required] if true also return the user's home school
+	IncludeHomeSchool bool `json:"include_home_school"` // not required so that the zero-value is OK
+}
+
 type SaveContentCursor struct {
 	Next NullableNext `json:"next"`
 }
@@ -87,7 +92,7 @@ type UpdateFaculty struct {
 
 type UpdateSchool struct {
 	// [required] school to update to
-	FullSchoolName string `json:"full_school_name" validate:"required"`
+	SchoolID uint `json:"school_id" validate:"required"`
 }
 
 type CreateComment struct {

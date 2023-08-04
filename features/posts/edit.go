@@ -31,7 +31,7 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		"content": req.Body,
 	}
 
-	// Update the `Title`/`Body` and `Edited` fields of the comment in a single query
+	// Update the `Title`/`Body` and `Edited` fields of the post in a single query
 	results := h.db.Model(&db.Post{}).
 		Where("id = ?", req.PostID).
 		Where("hidden = false").

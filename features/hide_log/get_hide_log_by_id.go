@@ -49,6 +49,7 @@ func (h *handler) handleGetHideLogById(c *gin.Context) {
 		post := db.Post{}
 		err := h.db.
 			Preload("School").
+			Preload("Category").
 			Preload("Faculty").
 			Preload("YearOfStudy").
 			Where("id = ?", hideLog.PostID).

@@ -18,7 +18,7 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            uint    `gorm:"primaryKey" json:"-"`
+	ID            uint    `gorm:"primaryKey" json:"id"`
 	Name          string  `json:"name"`
 	Abbr          string  `json:"abbr"`
 	Lat           float32 `json:"lat"`
@@ -76,7 +76,7 @@ func (FcmToken) TableName() string {
 }
 
 type PostCategory struct {
-	ID   uint   `gorm:"primaryKey" json:"id"`
+	ID   uint   `gorm:"primaryKey" json:"-"`
 	Name string `gorm:"column:name" json:"name"`
 }
 
@@ -134,7 +134,7 @@ type Post struct {
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
 	CategoryID    uint            `gorm:"column:category_id" json:"-"`
-	Category      School          `gorm:"foreignKey:CategoryID" json:"category"`
+	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
