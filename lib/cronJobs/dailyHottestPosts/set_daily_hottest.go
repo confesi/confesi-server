@@ -3,8 +3,11 @@ package dailyHottestPosts
 import (
 	"confesi/config"
 	"confesi/db"
+	"confesi/lib/cache"
 	"confesi/lib/cronJobs"
 	"confesi/lib/logger"
+	"confesi/lib/utils"
+	"context"
 	"errors"
 	"time"
 
@@ -73,6 +76,7 @@ func DoDailyHottestJob(dateTime time.Time) error {
 		tx.Rollback()
 		return err
 	}
+
 	if count > 0 {
 		tx.Rollback()
 		return nil
@@ -119,5 +123,17 @@ func DoDailyHottestJob(dateTime time.Time) error {
 		tx.Rollback()
 		return err
 	}
+
+	// clear the user's seen id cache
+	folder_name := config.RedisSchoolsRankCache
+	store := cache.New() //Redis client
+	c := context.TODO()  // context
+
+	err = utils.DeleteCacheFolder(&c, store, folder_name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	return nil
 }
