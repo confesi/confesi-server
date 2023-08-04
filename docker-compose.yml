@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: confesi-db
+    image: postgres:14.8-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: confesi
+      POSTGRES_HOST: localhost
+    ports:
+      - 5432:5432
+    volumes:
+      - ./tmp/data:/var/lib/postgresql/data
+
+  app:
+    container_name: confesi-api
+    build:
+      context: .
+      dockerfile: development.Dockerfile
+    ports:
+      - 8080:8080
+    links:
+      - db
+      - redis
+    volumes:
+      - .:/confesi
+    environment:
+      PORT:
+      POSTGRES_DSN:
+      APPCHECK_TOKEN:
+      REDIS_CONN:
+      PUBLIC_DOC_ACCESS:
+      AWS_ACCESS_KEY_ID:
+      AWS_SECRET_ACCESS_KEY:
+      AWS_REGION:
+
+  redis:
+      image: redis:alpine
+      volumes:
+        - redis-data:/data
+      container_name: redis
+      ports:
+        - '6379:6379'
+
+volumes:
+  redis-data:
+    driver: local

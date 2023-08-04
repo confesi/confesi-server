@@ -1,0 +1,29 @@
+GIN_MODE="debug"
+PORT="8080"
+
+POSTGRES_DSN="postgres://postgres:postgres@db:5432/confesi?sslmode=disable"
+
+# generate token at https://generate-random.org/api-token-generator
+APPCHECK_TOKEN="kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H"
+
+# generate key from https://numbergenerator.org/hex-code-generator
+# either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256
+HKDF_SECRET="some-secret-string"
+
+# to generate a new nonce for production:
+# go run ./scripts/main.go --new-nonce
+CIPHER_NONCE="47363bcf91a1545668f0fd7a"
+
+# Redis connection string
+REDIS_CONN="redis:6379"
+
+# Api key for firebase, add instructions in README.md
+FB_API_KEY=""
+
+# Enable public doc access or not, should be FALSE IN PRODUCTION!
+PUBLIC_DOC_ACCESS="true"
+
+# fill in your AWS access keys
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-west-2

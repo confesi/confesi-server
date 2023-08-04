@@ -1,0 +1,15 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Confesi dev-only API docs",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {},
+    "externalDocs": {
+        "description": "GitHub",
+        "url": "https://github.com/mattrltrent/confesi-server"
+    }
+}

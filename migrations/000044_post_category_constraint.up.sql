@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE posts ALTER COLUMN category_id SET NOT NULL;
+
+END;
+
+
