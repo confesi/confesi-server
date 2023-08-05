@@ -25,11 +25,11 @@ type CommentThreadGroup struct {
 
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
+
 )
 
 func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, commentSpecificKey string) ([]CommentThreadGroup, error) {
 	var comments []CommentDetail
-
 	excludedIDQuery := ""
 	if len(excludedIDs) > 0 {
 		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
@@ -135,9 +135,11 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 
 func (h *handler) handleGetComments(c *gin.Context) {
 	// extract request
+
 	var req validation.InitialCommentQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
@@ -187,6 +189,18 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
+	}
+
+	if len(comments) == 0 {
+		comments = []CommentThreadGroup{}
+	} else {
+
+		// for each thread comment group if replies is empty make it []:
+		for i := range comments {
+			if len(comments[i].Replies) == 0 {
+				comments[i].Replies = []CommentDetail{}
+			}
+		}
 	}
 
 	// Send response
