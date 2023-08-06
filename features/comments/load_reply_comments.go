@@ -47,7 +47,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC
 			LIMIT ?
-		`, token.UID, req.ParentComment, config.RepliesLoadedManually).
+		`, token.UID, req.ParentRoot, config.RepliesLoadedManually).
 		Find(&fetchResults.Comments).
 		Error
 

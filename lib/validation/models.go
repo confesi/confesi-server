@@ -130,7 +130,7 @@ type RepliesCommentQuery struct {
 	// [required] timestamp of last seen replied comment (microseconds since epoch)
 	Next NullableNext `json:"next"`
 	// [required] the comment to load replies for
-	ParentComment uint `json:"parent_comment" validate:"required"`
+	ParentRoot uint `json:"parent_root" validate:"required"`
 }
 
 type FeedbackDetails struct {

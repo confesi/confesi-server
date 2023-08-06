@@ -61,6 +61,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				   ROW_NUMBER() OVER (PARTITION BY c.parent_root ORDER BY c.created_at ASC) AS reply_num
 			FROM comments c
 			JOIN top_root_comments tr ON c.parent_root = tr.id
+			ORDER BY c.created_at ASC
 		)
 		SELECT t.id, t.post_id, t.vote_score, t.edited, t.trending_score, t.content, t.parent_root, t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote, t.numerical_user, t.numerical_replying_user, t.numerical_replying_user_is_op, t.numerical_user_is_op, t.user_vote
 		FROM (
@@ -123,6 +124,8 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				lastReply := thread.Replies[len(thread.Replies)-1]
 				time := lastReply.Comment.CreatedAt.MicroSeconds()
 				thread.Next = &time
+			} else {
+
 			}
 
 			commentThreads = append(commentThreads, thread)
@@ -187,6 +190,17 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		logger.StdErr(err)
 		response.New(http.StatusInternalServerError).Err("failed to set cache expiration").Send(c)
 		return
+	}
+
+	if len(comments) == 0 {
+		comments = []CommentThreadGroup{}
+	}
+
+	// for each thread comment group if replies is empty make it []:
+	for i := range comments {
+		if len(comments[i].Replies) == 0 {
+			comments[i].Replies = []CommentDetail{}
+		}
 	}
 
 	// Send response
