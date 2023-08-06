@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
@@ -82,6 +83,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	var post db.Post
 	err = tx.
 		Model(&post).
+		Clauses(clause.Returning{}).
 		Where("id = ?", req.PostID).
 		Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)}).
 		Error
