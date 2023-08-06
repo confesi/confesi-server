@@ -81,8 +81,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	var post db.Post
 	err = tx.
+		Model(&post).
 		Where("id = ?", req.PostID).
-		First(&post).
+		Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)}).
 		Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -135,6 +135,7 @@ type Post struct {
 	Edited        bool            `gorm:"column:edited" json:"edited"`
 	CategoryID    uint            `gorm:"column:category_id" json:"-"`
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
+	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
