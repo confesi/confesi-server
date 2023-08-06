@@ -75,25 +75,27 @@ func (h *handler) handleCreate(c *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
 	}()
 
 	var post db.Post
-	err = tx.
+	res := tx.
 		Model(&post).
 		Clauses(clause.Returning{}).
 		Where("id = ?", req.PostID).
-		Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)}).
-		Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)
 			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		tx.Rollback()
+		return
+	} else if res.RowsAffected == 0 {
+		response.New(http.StatusBadRequest).Err("post not found").Send(c)
 		return
 	}
 
@@ -112,19 +114,23 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if req.ParentCommentID != nil {
 
 		// parent comment
-
-		err = tx.
-			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
-			Find(&parentComment).
+		res = tx.
+			Model(&parentComment).
+			Clauses(clause.Returning{}).
+			Where("comments.id = ? AND comments.post_id = ? AND parent_root IS NULL", req.ParentCommentID, req.PostID).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
-			}).
-			Error
-		if err != nil {
+			})
+		if res.RowsAffected == 0 {
+			tx.Rollback()
+			response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist, or trying to reply to non-root").Send(c)
+			return
+		}
+		if res.Error != nil {
 			// parent comment not found
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 				tx.Rollback()
-				response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist").Send(c)
+				response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist, or trying to reply to non-root").Send(c)
 				return
 			}
 			// some other error
@@ -138,7 +144,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			comment.ParentRoot = parentComment.ParentRoot
 		}
 	} else {
-
 		comment.ParentRoot = nil
 	}
 
