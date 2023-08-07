@@ -37,24 +37,44 @@ type fetchResults struct {
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 	mux.Use(func(c *gin.Context) {
-		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
-		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+		//! ADMINS & MODS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"mod", "admin"})
+		//! ADMINS & MODS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
 	})
+
+	// ? User Standing
 	mux.PATCH("/user-standing", h.handleSetUserStanding)
 	mux.GET("/user-standing", h.handleGetUserStanding)
-	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
-	mux.POST("/expire-fcm-tokens", h.handleManuallyTriggerClearExpiredFcmTokens)
-	mux.GET("/crons", h.handleGetDailyHottestCrons)
-	mux.GET("/feedback", h.handleListFeedback)
-	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
+
+	// ? Content
+
+	mux.PATCH("/reviewed-by-mod", h.handleReviewContentByMod)
+	mux.PATCH("/hide", h.handleHideContent)
+
+	// ? Reports
 	mux.GET("/report", h.handleGetReportById)
 	mux.GET("/reports", h.handleGetReports)
-	mux.PATCH("/hide", h.handleHideContent)
-	mux.PATCH("/reviewed-by-mod", h.handleReviewContentByMod)
 	mux.GET("/comments-by-report", h.handleGetRankedCommentsByReport)
 	mux.GET("/posts-by-report", h.handleGetRankedPostsByReport)
 	mux.GET("/reports-for-comment", h.handleFetchReportForCommentById)
 	mux.GET("/reports-for-post", h.handleFetchReportForPostById)
+
+	mux.Use(func(c *gin.Context) {
+		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
+		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+	})
+
+	// ? Cron Jobs
+	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
+	mux.POST("/expire-fcm-tokens", h.handleManuallyTriggerClearExpiredFcmTokens)
+	mux.GET("/crons", h.handleGetDailyHottestCrons)
+
+	// ? Feedback
+	mux.GET("/feedback", h.handleListFeedback)
+	mux.GET("/feedback/:feedbackID", h.handleFeedbackID)
+
+	// ? User
 	mux.PATCH("/set-user-role", h.handleSetUserRole)
+
 }
