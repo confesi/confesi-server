@@ -11,11 +11,13 @@ import (
 
 // Attempts to execute the cron job once, without retries.
 func (h *handler) handleSetUserRole(c *gin.Context) {
+	// Validate request
 	var req validation.UpdateUserRole
 	err := utils.New(c).Validate(&req)
 	if err != nil {
 		return
 	}
+
 	// Obtain User ID
 	uid := req.UserID
 
@@ -25,9 +27,9 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 		response.New(http.StatusNotFound).Err("user not found").Send(c)
 		return
 	}
+
 	// Obtain Roles
 	roles := user.CustomClaims["roles"].([]interface{})
-	// roles := []string{"admin"}
 
 	if req.Action == "remove" {
 		// Remove roles
@@ -48,14 +50,16 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 				temp = append(temp, item)
 			}
 		}
+
 		roles = temp
 	} else if req.Action == "add" {
-		// Add role
+		// Add role (Append)
 		for _, role := range req.Roles {
 			roles = append(roles, role)
 		}
 
 	} else {
+		// Set Roles (Overwrite)
 		temp := make([]interface{}, len(req.Roles))
 		for i := range req.Roles {
 			temp[i] = req.Roles[i]
@@ -63,9 +67,10 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 		roles = temp
 	}
 
+	// Remove duplicates
 	roles = unique_list(roles)
 
-	// set custom claims
+	// Set Custom Claims (Update User Roles)
 	err = h.fb.AuthClient.SetCustomUserClaims(c, uid, map[string]interface{}{
 		"sync":  true,
 		"roles": roles,
@@ -74,6 +79,8 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 		response.New(http.StatusNotFound).Err("error updating user").Send(c)
 		return
 	}
+
+	// If everything went well return success
 	response.New(http.StatusOK).Send(c)
 }
 
