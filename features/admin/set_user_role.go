@@ -77,6 +77,7 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 	response.New(http.StatusOK).Send(c)
 }
 
+// Create unique lists (no dupes)
 func unique_list(interface_list []interface{}) []interface{} {
 	stringSlice := make([]string, len(interface_list))
 	for i, v := range interface_list {

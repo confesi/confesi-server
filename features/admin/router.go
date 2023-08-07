@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/cache"
 	"confesi/lib/fire"
+	"confesi/middleware"
 	"errors"
 
 	"github.com/gin-gonic/gin"
@@ -35,11 +36,11 @@ type fetchResults struct {
 
 func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
-	// mux.Use(func(c *gin.Context) {
-	// 	//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
-	// 	middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
-	// 	//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
-	// })
+	mux.Use(func(c *gin.Context) {
+		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
+		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
+	})
 	mux.PATCH("/user-standing", h.handleSetUserStanding)
 	mux.GET("/user-standing", h.handleGetUserStanding)
 	mux.POST("/daily-hottest-cron", h.handleManuallyTriggerDailyHottestCron)
