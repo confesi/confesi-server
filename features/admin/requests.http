@@ -155,3 +155,16 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjYyM2YzNmM4MTZlZTNkZWQ2YzU0NT
     "comment_id": 1,
     "next": null
 }
+
+
+### Update A Specific User's Role (Add or Remove or Set)
+
+PATCH http://127.0.0.1:8080/api/v1/admin/set-user-role
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjYyM2YzNmM4MTZlZTNkZWQ2YzU0NTkyZTM4ZGFlZjcyZjE1YTBmMTMiLCJ0eXAiOiJKV1QifQ.eyJyb2xlcyI6W10sInN5bmMiOnRydWUsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9jb25mZXNpLXNlcnZlci1kZXYiLCJhdWQiOiJjb25mZXNpLXNlcnZlci1kZXYiLCJhdXRoX3RpbWUiOjE2OTEzNjM2MzQsInVzZXJfaWQiOiJzUDFEOE1aQVFwWnNwZDFPN3R1ZkxQQkZxOXYxIiwic3ViIjoic1AxRDhNWkFRcFpzcGQxTzd0dWZMUEJGcTl2MSIsImlhdCI6MTY5MTM2MzYzNCwiZXhwIjoxNjkxMzY3MjM0LCJlbWFpbCI6Imh1a2NocmlzdG9waGVyMTJAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZW1haWwiOlsiaHVrY2hyaXN0b3BoZXIxMkBnbWFpbC5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.CXWS_d_yXSUGG8oMfBDK4wX1S7YR3lJKGEyh-mSBFuJh2Pw1ghZzPqROfs58HQqmptjPajGS69BWrPRIEzfcnq3mSoiXxhV-3NG0UINqZjkhOZ8dNbwS6K9VwUk7Bg1aHL7dMSch1GZ-AKFDdgrQOZtXvJ3Ipq1WOkWkzINY2YWVu7QBiWfGwvovMYIc056PqqEIRVoMbnhuFbie5RlCFiAAnJXw0nNrGCaYjrt4QBIwUWO_cEF_3cMuD-A-zvCz-MPEwnXDciCXfm0FjGFlacaffTXGZDoC7A9vK7W7U3wuzLgL1zWAcnkBogiN9gXbhS3KoVJGmqKiXSqaTZjebg
+
+{
+    "user_id": "sP1D8MZAQpZspd1O7tufLPBFq9v1",
+    "roles": ["admin"],
+    "action": "set"
+}

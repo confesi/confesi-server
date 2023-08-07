@@ -84,6 +84,14 @@ type UpdateYearOfStudy struct {
 	// [required] year of study to update to
 	YearOfStudy string `json:"year_of_study" validate:"required"`
 }
+type UpdateUserRole struct {
+	// [required] user id to update role for
+	UserID string `json:"user_id" validate:"required"`
+	// [required] timestamp of last viewed report (microseconds since epoch)
+	Roles []string `json:"roles" validate:"required"`
+	// [required] action to take on the role, remove to remove the role, add to add the role
+	Action string `json:"action" validate:"required,oneof=add remove set"`
+}
 
 type UpdateFaculty struct {
 	// [required] faculty to update to
