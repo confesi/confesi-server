@@ -45,7 +45,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 			FROM comments
 			WHERE parent_root = ?
 			`+req.Next.Cursor("AND created_at >")+`
-			ORDER BY created_at ASC
+			ORDER BY created_at ASC 
 			LIMIT ?
 		`, token.UID, req.ParentRoot, config.RepliesLoadedManually).
 		Find(&fetchResults.Comments).
