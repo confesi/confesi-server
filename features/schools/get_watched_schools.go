@@ -18,51 +18,41 @@ type watchedResponse struct {
 }
 
 func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token, tx *gorm.DB, includeHomeSchool bool) (*watchedResponse, error) {
-
-	schools := []SchoolDetail{}
+	var schools []SchoolDetail // Declare schools as a slice of SchoolDetail
 	var userSchool *SchoolDetail
 
-	query := tx.
-		Raw(`
-            WITH SchoolsWithWatched AS (
-                SELECT 
-                    s.*, 
-                    COALESCE(u.school_id = s.id, false) AS home,
-                    CASE 
-                        WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
-                        THEN true
-                        ELSE false
-                    END AS watched
-                FROM schools AS s
-                LEFT JOIN (
-                    SELECT DISTINCT school_id
-                    FROM users
-                    WHERE id = ?
-                ) AS u ON u.school_id = s.id
-            )
-            SELECT *
-            FROM SchoolsWithWatched
-            WHERE watched = true;
-        `, token.UID, token.UID)
+	// Retrieve schools with their home and watched status
+	query := tx.Raw(`
+		SELECT 
+			s.*, 
+			COALESCE(u.school_id = s.id, false) AS home,
+			EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id) AS watched
+		FROM schools AS s
+		JOIN school_follows AS sf ON sf.school_id = s.id AND sf.user_id = ?
+		JOIN users AS u ON u.id = ?
+	`, token.UID, token.UID, token.UID)
 
-	if includeHomeSchool {
-		query = query.Joins("JOIN users ON users.school_id = schools.id AND users.id = ?", token.UID)
-	}
-
-	err := query.Scan(&schools).Error
+	err := query.Find(&schools).Error
 	if err != nil {
 		return nil, serverError
 	}
 
-	if !includeHomeSchool {
-		userSchool = nil
-	} else {
-		for _, school := range schools {
-			if school.Home {
-				userSchool = &school
-				break
-			}
+	if includeHomeSchool {
+		// Fetch the user's school directly in the initial query using a join
+		query := tx.Raw(`
+			SELECT 
+				s.*, 
+				EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id) AS watched
+			FROM schools AS s
+			JOIN school_follows AS sf ON sf.school_id = s.id AND sf.user_id = ?
+			JOIN users AS u ON u.id = ?
+		`, token.UID, token.UID, token.UID).Joins("JOIN users ON users.school_id = s.id AND users.id = ?", token.UID)
+
+		err := query.Find(&userSchool).Error
+		if err != nil {
+			return nil, serverError
 		}
+		userSchool.Home = true // if the user's school is included, it is always the home school
 	}
 
 	return &watchedResponse{Schools: schools, UserSchool: userSchool}, nil
