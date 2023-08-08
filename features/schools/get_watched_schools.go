@@ -41,13 +41,14 @@ func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token, tx *gorm.
 		// Fetch the user's school directly in the initial query using a join
 		query := tx.Raw(`
 			SELECT 
-				s.*, 
-				EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id) AS watched
-			FROM schools AS s
-			JOIN school_follows AS sf ON sf.school_id = s.id AND sf.user_id = ?
-			JOIN users AS u ON u.id = ?
-		`, token.UID, token.UID, token.UID).Joins("JOIN users ON users.school_id = s.id AND users.id = ?", token.UID)
-
+				schools.*, 
+				EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = schools.id) AS watched
+			FROM schools 
+			JOIN users ON users.school_id = schools.id
+			WHERE users.id = ?
+			AND schools.id = users.school_id
+			LIMIT 1
+		`, token.UID, token.UID)
 		err := query.Find(&userSchool).Error
 		if err != nil {
 			return nil, serverError
