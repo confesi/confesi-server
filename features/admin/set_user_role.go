@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"confesi/db"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -28,8 +29,23 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 		return
 	}
 
+	// Obtain Action User ID
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
 	// Obtain Roles
 	roles := user.CustomClaims["roles"].([]interface{})
+
+	// Create Role Logs
+	roleLogs := db.RoleAssignmentLogs{
+		ActionType:     req.Action,
+		ActionUserID:   token.UID,
+		AffectedUserID: uid,
+		OldRoles:       interface_to_string(roles),
+	}
 
 	if req.Action == "remove" {
 		// Remove roles
@@ -70,6 +86,15 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 	// Remove duplicates
 	roles = unique_list(roles)
 
+	// Update Role Logs
+	roleLogs.NewRoles = interface_to_string(roles)
+
+	err = h.db.Create(&roleLogs).Error
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
 	// Set Custom Claims (Update User Roles)
 	err = h.fb.AuthClient.SetCustomUserClaims(c, uid, map[string]interface{}{
 		"sync":  true,
@@ -99,4 +124,18 @@ func unique_list(interface_list []interface{}) []interface{} {
 		}
 	}
 	return list
+}
+
+func interface_to_string(interface_list []interface{}) string {
+	output := "{"
+	for i, item := range interface_list {
+		if i == len(interface_list)-1 {
+			output += item.(string)
+		} else {
+			output += item.(string) + ","
+		}
+
+	}
+	output += "}"
+	return output
 }

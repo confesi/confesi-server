@@ -356,6 +356,16 @@ type CronJob struct {
 	Type      string         `gorm:"column:type" json:"type"`
 }
 
+type RoleAssignmentLogs struct {
+	ID             int        `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt      TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	ActionUserID   string     `gorm:"column:action_user_id" json:"action_user_id"`
+	AffectedUserID string     `gorm:"column:affected_user_id" json:"affected_user_id"`
+	OldRoles       string     `gorm:"column:old_roles" json:"old_roles"`
+	NewRoles       string     `gorm:"column:new_roles" json:"new_roles"`
+	ActionType     string     `gorm:"column:action_type" json:"action_type"`
+}
+
 func (CronJob) TableName() string {
 	return "cron_jobs"
 }
