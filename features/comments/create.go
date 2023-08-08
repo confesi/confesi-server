@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
@@ -75,27 +74,23 @@ func (h *handler) handleCreate(c *gin.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 			return
 		}
 	}()
 
 	var post db.Post
-	res := tx.
-		Model(&post).
-		Clauses(clause.Returning{}).
+	err = tx.
 		Where("id = ?", req.PostID).
-		Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		First(&post).
+		Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)
 			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		tx.Rollback()
-		return
-	} else if res.RowsAffected == 0 {
-		response.New(http.StatusBadRequest).Err("post not found").Send(c)
 		return
 	}
 
@@ -114,23 +109,19 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if req.ParentCommentID != nil {
 
 		// parent comment
-		res = tx.
-			Model(&parentComment).
-			Clauses(clause.Returning{}).
-			Where("comments.id = ? AND comments.post_id = ? AND parent_root IS NULL", req.ParentCommentID, req.PostID).
+
+		err = tx.
+			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
+			Find(&parentComment).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
-			})
-		if res.RowsAffected == 0 {
-			tx.Rollback()
-			response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist, or trying to reply to non-root").Send(c)
-			return
-		}
-		if res.Error != nil {
+			}).
+			Error
+		if err != nil {
 			// parent comment not found
-			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				tx.Rollback()
-				response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist, or trying to reply to non-root").Send(c)
+				response.New(http.StatusBadRequest).Err("parent-comment and post combo doesn't exist").Send(c)
 				return
 			}
 			// some other error
@@ -144,6 +135,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 			comment.ParentRoot = parentComment.ParentRoot
 		}
 	} else {
+
 		comment.ParentRoot = nil
 	}
 
@@ -219,6 +211,18 @@ func (h *handler) handleCreate(c *gin.Context) {
 		}
 	}
 
+	if req.ParentCommentID != nil {
+		res := tx.
+			Model(&db.Post{}).
+			Where("id = ?", req.PostID).
+			Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
+		if res.Error != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}
+
 	// if all goes well, respond with a 201 & commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
@@ -248,6 +252,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 			Send(*h.db)
 	}
 
+	// respond "success" BEFORE sending FCM
+	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true}).Send(c)
+
 	// if threaded comment, parent comment
 	if req.ParentCommentID != nil {
 		// to-send-to threadTokens
@@ -267,8 +274,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
 				Send(*h.db)
 		}
-
 	}
 
-	response.New(http.StatusCreated).Send(c)
 }
