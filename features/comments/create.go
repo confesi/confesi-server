@@ -34,12 +34,14 @@ func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (err
 }
 
 func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
+	print("Getting next identifier....")
 	highestIdentifier := db.Comment{}
 	err := tx.
 		Where("post_id = ?", postId).
-		Order("numerical_user ASC").
-		Find(&highestIdentifier).
+		Where("numerical_user IS NOT NULL").
+		Order("numerical_user DESC").
 		Limit(1).
+		Find(&highestIdentifier).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return serverError, 0
