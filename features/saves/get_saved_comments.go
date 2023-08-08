@@ -21,7 +21,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	fetchResult := FetchedComments{}
 
 	query := `
-		SELECT comments.*, saved_comments.created_at as s,
+		SELECT comments.*,
 			COALESCE(
 				(
 					SELECT votes.vote
@@ -35,9 +35,9 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 		FROM comments
 		JOIN saved_comments ON comments.id = saved_comments.comment_id
 		WHERE saved_comments.user_id = ?
-			` + req.Next.Cursor("AND s <") + `
+			` + req.Next.Cursor("AND saved_comments.created_at <") + `
 			AND comments.hidden = false
-		ORDER BY s DESC
+		ORDER BY saved_comments.created_at DESC
 		LIMIT ?
 		`
 

@@ -22,7 +22,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	fetchResult := FetchedPosts{}
 
 	query := `
-	SELECT posts.*, saved_posts.created_at as s,
+	SELECT posts.*,
 		COALESCE(
 			(
 				SELECT votes.vote
@@ -36,9 +36,9 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	FROM posts
 	JOIN saved_posts ON posts.id = saved_posts.post_id
 	WHERE saved_posts.user_id = ?
-		` + req.Next.Cursor("AND s <") + `
+		` + req.Next.Cursor("AND saved_posts.created_at <") + `
 		AND posts.hidden = false
-	ORDER BY s DESC
+	ORDER BY saved_posts.created_at DESC
 	LIMIT ?
 `
 
