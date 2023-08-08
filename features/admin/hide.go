@@ -15,6 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	uniSpecific bool = false
+)
+
 type fcmTokenWithReportID struct {
 	Token    string `gorm:"column:token"`
 	ReportID uint   `gorm:"column:report_id"`
@@ -51,6 +55,12 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		return
 	}
 
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
@@ -68,10 +78,19 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	}
 
 	// update the "hidden" field on content.
-	result := tx.
-		Table(table).
-		Where("id = ?", req.ContentID).
-		Updates(updateData)
+	query := tx.Table(table).Where("id = ?", req.ContentID)
+
+	if len(userRoles.SchoolMods) > 0 && table == "posts" {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+		post := db.Post{}
+		if query.First(&post).Error != nil {
+			tx.Rollback()
+			response.New(http.StatusForbidden).Err("missing school permissions").Send(c)
+			return
+		}
+	}
+
+	result := query.Updates(updateData)
 
 	if result.Error != nil {
 		tx.Rollback()

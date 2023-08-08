@@ -7,11 +7,20 @@ import (
 	"confesi/lib/validation"
 	"errors"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 )
+
+type UserRoleTypes struct {
+	Admin      bool  `json:"admin"`       // can do anything
+	GlobalMod  bool  `json:"global_mod"`  // can do mod actions for any school
+	SchoolMods []int `json:"school_mods"` // can do mod actions for specific schools
+}
 
 type AllowedUser string
 
@@ -94,6 +103,12 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 					return
 				}
 			}
+			// create user role types
+			userRoleTypes, err := createUserRoleTypes(rolesInterfaceSlice)
+			if err != nil {
+				response.New(http.StatusInternalServerError).Err("server error").Send(c)
+				return
+			}
 
 			// check if all the required roles exist in the parsed roles
 			{
@@ -118,6 +133,8 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 					return
 				}
 			}
+			// fmt.Println(userRoleTypes)
+			c.Set("userRoleTypes", *userRoleTypes)
 
 			c.Set("user", token)
 			c.Next()
@@ -216,4 +233,35 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	}
 
 	return nil
+}
+
+func createUserRoleTypes(roles []interface{}) (*UserRoleTypes, error) {
+	userRoleTypes := UserRoleTypes{}
+	pattern := `^mod_[0-9]+$`
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+	for _, role := range roles {
+		roleString := role.(string)
+		switch roleString {
+		case "admin":
+			userRoleTypes.Admin = true
+		case "mod":
+			userRoleTypes.GlobalMod = true
+		}
+		if strings.Contains(roleString, "mod_") {
+			res := regex.FindString(roleString)
+
+			stringSchoolID := strings.Split(res, "_")[1]
+			schoolID, err := strconv.Atoi(stringSchoolID)
+			if err != nil {
+				return nil, err
+			}
+			userRoleTypes.SchoolMods = append(userRoleTypes.SchoolMods, schoolID)
+		}
+
+	}
+
+	return &userRoleTypes, nil
 }

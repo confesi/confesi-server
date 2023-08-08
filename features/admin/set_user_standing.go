@@ -21,10 +21,33 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 	if err != nil {
 		return
 	}
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+	if len(userRoles.SchoolMods) > 0 {
+		user := db.User{}
+		query := h.db.Model(&db.User{}).Where("id = ?", req.UserID)
+
+		res := query.First(&user)
+		if res.Error != nil {
+			response.New(http.StatusForbidden).Err("user doesn't exist").Send(c)
+			return
+		}
+
+		res = query.Where("school_id IN ?", userRoles.SchoolMods).First(&user)
+
+		if res.Error != nil {
+			response.New(http.StatusForbidden).Err("missing school permissions").Send(c)
+			return
+		}
+	}
 
 	if req.Standing == "limited" {
 		// update a column `limited` in the `users` table to be true
 		res := h.db.Model(&db.User{}).Where("id = ?", req.UserID).Update("is_limited", true)
+
 		if res.Error != nil {
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 			return
@@ -35,6 +58,7 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 		}
 	} else if req.Standing == "enabled" {
 		res := h.db.Model(&db.User{}).Where("id = ?", req.UserID).Update("is_limited", false)
+
 		if res.Error != nil {
 			response.New(http.StatusInternalServerError).Err("server error").Send(c)
 			return

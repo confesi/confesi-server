@@ -27,11 +27,21 @@ func (h *handler) handleReviewContentByMod(c *gin.Context) {
 		return
 	}
 
-	err = h.db.
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
+	query := h.db.
 		Table(table).
-		Where("id = ?", req.ContentID).
-		Update("reviewed_by_mod", req.ReviewedByMod).
-		Error
+		Where("id = ?", req.ContentID)
+
+	if len(userRoles.SchoolMods) > 0 {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+	}
+
+	err = query.Update("reviewed_by_mod", req.ReviewedByMod).Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
