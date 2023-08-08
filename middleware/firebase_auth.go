@@ -20,13 +20,20 @@ const (
 	RegisteredFbUsers AllowedUser = "registered_fb_users" // only registered users who have a postgres profile (fully created account)
 )
 
+type RoleRequirements string
+
+const (
+	NeedsOne RoleRequirements = "strict"  // every role listed must be present in the user's roles
+	NeedsAll RoleRequirements = "relaxed" // at least one of the roles listed must be present in the user's roles
+)
+
 // Only allows valid Firebase users to pass through.
 //
 // Sets the authenticated Firebase user id to the context as `user`
 // iff the user is anon or registered.
 //
 // Allows for additional checks to see if a user possess some specified roles.
-func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles []string) {
+func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles []string, roleRequirements RoleRequirements) {
 	idToken := c.GetHeader("Authorization")
 	if len(idToken) < 8 || idToken[:7] != "Bearer " {
 		response.New(http.StatusUnauthorized).Err("malformed Authorization header").Send(c)
@@ -89,15 +96,24 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 			}
 
 			// check if all the required roles exist in the parsed roles
-			for _, requiredRole := range roles {
+			{
 				found := false
-				for _, role := range parsedRoles {
-					if requiredRole == role {
-						found = true
-						break
+				for _, requiredRole := range roles {
+					if roleRequirements == NeedsAll {
+						found = false
+					}
+					for _, role := range parsedRoles {
+						if requiredRole == role {
+							found = true
+							break
+						}
+					}
+					if !found && roleRequirements == NeedsAll {
+						response.New(http.StatusUnauthorized).Err("invalid role").Send(c)
+						return
 					}
 				}
-				if !found {
+				if !found && roleRequirements == NeedsOne {
 					response.New(http.StatusUnauthorized).Err("invalid role").Send(c)
 					return
 				}

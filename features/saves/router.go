@@ -25,7 +25,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// only allow registered users to save content
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 
 	mux.POST("/save", h.handleSave)

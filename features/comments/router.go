@@ -37,7 +37,7 @@ func Router(mux *gin.RouterGroup) {
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{}, middleware.NeedsAll)
 	})
 	anyFirebaseUserRoutes.GET("/roots", h.handleGetComments)
 	anyFirebaseUserRoutes.GET("/replies", h.handleGetReplies)
@@ -47,7 +47,7 @@ func Router(mux *gin.RouterGroup) {
 	// registered firebase users only
 	registeredFirebaseUserOnly := mux.Group("")
 	registeredFirebaseUserOnly.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 	registeredFirebaseUserOnly.POST("/create", h.handleCreate)
 	registeredFirebaseUserOnly.PATCH("/hide", h.handleHideComment)

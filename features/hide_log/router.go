@@ -26,7 +26,7 @@ func Router(mux *gin.RouterGroup) {
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")
 	anyFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{}, middleware.NeedsAll)
 	})
 	anyFirebaseUserRoutes.GET("/your-hide-log", h.handleYourHideLog)
 	anyFirebaseUserRoutes.GET("/hide-log", h.handleGetHideLogById)

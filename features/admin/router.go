@@ -38,7 +38,7 @@ func Router(mux *gin.RouterGroup) {
 	h := handler{db: db.New(), fb: fire.New(), redis: cache.New()}
 	mux.Use(func(c *gin.Context) {
 		//! ADMINS & MODS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"mod", "admin"})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"mod", "admin"}, middleware.NeedsOne)
 		//! ADMINS & MODS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
 	})
 
@@ -61,7 +61,7 @@ func Router(mux *gin.RouterGroup) {
 
 	mux.Use(func(c *gin.Context) {
 		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{"admin"}, middleware.NeedsAll)
 		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
 	})
 

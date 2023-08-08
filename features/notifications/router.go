@@ -28,7 +28,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// any firebase users
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{}, middleware.NeedsAll)
 	})
 
 	mux.POST("/token-uid", h.handleSetTokenWithUid)

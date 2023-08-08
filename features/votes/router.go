@@ -18,7 +18,6 @@ var (
 type handler struct {
 	db *gorm.DB
 	fb *fire.FirebaseApp
-	
 }
 
 func Router(mux *gin.RouterGroup) {
@@ -26,7 +25,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// only allow registered users to vote
 	mux.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 
 	mux.PUT("/vote", h.handleVote)

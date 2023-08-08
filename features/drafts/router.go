@@ -34,7 +34,7 @@ func Router(mux *gin.RouterGroup) {
 	// only registered firebase users
 	registeredFirebaseUserRoutes := mux.Group("")
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 	registeredFirebaseUserRoutes.POST("/create", h.handleCreate)
 	registeredFirebaseUserRoutes.GET("/your-drafts", h.handleGetYourDrafts)

@@ -39,7 +39,7 @@ func Router(mux *gin.RouterGroup) {
 
 	anyFirebaseUser := mux.Group("")
 	anyFirebaseUser.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{}, middleware.NeedsAll)
 	})
 	// protect against email spam by UID
 	anyFirebaseUser.Use(func(c *gin.Context) {
@@ -55,6 +55,6 @@ func Router(mux *gin.RouterGroup) {
 	// registered firebase users only
 	registeredFirebaseUserRoutes := mux.Group("")
 	registeredFirebaseUserRoutes.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 }

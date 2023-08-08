@@ -64,7 +64,7 @@ func Router(r *gin.RouterGroup) {
 	// any firebase user
 	anyFirebaseUser := r.Group("")
 	anyFirebaseUser.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.AllFbUsers, []string{}, middleware.NeedsAll)
 	})
 	anyFirebaseUser.GET("/rank", h.handleGetRankedSchools)
 	anyFirebaseUser.DELETE("/purge", h.handlePurgeRankedSchoolsCache)
@@ -75,7 +75,7 @@ func Router(r *gin.RouterGroup) {
 	// only registered firebase users
 	registeredFirebaseUsersOnly := r.Group("")
 	registeredFirebaseUsersOnly.Use(func(c *gin.Context) {
-		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
+		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{}, middleware.NeedsAll)
 	})
 	registeredFirebaseUsersOnly.POST("/watch", h.handleWatchSchool)
 	registeredFirebaseUsersOnly.DELETE("/unwatch", h.handleUnwatchSchool)
