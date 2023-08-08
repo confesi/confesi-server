@@ -24,27 +24,31 @@ func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token, tx *gorm.
 
 	query := tx.
 		Raw(`
-            SELECT s.*, 
-                COALESCE(u.school_id = s.id, false) as home,
-                CASE 
-                    WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
-                    THEN true
-                    ELSE false
-                END as watched
-            FROM schools as s
-            LEFT JOIN (
-                SELECT DISTINCT school_id
-                FROM users
-                WHERE id = ?
-            ) as u ON true;
+            WITH SchoolsWithWatched AS (
+                SELECT 
+                    s.*, 
+                    COALESCE(u.school_id = s.id, false) AS home,
+                    CASE 
+                        WHEN EXISTS (SELECT 1 FROM school_follows WHERE user_id = ? AND school_id = s.id)
+                        THEN true
+                        ELSE false
+                    END AS watched
+                FROM schools AS s
+                LEFT JOIN (
+                    SELECT DISTINCT school_id
+                    FROM users
+                    WHERE id = ?
+                ) AS u ON u.school_id = s.id
+            )
+            SELECT *
+            FROM SchoolsWithWatched
+            WHERE watched = true;
         `, token.UID, token.UID)
 
 	if includeHomeSchool {
-		// fetch the user's school directly in the initial query using a join
 		query = query.Joins("JOIN users ON users.school_id = schools.id AND users.id = ?", token.UID)
 	}
 
-	// fetch user's school directly into the userSchool variable
 	err := query.Scan(&schools).Error
 	if err != nil {
 		return nil, serverError
@@ -53,7 +57,6 @@ func (h *handler) getWatchedSchools(c *gin.Context, token *auth.Token, tx *gorm.
 	if !includeHomeSchool {
 		userSchool = nil
 	} else {
-		// find the user's school in the list of schools
 		for _, school := range schools {
 			if school.Home {
 				userSchool = &school
