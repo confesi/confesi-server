@@ -43,7 +43,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 
 	// fetch the user's facultyId, and schoolId
 	var userData db.User
-	err = tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	err = tx.Select("faculty_id, school_id, year_of_study_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
 		tx.Rollback()
 		return serverError
