@@ -184,7 +184,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Pluck("fcm_tokens.token", &tokens).
 			Error
 		if err == nil && len(tokens) > 0 {
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnCommentNoti(vote.Vote, votes.Upvote-votes.Downvote)).
 				WithData(builders.VoteOnCommentData(*vote.CommentID)).
@@ -200,7 +200,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Pluck("fcm_tokens.token", &tokens).
 			Error
 		if err == nil && len(tokens) > 0 {
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnPostNoti(vote.Vote, votes.Upvote-votes.Downvote)).
 				WithData(builders.VoteOnCommentData(*vote.PostID)).

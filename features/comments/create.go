@@ -247,7 +247,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Error
 
 	if err == nil && len(postTokens) > 0 {
-		fcm.New(h.fb.MsgClient).
+		go fcm.New(h.fb.MsgClient).
 			ToTokens(postTokens).
 			WithMsg(builders.CommentAddedToPostNoti(req.Content)).
 			WithData(builders.CommentAddedToPostData(comment.ID, req.PostID)).
@@ -270,7 +270,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 			Pluck("fcm_tokens.token", &threadTokens).
 			Error
 		if err == nil && len(threadTokens) > 0 {
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens(threadTokens).
 				WithMsg(builders.ThreadedCommentReplyNoti(req.Content)).
 				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
