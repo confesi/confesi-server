@@ -40,7 +40,6 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
 		Where("post_id = ?", postId).
 		Where("numerical_user IS NOT NULL").
 		Order("numerical_user DESC").
-		Limit(1).
 		Find(&highestIdentifier).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
