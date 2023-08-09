@@ -56,7 +56,7 @@ type VoteDetail struct {
 }
 
 type PostQuery struct {
-	Sort       string `json:"sort" validate:"oneof=trending new"`
+	Sort       string `json:"sort" validate:"oneof=trending new sentiment"`
 	SchoolId   uint   `json:"school_id" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
