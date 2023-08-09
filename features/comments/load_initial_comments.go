@@ -107,6 +107,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				return nil, errors.New("failed to update redis cache")
 			}
 		}
+
 	}
 
 	// Create the final list of comment threads
@@ -124,7 +125,9 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				time := lastReply.Comment.CreatedAt.MicroSeconds()
 				thread.Next = &time
 			}
-
+			if len(thread.Replies) == 0 {
+				thread.Replies = []CommentDetail{}
+			}
 			commentThreads = append(commentThreads, thread)
 		}
 	}
@@ -193,14 +196,6 @@ func (h *handler) handleGetComments(c *gin.Context) {
 
 	if len(comments) == 0 {
 		comments = []CommentThreadGroup{}
-	} else {
-
-		// for each thread comment group if replies is empty make it []:
-		for i := range comments {
-			if len(comments[i].Replies) == 0 {
-				comments[i].Replies = []CommentDetail{}
-			}
-		}
 	}
 
 	// Send response
