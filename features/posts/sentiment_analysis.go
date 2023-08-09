@@ -2,7 +2,6 @@ package posts
 
 import (
 	"confesi/db"
-	"confesi/lib/logger"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
@@ -43,17 +42,6 @@ func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	// sentiment analysis
 
 	analysis := AnalyzeText(post.Title + "\n" + post.Content)
-
-	if *post.Sentiment == 0.0 {
-		updates := map[string]interface{}{
-			"sentiment": analysis.Compound,
-		}
-		err = h.db.Model(&post).Updates(updates).Error
-		if err != nil {
-			logger.StdErr(err)
-		}
-
-	}
 
 	// if all goes well, send status 200
 	response.New(http.StatusOK).Val(analysis).Send(c)

@@ -92,7 +92,7 @@ type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudyID *uint8      `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudyID *uint       `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy   YearOfStudy `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	FacultyID     *uint       `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`

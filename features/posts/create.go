@@ -55,6 +55,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 		SchoolID:      userData.SchoolID,
 		CategoryID:    postCategory.ID,
 		FacultyID:     userData.FacultyID,
+		YearOfStudyID: userData.YearOfStudyID,
 		Title:         title,
 		Content:       body,
 		Sentiment:     nil,
