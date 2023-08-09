@@ -4,8 +4,8 @@ package config
 
 const (
 	MaxCommentThreadDepthExcludingRoot               = 1                                        // how many levels of comments are allowed (depth)
-	RootCommentsLoadedInitially                      = 5                                        // how many root comments are returned at once
-	RepliesLoadedInitially                           = 1                                        // how many replies are returned at once
+	RootCommentsLoadedInitially                      = 10                                       // how many root comments are returned at once
+	RepliesLoadedInitially                           = 3                                        // how many replies are returned at once
 	RepliesLoadedManually                            = 5                                        // how many replies are loaded when user clicks on "load more replies"
 	HottestPostsPageSize                             = 5                                        // how many hottest posts are returned in a page size per day
 	CronJobPageSize                                  = 10                                       // how many cron job results are returned in a page size
@@ -22,6 +22,7 @@ const (
 	RedisEmailRateLimitingRouteKeySendPwReset        = "email_rate_limiting_pw_reset"           // redis key for email rate limiting cache
 	RedisGlobalUserStats                             = "global_user_stats"                      // redis key for global user stats cache
 	YourPostsPageSize                                = 3                                        // how many posts are returned in a page size in the your posts page
+	YourDraftsPageSize                               = 3                                        // how many drafts are returned in a page size in the your drafts page
 	YourCommentsPageSize                             = 3                                        // how many comments are returned in a page size in the your comments page
 	SavedPostsAndCommentsPageSize                    = 2                                        // how many posts and comments are returned in a page size in the saved posts and comments page
 	UserCommentsAdminPageSize                        = 3                                        // how many comments are returned in a page size in the user comments admin page
@@ -42,6 +43,7 @@ const (
 	iOSBundleId        = "com.confesi.app"    // iOS bundle id // TODO: change this
 	AndroidPackageName = "com.confesi.app"    // Android package name // TODO: change this
 	FirebaseProjectID  = "confesi-server-dev" // Firebase project id // TODO: change this
+	Development        = true                 // development mode
 )
 
 // ----- ALT CONSTANTS

@@ -48,11 +48,21 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 	}
 
 	schoolName := c.Query("school")
-	latStr := c.Query("lat")
-	longStr := c.Query("long")
 	radiusStr := c.Query("radius")
 
-	missingLatLong := latStr == "" || longStr == ""
+	latlong, err := utils.GetLatLong(c)
+	if err != nil {
+		logger.StdErr(err)
+		response.
+			New(http.StatusInternalServerError).
+			Err(serverError.Error()).
+			Send(c)
+		return
+	}
+	lat := latlong.Lat
+	long := latlong.Long
+
+	missingLatLong := lat == 0 || long == 0
 	if schoolName == "" && missingLatLong {
 		response.
 			New(http.StatusBadRequest).
@@ -107,7 +117,7 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 		radiusStr = fmt.Sprintf("%d", config.DefaultRange)
 	}
 
-	coord, err := getCoord(latStr, longStr, radiusStr)
+	coord, err := getCoord(lat, long, radiusStr)
 	if err != nil {
 		response.
 			New(http.StatusBadRequest).
@@ -159,20 +169,13 @@ func degreeToRad(deg float64) float64 {
 	return (float64(deg) * (math.Pi / 180))
 }
 
-func getCoord(latStr, longStr, radiusStr string) (*Coordinate, error) {
-	lat, err := strconv.ParseFloat(latStr, 64)
-	if err != nil {
-		return nil, errors.New("invalid lat value")
-	}
-	if lat < latValueMin || lat > latValueMax {
+func getCoord(lat float64, long float64, radiusStr string) (*Coordinate, error) {
+
+	if lat < float64(latValueMin) || lat > float64(latValueMax) {
 		return nil, errors.New("lat value out of bound")
 	}
 
-	long, err := strconv.ParseFloat(longStr, 64)
-	if err != nil {
-		return nil, errors.New("invalid long value")
-	}
-	if long < longValueMin || long > longValueMax {
+	if long < float64(longValueMin) || long > float64(longValueMax) {
 		return nil, errors.New("long value out of bound")
 	}
 

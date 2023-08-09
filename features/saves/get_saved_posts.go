@@ -22,7 +22,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	fetchResult := FetchedPosts{}
 
 	query := `
-	SELECT posts.*, saved_posts.created_at,
+	SELECT posts.*,
 		COALESCE(
 			(
 				SELECT votes.vote

@@ -8,6 +8,7 @@ import (
 	"confesi/lib/validation"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -115,6 +116,13 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 	}
 	schoolResult := rankedSchoolsResult{}
 
+	var possibleRestriction string
+	if len(ids) > 0 {
+		idsStr := strings.Join(ids, ", ") // Convert the ids slice to a comma-separated string
+		possibleRestriction = "WHERE s.id NOT IN (" + idsStr + ")"
+		fmt.Println(possibleRestriction)
+	}
+
 	query := h.DB.Raw(`
 		SELECT s.*, 
 			COALESCE(u.school_id = s.id, false) as home,
@@ -129,13 +137,11 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 			FROM users
 			WHERE id = ?
 		) as u ON u.school_id = s.id
-		ORDER BY daily_hottests DESC
+		`+possibleRestriction+`
+		GROUP BY s.id, u.school_id
+		ORDER BY s.daily_hottests DESC
 		LIMIT ?;
 	`, token.UID, token.UID, config.RankedSchoolsPageSize)
-
-	if len(ids) > 0 {
-		query = query.Where("schools.id NOT IN (?)", ids)
-	}
 
 	err = query.Find(&schoolResult.Schools).Error
 	if err != nil {

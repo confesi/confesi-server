@@ -1,5 +1,0 @@
-BEGIN;
-
-ALTER TABLE posts DROP COLUMN sentiment;
-
-END;

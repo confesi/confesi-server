@@ -34,12 +34,14 @@ func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (err
 }
 
 func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
+	print("Getting next identifier....")
 	highestIdentifier := db.Comment{}
 	err := tx.
 		Where("post_id = ?", postId).
-		Order("numerical_user ASC").
-		Find(&highestIdentifier).
+		Where("numerical_user IS NOT NULL").
+		Order("numerical_user DESC").
 		Limit(1).
+		Find(&highestIdentifier).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return serverError, 0
@@ -211,6 +213,18 @@ func (h *handler) handleCreate(c *gin.Context) {
 		}
 	}
 
+	if req.ParentCommentID != nil {
+		res := tx.
+			Model(&db.Post{}).
+			Where("id = ?", req.PostID).
+			Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
+		if res.Error != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}
+
 	// if all goes well, respond with a 201 & commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
@@ -240,6 +254,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 			Send(*h.db)
 	}
 
+	// respond "success" BEFORE sending FCM
+	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true}).Send(c)
+
 	// if threaded comment, parent comment
 	if req.ParentCommentID != nil {
 		// to-send-to threadTokens
@@ -259,8 +276,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
 				Send(*h.db)
 		}
-
 	}
 
-	response.New(http.StatusCreated).Send(c)
 }

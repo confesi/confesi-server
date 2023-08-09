@@ -5,9 +5,11 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func (h *handler) handleSetSchool(c *gin.Context) {
@@ -25,48 +27,34 @@ func (h *handler) handleSetSchool(c *gin.Context) {
 		return
 	}
 
-	// start a transaction
-	tx := h.db.Begin()
-	// if something goes ary, rollback
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-			response.New(http.StatusInternalServerError).Err("server error").Send(c)
-			return
-		}
-	}()
-
-	// check if user's school is valid (aka, the school exists in the database)
-	school := db.School{}
-	err = tx.Select("id").Where("name ILIKE ?", req.FullSchoolName).First(&school).Error
-	if err != nil {
-		tx.Rollback()
-		response.New(http.StatusBadRequest).Err("school doesn't exist").Send(c)
-		return
-	}
-
-	schoolID := uint8(school.ID)
-
 	// update the user's school
-	res := tx.
+	res := h.db.
 		Model(&db.User{}).
 		Where("id = ?", token.UID).
-		Update("school_id", schoolID)
+		Update("school_id", req.SchoolID)
 	if res.Error != nil {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
+		var pgErr *pgconn.PgError
+		// Gorm doesn't properly handle some errors: https://github.com/go-gorm/gorm/issues/4037
+		if ok := errors.As(res.Error, &pgErr); !ok {
+			// if it's not a PostgreSQL error, return a generic server error
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+		switch pgErr.Code {
+		case "23503": // foreign key constraint violation
+			response.New(http.StatusBadRequest).Err("invalid school").Send(c)
+			return
+
+		default:
+			// some other postgreSQL error
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+
+		}
 	}
 	if res.RowsAffected == 0 {
-		tx.Rollback()
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
-	}
-
-	// commit the transaction
-	err = tx.Commit().Error
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		// no rows were affected, meaning the user doesn't exist
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 

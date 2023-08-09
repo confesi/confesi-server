@@ -21,7 +21,7 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	fetchResult := FetchedComments{}
 
 	query := `
-		SELECT comments.*, saved_comments.created_at,
+		SELECT comments.*,
 			COALESCE(
 				(
 					SELECT votes.vote

@@ -19,6 +19,10 @@
 
 ## Initial project setup
 
+**Download the file `IP2LOCATION-LITE-DB5.IPV6.BIN` externally:**
+
+Then put it here, like so `~/assets/IP2LOCATION/IP2LOCATION-LITE-DB5.IPV6.BIN`
+
 **Generate example `.env` file:**
 
 ```sh
