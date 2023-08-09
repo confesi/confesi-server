@@ -89,10 +89,6 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 				}, // todo: APNS CONFIG (content available, priority, etc)
 			}
 
-			// _, err := s.Client.Send(context.Background(), message)
-			// if err != nil {
-			// 	fmt.Print(err.Error())
-			// }
 			messages = append(messages, message)
 		}
 	} else if len(s.Tokens) == 0 && s.Topic != "" {
