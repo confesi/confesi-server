@@ -18,7 +18,7 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            uint    `gorm:"primaryKey" json:"-"`
+	ID            uint    `gorm:"primaryKey" json:"id"`
 	Name          string  `json:"name"`
 	Abbr          string  `json:"abbr"`
 	Lat           float32 `json:"lat"`
