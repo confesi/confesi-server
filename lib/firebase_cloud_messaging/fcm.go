@@ -69,9 +69,30 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 				Notification: s.Notification,
 				Android: &messaging.AndroidConfig{ // todo: Android CONFIG (content available, priority, etc)
 					Priority: "high", // default to high to get that sweet "ding"
+
 				},
-				APNS: &messaging.APNSConfig{}, // todo: APNS CONFIG (content available, priority, etc)
+				APNS: &messaging.APNSConfig{
+					Headers: map[string]string{
+						"method":           "POST",
+						"path":             "/3/device/" + token,
+						"apns-priority":    "10",
+						"apns-topic":       "com.confesi.app",
+						"apns-push-type":   "alert",
+						"apns-collapse-id": "confesi",
+						"apns-expiration":  "0",
+					},
+					Payload: &messaging.APNSPayload{
+						Aps: &messaging.Aps{
+							Sound: "defaultCritical",
+						},
+					},
+				}, // todo: APNS CONFIG (content available, priority, etc)
 			}
+
+			// _, err := s.Client.Send(context.Background(), message)
+			// if err != nil {
+			// 	fmt.Print(err.Error())
+			// }
 			messages = append(messages, message)
 		}
 	} else if len(s.Tokens) == 0 && s.Topic != "" {
@@ -86,6 +107,7 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 			APNS:    &messaging.APNSConfig{},
 			Webpush: &messaging.WebpushConfig{},
 		}
+
 		messages = append(messages, message)
 	} else {
 		// Return error if both tokens and topic are present or if both are absent
@@ -124,7 +146,6 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 				if messaging.IsRegistrationTokenNotRegistered(result.Error) {
 					deadTokens = append(deadTokens, batch[j].Token)
 				}
-				sends++
 			}
 		}
 		sends += uint(batchResponse.SuccessCount)
