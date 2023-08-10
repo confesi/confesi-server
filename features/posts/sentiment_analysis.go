@@ -7,8 +7,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/grassmudhorses/vader-go/lexicon"
-	"github.com/grassmudhorses/vader-go/sentitext"
 	"gorm.io/gorm"
 )
 
@@ -42,15 +40,8 @@ func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	}
 
 	// sentiment analysis
-	parsedtext := sentitext.Parse(post.Title+"\n"+post.Content, lexicon.DefaultLexicon)
-	sentiment := sentitext.PolarityScore(parsedtext)
 
-	analysis := sentimentAnalysis{
-		Positive: sentiment.Positive,
-		Negative: sentiment.Negative,
-		Neutral:  sentiment.Neutral,
-		Compound: sentiment.Compound,
-	}
+	analysis := AnalyzeText(post.Title + "\n" + post.Content)
 
 	// if all goes well, send status 200
 	response.New(http.StatusOK).Val(analysis).Send(c)

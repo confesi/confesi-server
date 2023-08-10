@@ -14,7 +14,7 @@ import (
 
 const (
 	// 30 requests per minute
-	tokensPerUnit = 30
+	tokensPerUnit = 10000
 	unit          = time.Minute
 )
 

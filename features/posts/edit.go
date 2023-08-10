@@ -25,10 +25,18 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		return
 	}
 
+	// sentiment analysis
+	sentiment := AnalyzeText(req.Title + "\n" + req.Body)
+	sentimentValue := sentiment.Compound
+	if sentimentValue == 0 {
+		sentimentValue = sentiment.Neutral
+	}
+
 	updates := map[string]interface{}{
-		"edited":  true,
-		"title":   req.Title,
-		"content": req.Body,
+		"edited":    true,
+		"title":     req.Title,
+		"content":   req.Body,
+		"sentiment": &sentimentValue,
 	}
 
 	// Update the `Title`/`Body` and `Edited` fields of the post in a single query
