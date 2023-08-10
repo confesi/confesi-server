@@ -356,7 +356,11 @@ type CronJob struct {
 	Type      string         `gorm:"column:type" json:"type"`
 }
 
-type RoleAssignmentLogs struct {
+func (RoleAssignmentLog) TableName() string {
+	return "role_assignment_logs"
+}
+
+type RoleAssignmentLog struct {
 	ID             int        `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt      TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	ActionUserID   string     `gorm:"column:action_user_id" json:"action_user_id"`
