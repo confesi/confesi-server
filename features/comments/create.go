@@ -46,7 +46,7 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (uint, error) {
 		}).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return 0, nil
+		return 0, serverError
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.CommentNumerics == nil {
 		return 1, nil
