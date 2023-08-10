@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE posts ADD COLUMN comment_numerics INTEGER NOT NULL DEFAULT 0; 
+
+END;
+

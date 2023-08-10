@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // (error, bool, uint) -> (error, alreadyPosted, numericalUser)
@@ -33,23 +34,24 @@ func getAlreadyPostedNumericalUser(tx *gorm.DB, postID uint, userID string) (err
 	}
 }
 
-func getNextIdentifier(tx *gorm.DB, postId uint) (error, uint) {
+func getNextIdentifier(tx *gorm.DB, postId uint) (uint, error) {
 	print("Getting next identifier....")
-	highestIdentifier := db.Comment{}
+	highestIdentifier := db.Post{}
 	err := tx.
-		Where("post_id = ?", postId).
-		Where("numerical_user IS NOT NULL").
-		Order("numerical_user DESC").
-		Limit(1).
+		Where("id = ?", postId).
+		Clauses(clause.Locking{Strength: "UPDATE"}).
 		Find(&highestIdentifier).
+		Updates(map[string]interface{}{
+			"comment_numerics": gorm.Expr("comment_numerics + ?", 1),
+		}).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return serverError, 0
+		return 0, nil
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.NumericalUser == nil {
-		return nil, 1
+	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.CommentNumerics == nil {
+		return 1, nil
 	} else {
-		return nil, *highestIdentifier.NumericalUser + 1
+		return *highestIdentifier.CommentNumerics + 1, nil
 	}
 }
 
@@ -114,6 +116,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 		err = tx.
 			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
+			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Find(&parentComment).
 			Updates(map[string]interface{}{
 				"children_count": gorm.Expr("children_count + ?", 1),
@@ -144,7 +147,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	var nextIdentifier uint
 	// is OP?
 	if !isOp {
-		err, nextIdentifier = getNextIdentifier(tx, req.PostID)
+		nextIdentifier, err = getNextIdentifier(tx, req.PostID)
 		if err != nil {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -216,6 +219,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if req.ParentCommentID != nil {
 		res := tx.
 			Model(&db.Post{}).
+			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", req.PostID).
 			Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
 		if res.Error != nil {
