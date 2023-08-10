@@ -118,7 +118,11 @@ func (h *handler) handleGetRankedSchools(c *gin.Context) {
 
 	var possibleRestriction string
 	if len(ids) > 0 {
-		idsStr := strings.Join(ids, ", ") // Convert the ids slice to a comma-separated string
+		cleanedIds := make([]string, len(ids))
+		for i, id := range ids {
+			cleanedIds[i] = strings.Trim(id, "{}") // Remove curly braces
+		}
+		idsStr := strings.Join(cleanedIds, ", ") // Convert the cleaned ids slice to a comma-separated string
 		possibleRestriction = "WHERE s.id NOT IN (" + idsStr + ")"
 		fmt.Println(possibleRestriction)
 	}

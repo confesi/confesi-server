@@ -7,14 +7,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestUniqueMasksMapToSameID(t *testing.T) {
+	// Test case: Masking the same ID twice should result in different encrypted values
+	id := uint(5)
+
+	maskedID1, err := Mask(id)
+	assert.NoError(t, err, "Masking error")
+
+	maskedID2, err := Mask(id)
+	assert.NoError(t, err, "Masking error")
+
+	assert.NotEqual(t, maskedID1, maskedID2, "Masked IDs should not be equal")
+
+	// Test case: Unmasking the encrypted IDs should yield the same original ID
+	decryptedID1, err := Unmask(maskedID1)
+	assert.NoError(t, err, "Unmasking error")
+
+	decryptedID2, err := Unmask(maskedID2)
+	assert.NoError(t, err, "Unmasking error")
+
+	assert.Equal(t, id, decryptedID1, "Original and decrypted IDs do not match")
+	assert.Equal(t, id, decryptedID2, "Original and decrypted IDs do not match")
+}
+
 func TestEncryptionAndDecryption(t *testing.T) {
 	tests := []struct {
-		id int
+		id uint
 	}{
-		{0},      // test case 1
-		{12345},  // test case 2
-		{987654}, // test case 3
-		{-42},    // test case 4
+		{0},                 // sub-test case 1
+		{12345212121224583}, // sub-test case 2
+		{987654},            // sub-test case 3
+		{42},                // sub-test case 4
 	}
 
 	for _, test := range tests {
@@ -45,5 +68,5 @@ func TestEncryptionAndDecryptionSimple(t *testing.T) {
 		t.Error("Decryption error:", err)
 	}
 
-	assert.Equal(t, 123, decrypted)
+	assert.Equal(t, uint(123), decrypted)
 }

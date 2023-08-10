@@ -17,33 +17,31 @@ type MaskedID struct {
 	Val uint
 }
 
+func (mu MaskedID) MarshalJSON() ([]byte, error) {
+	masked, err := masking.Mask(mu.Val)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(masked)
+}
+
 func (mu *MaskedID) Scan(value interface{}) error {
 	if value == nil {
 		return nil
 	}
 
-	intValue, ok := value.(uint)
+	intValue, ok := value.(int64)
 	if !ok {
-		return fmt.Errorf("unable to scan MaskedID value")
+		return fmt.Errorf("unable to scan MaskedID value: unexpected type")
 	}
 
-	mu.Val = intValue
+	mu.Val = uint(intValue)
 	return nil
 }
 
-func (mu MaskedID) MarshalJSON() ([]byte, error) {
-	strValue, err := masking.Mask(int(mu.Val))
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(strValue)
-}
-
 func (mu MaskedID) Value() (driver.Value, error) {
-	strValue, err := masking.Mask(int(mu.Val))
-	if err != nil {
-		return nil, err
-	}
+	strValue := uint(mu.Val)
+
 	return strValue, nil
 }
 
@@ -53,7 +51,7 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            MaskedID `gorm:"primaryKey" json:"id"`
+	ID            MaskedID `gorm:"primary_key;column:id" json:"id"`
 	Name          string   `json:"name"`
 	Abbr          string   `json:"abbr"`
 	Lat           float32  `json:"lat"`

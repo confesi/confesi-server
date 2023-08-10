@@ -44,7 +44,7 @@ func (h *handler) handleFeedback(c *gin.Context) {
 	feedback := db.Feedback{
 		UserID:  token.UID,
 		Content: req.Message,
-		TypeID:  uint(feedbackType.ID),
+		TypeID:  feedbackType.ID.Val,
 	}
 
 	err = h.db.Create(&feedback).Error

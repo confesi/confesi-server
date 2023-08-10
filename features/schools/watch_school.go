@@ -41,6 +41,7 @@ func (h *handler) watchSchool(c *gin.Context, token *auth.Token, req validation.
 }
 
 func (h *handler) handleWatchSchool(c *gin.Context) {
+
 	// extract request
 	var req validation.WatchSchool
 

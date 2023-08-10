@@ -13,7 +13,7 @@ import (
 // todo: .ENV
 var secretKey = []byte("your_16_byte_key")
 
-func Mask(id int) (string, error) {
+func Mask(id uint) (string, error) {
 	block, err := aes.NewCipher(secretKey)
 	if err != nil {
 		return "", err
@@ -48,11 +48,9 @@ func Unmask(ciphertext string) (uint, error) {
 	plaintext := make([]byte, len(decodedCiphertext)-aes.BlockSize)
 	ctr.XORKeyStream(plaintext, decodedCiphertext[aes.BlockSize:])
 
-	decryptedStr := string(plaintext)
-	decryptedUint, err := strconv.Atoi(decryptedStr)
+	decryptedID, err := strconv.Atoi(string(plaintext))
 	if err != nil {
 		return 0, err
 	}
-
-	return uint(decryptedUint), nil
+	return uint(decryptedID), nil
 }
