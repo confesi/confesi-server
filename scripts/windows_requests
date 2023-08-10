@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# check if token value is provided as a command-line argument
+if [ $# -eq 1 ]; then
+  new_token="$1"
+elif [ -p /dev/stdin ]; then
+  # read the token value from standard input
+  read -r new_token
+else
+  echo "Usage: $0 <token_value> or provide token value through standard input"
+  exit 1
+fi
+
+# check if the first script failed
+if [ $? -eq 0 ]; then
+  dirs=$(find . -type f -name "requests.http" -exec dirname {} \; | sort -u)
+
+  # replace token values in files
+  for dir in ${dirs[@]}; do
+    find "$dir" -name "requests.http" -exec sed -E -e "s@(Authorization: Bearer )[^[:space:]]+.*@\1$new_token@" -i {} +
+  done
+  echo "Token values updated successfully!"
+else
+  echo "Failed to obtain token. Aborting script."
+  exit 1
+fi

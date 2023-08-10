@@ -26,6 +26,7 @@ type School struct {
 	DailyHottests int     `json:"daily_hottests"`
 	Domain        string  `json:"domain"`
 	ImgUrl        string  `json:"img_url"`
+	Website       string  `json:"website"`
 }
 
 type Faculty struct {
@@ -92,7 +93,7 @@ type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudyID *uint8      `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudyID *uint       `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy   YearOfStudy `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	FacultyID     *uint       `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`
@@ -130,6 +131,7 @@ type Post struct {
 	TrendingScore float64         `gorm:"column:trending_score" json:"trending_score"`
 	HottestOn     *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
 	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
+	Sentiment     *float64        `gorm:"column:sentiment" json:"sentiment"`
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`

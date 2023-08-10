@@ -94,6 +94,9 @@ func (h *handler) handleGetSchools(c *gin.Context) {
 			schoolReponse = append(schoolReponse, school)
 		}
 
+		if len(schoolReponse) == 0 {
+			schoolReponse = []SchoolDetail{}
+		}
 		response.
 			New(http.StatusOK).
 			Val(Response{pagination, schoolReponse}).

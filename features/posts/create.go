@@ -43,7 +43,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 
 	// fetch the user's facultyId, and schoolId
 	var userData db.User
-	err = tx.Select("faculty_id, school_id").Where("id = ?", token.UID).First(&userData).Error
+	err = tx.Select("faculty_id, school_id, year_of_study_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
 		tx.Rollback()
 		return serverError
@@ -55,14 +55,24 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 		SchoolID:      userData.SchoolID,
 		CategoryID:    postCategory.ID,
 		FacultyID:     userData.FacultyID,
+		YearOfStudyID: userData.YearOfStudyID,
 		Title:         title,
 		Content:       body,
+		Sentiment:     nil,
 		Downvote:      0,
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
 		// `HottestOn` not included so that it defaults to NULL
 	}
+
+	// sentiment analysis of post
+	sentiment := AnalyzeText(title + "\n" + body)
+	sentimentValue := sentiment.Compound
+	if sentimentValue == 0 {
+		sentimentValue = sentiment.Neutral
+	}
+	post.Sentiment = &sentimentValue
 
 	// save user to postgres
 	err = tx.Create(&post).Error
