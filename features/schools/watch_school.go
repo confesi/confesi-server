@@ -2,6 +2,7 @@ package schools
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -13,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (h *handler) watchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool) error {
+func (h *handler) watchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool, unmaskedId uint) error {
 	school := db.SchoolFollow{
 		UserID:   token.UID,
-		SchoolID: req.SchoolID,
+		SchoolID: unmaskedId,
 	}
 	err := h.DB.Create(&school).Error
 	if err != nil {
@@ -53,7 +54,14 @@ func (h *handler) handleWatchSchool(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	err = h.watchSchool(c, token, req)
+
+	unmaskedId, err := masking.Unmask(req.SchoolID)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	err = h.watchSchool(c, token, req, unmaskedId)
 	if err != nil {
 		// switch over err
 		switch err {

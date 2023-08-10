@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,6 +26,12 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		return
 	}
 
+	unmaskedID, err := masking.Unmask(req.PostID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	// sentiment analysis
 	sentiment := AnalyzeText(req.Title + "\n" + req.Body)
 	sentimentValue := sentiment.Compound
@@ -41,7 +48,7 @@ func (h *handler) handleEditPost(c *gin.Context) {
 
 	// Update the `Title`/`Body` and `Edited` fields of the post in a single query
 	results := h.db.Model(&db.Post{}).
-		Where("id = ?", req.PostID).
+		Where("id = ?", unmaskedID).
 		Where("hidden = false").
 		Where("user_id = ?", token.UID).
 		Updates(updates)

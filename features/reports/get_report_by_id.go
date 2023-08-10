@@ -2,20 +2,17 @@ package reports
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func (h *handler) handleGetReportById(c *gin.Context) {
-	// get id from query param id
-	id := c.Query("id")
-
 	// get the user's token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
@@ -23,17 +20,19 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 		return
 	}
 
-	report := db.Report{}
-
-	idNumeric, err := strconv.Atoi(id)
+	// get id from query param id
+	id := c.Query("id")
+	unmaskedId, err := masking.Unmask(id)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return
 	}
 
+	report := db.Report{}
+
 	err = h.db.
 		Preload("ReportType"). // preload the ReportType field of the Report
-		Where("id = ? AND reported_by = ?", idNumeric, token.UID).
+		Where("id = ? AND reported_by = ?", unmaskedId, token.UID).
 		First(&report).
 		Error
 	if err != nil {

@@ -50,7 +50,7 @@ func (h *handler) handleSetYearOfStudy(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("invalid year of study").Send(c)
 		return
 	}
-	yearOfStudyID := uint8(yearOfStudy.ID)
+	yearOfStudyID := yearOfStudy.ID.Val
 
 	// update the user's year of study
 	res := tx.

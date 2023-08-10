@@ -4,6 +4,7 @@ import (
 	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/algorithm"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -227,13 +228,19 @@ func (h *handler) handleVote(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := masking.Unmask(req.ContentID)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
 	var vote db.Vote
 	vote.UserID = token.UID
 	vote.Vote = int(*req.Value)
 	if req.ContentType == "post" {
-		vote.PostID = &req.ContentID
+		vote.PostID = &unmaskedId
 	} else if req.ContentType == "comment" {
-		vote.CommentID = &req.ContentID
+		vote.CommentID = &unmaskedId
 	} else {
 		// should never happen with validated struct, but to be defensive
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("invalid content type")).Send(c)

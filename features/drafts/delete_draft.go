@@ -2,6 +2,7 @@ package drafts
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,8 +26,14 @@ func (h *handler) handleDeleteDraft(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := masking.Unmask(req.DraftID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	results := h.db.
-		Where("id = ?", req.DraftID).
+		Where("id = ?", unmaskedId).
 		Where("user_id = ?", token.UID).
 		Delete(&db.Draft{})
 
