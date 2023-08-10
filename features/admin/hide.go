@@ -179,8 +179,8 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		logger.StdInfo(fmt.Sprintf("error while fetching tokens for offending user: %s", err))
 	} else if len(offenders) > 0 {
 		for _, tokenWithOffenderID := range offenders {
-			fcm.New(h.fb.MsgClient).
-				ToTokens([]string{tokenWithOffenderID.Token}).
+			go fcm.New(h.fb.MsgClient).
+				ToTokens([]string{"tokenWithOffenderID.Token"}).
 				WithMsg(builders.HideOffendingUserNoti()).
 				WithData(builders.HideOffendingUserData(tokenWithOffenderID.HideLogID)).
 				Send(*h.db)
