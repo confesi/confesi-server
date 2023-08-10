@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -17,6 +18,12 @@ func (h *handler) handleReviewContentByMod(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := masking.Unmask(req.ContentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
+		return
+	}
+
 	var table string
 	if req.ContentType == "comment" {
 		table = "comments"
@@ -29,7 +36,7 @@ func (h *handler) handleReviewContentByMod(c *gin.Context) {
 
 	err = h.db.
 		Table(table).
-		Where("id = ?", req.ContentID).
+		Where("id = ?", unmaskedId).
 		Update("reviewed_by_mod", req.ReviewedByMod).
 		Error
 	if err != nil {

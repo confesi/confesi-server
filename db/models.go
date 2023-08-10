@@ -1,6 +1,7 @@
 package db
 
 import (
+	"confesi/lib/masking"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -12,25 +13,59 @@ import (
 	"gorm.io/datatypes"
 )
 
+type MaskedID struct {
+	Val uint
+}
+
+func (mu *MaskedID) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	intValue, ok := value.(uint)
+	if !ok {
+		return fmt.Errorf("unable to scan MaskedID value")
+	}
+
+	mu.Val = intValue
+	return nil
+}
+
+func (mu MaskedID) MarshalJSON() ([]byte, error) {
+	strValue, err := masking.Mask(int(mu.Val))
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(strValue)
+}
+
+func (mu MaskedID) Value() (driver.Value, error) {
+	strValue, err := masking.Mask(int(mu.Val))
+	if err != nil {
+		return nil, err
+	}
+	return strValue, nil
+}
+
 type ModLevel struct {
-	ID  uint   `gorm:"primaryKey" json:"id"`
-	Mod string `gorm:"column:mod" json:"mod"`
+	ID  MaskedID `gorm:"primaryKey" json:"id"`
+	Mod string   `gorm:"column:mod" json:"mod"`
 }
 
 type School struct {
-	ID            uint    `gorm:"primaryKey" json:"id"`
-	Name          string  `json:"name"`
-	Abbr          string  `json:"abbr"`
-	Lat           float32 `json:"lat"`
-	Lon           float32 `json:"lon"`
-	DailyHottests int     `json:"daily_hottests"`
-	Domain        string  `json:"domain"`
-	ImgUrl        string  `json:"img_url"`
-	Website       string  `json:"website"`
+	ID            MaskedID `gorm:"primaryKey" json:"id"`
+	Name          string   `json:"name"`
+	Abbr          string   `json:"abbr"`
+	Lat           float32  `json:"lat"`
+	Lon           float32  `json:"lon"`
+	DailyHottests int      `json:"daily_hottests"`
+	Domain        string   `json:"domain"`
+	ImgUrl        string   `json:"img_url"`
+	Website       string   `json:"website"`
 }
 
 type Faculty struct {
-	ID      int         `gorm:"primaryKey" json:"-"`
+	ID      MaskedID    `gorm:"primaryKey" json:"-"`
 	Faculty null.String `gorm:"column:faculty" json:"faculty"`
 }
 
@@ -52,20 +87,20 @@ func (FcmTopicPref) TableName() string {
 
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmTopicPref struct {
-	ID                    uint   `gorm:"primaryKey" json:"-"`
-	UserID                string `gorm:"column:user_id" json:"-"`
-	DailyHottest          bool   `gorm:"column:daily_hottest" json:"daily_hottest"`
-	Trending              bool   `gorm:"column:trending" json:"trending"`
-	RepliesToYourComments bool   `gorm:"column:replies_to_your_comments" json:"replies_to_your_comments"`
-	CommentsOnYourPosts   bool   `gorm:"column:comments_on_your_posts" json:"comments_on_your_posts"`
-	VotesOnYourComments   bool   `gorm:"column:votes_on_your_comments" json:"votes_on_your_comments"`
-	VotesOnYourPosts      bool   `gorm:"column:votes_on_your_posts" json:"votes_on_your_posts"`
-	QuotesOfYourPosts     bool   `gorm:"column:quotes_of_your_posts" json:"quotes_of_your_posts"`
+	ID                    MaskedID `gorm:"primaryKey" json:"-"`
+	UserID                string   `gorm:"column:user_id" json:"-"`
+	DailyHottest          bool     `gorm:"column:daily_hottest" json:"daily_hottest"`
+	Trending              bool     `gorm:"column:trending" json:"trending"`
+	RepliesToYourComments bool     `gorm:"column:replies_to_your_comments" json:"replies_to_your_comments"`
+	CommentsOnYourPosts   bool     `gorm:"column:comments_on_your_posts" json:"comments_on_your_posts"`
+	VotesOnYourComments   bool     `gorm:"column:votes_on_your_comments" json:"votes_on_your_comments"`
+	VotesOnYourPosts      bool     `gorm:"column:votes_on_your_posts" json:"votes_on_your_posts"`
+	QuotesOfYourPosts     bool     `gorm:"column:quotes_of_your_posts" json:"quotes_of_your_posts"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmToken struct {
-	ID        uint       `gorm:"primaryKey" json:"id"`
+	ID        MaskedID   `gorm:"primaryKey" json:"id"`
 	UserID    *string    `gorm:"column:user_id" json:"-"`
 	Token     string     `gorm:"column:token" json:"token"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
@@ -77,8 +112,8 @@ func (FcmToken) TableName() string {
 }
 
 type PostCategory struct {
-	ID   uint   `gorm:"primaryKey" json:"-"`
-	Name string `gorm:"column:name" json:"name"`
+	ID   MaskedID `gorm:"primaryKey" json:"-"`
+	Name string   `gorm:"column:name" json:"name"`
 }
 
 func (PostCategory) TableName() string {
@@ -104,7 +139,7 @@ type User struct {
 
 // ! Very important some fields are NOT serialized (json:"-")
 type SchoolFollow struct {
-	ID        uint       `gorm:"primary_key;column:id" json:"id"`
+	ID        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
@@ -113,7 +148,7 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	ID            int             `gorm:"primary_key;column:id" json:"id"`
+	ID            MaskedID        `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
@@ -142,7 +177,7 @@ type Post struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Draft struct {
-	ID        int        `gorm:"primary_key;column:id" json:"id"`
+	ID        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
@@ -163,7 +198,7 @@ func (c *Comment) CensorComment() Comment {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
-	ID                        uint       `gorm:"primary_key;column:id" json:"id"`
+	ID                        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt                 TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt                 TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID                    uint       `gorm:"column:post_id" json:"post_id"`
@@ -257,7 +292,7 @@ const (
 
 // ! Important not to serialize some fields!!
 type Vote struct {
-	ID        uint
+	ID        MaskedID
 	Vote      int    `db:"vote" json:"vote"`
 	UserID    string `db:"user_id" json:"-"`
 	PostID    *uint  `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
@@ -266,6 +301,7 @@ type Vote struct {
 
 // ! Important not to serialize some fields!!
 type SavedPost struct {
+	ID        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
@@ -274,6 +310,7 @@ type SavedPost struct {
 
 // ! Important not to serialize some fields!!
 type SavedComment struct {
+	ID        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
@@ -282,7 +319,7 @@ type SavedComment struct {
 
 // ! Important not to serialize some fields!!
 type Feedback struct {
-	ID        int           `gorm:"primary_key;column:id" json:"id"`
+	ID        MaskedID      `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt TimeMicros    `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UserID    string        `gorm:"column:user_id" json:"-"`
 	Content   string        `gorm:"column:content" json:"content"`
@@ -291,8 +328,8 @@ type Feedback struct {
 }
 
 type ReportType struct {
-	ID   int    `gorm:"primary_key;column:id" json:"-"`
-	Type string `gorm:"column:type" json:"type"`
+	ID   MaskedID `gorm:"primary_key;column:id" json:"-"`
+	Type string   `gorm:"column:type" json:"type"`
 }
 
 func (ReportType) TableName() string {
@@ -300,12 +337,12 @@ func (ReportType) TableName() string {
 }
 
 type FeedbackType struct {
-	ID   int    `gorm:"primary_key;column:id" json:"-"`
-	Type string `gorm:"column:type" json:"type"`
+	ID   MaskedID `gorm:"primary_key;column:id" json:"-"`
+	Type string   `gorm:"column:type" json:"type"`
 }
 
 type YearOfStudy struct {
-	ID   int         `gorm:"primaryKey" json:"-"`
+	ID   MaskedID    `gorm:"primaryKey" json:"-"`
 	Name null.String `gorm:"column:name" json:"type"`
 }
 
@@ -318,7 +355,7 @@ func (FeedbackType) TableName() string {
 }
 
 type HideLog struct {
-	ID        uint       `gorm:"primaryKey" json:"id"`
+	ID        MaskedID   `gorm:"primaryKey" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID    *uint      `db:"post_id" gorm:"default:NULL" json:"-"`
@@ -336,7 +373,7 @@ func (HideLog) TableName() string {
 
 // ! Important not to serialize some fields!!
 type Report struct {
-	ID             uint        `gorm:"primaryKey" json:"id"`
+	ID             MaskedID    `gorm:"primaryKey" json:"id"`
 	CreatedAt      TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt      TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	ReportedBy     string      `gorm:"column:reported_by" json:"-"`
@@ -352,7 +389,7 @@ type Report struct {
 }
 
 type CronJob struct {
-	ID        uint           `gorm:"primaryKey" json:"id"`
+	ID        MaskedID       `gorm:"primaryKey" json:"id"`
 	CreatedAt TimeMicros     `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	Ran       datatypes.Date `gorm:"column:ran" json:"ran"`
 	Type      string         `gorm:"column:type" json:"type"`

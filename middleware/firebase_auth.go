@@ -164,7 +164,7 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 	}
 
 	// else, add the email to the user
-	user.SchoolID = school.ID
+	user.SchoolID = school.ID.Val
 
 	err = tx.Create(&user).Error
 	if err != nil {

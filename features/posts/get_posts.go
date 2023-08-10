@@ -4,6 +4,7 @@ import (
 	"confesi/config"
 	tags "confesi/lib/emojis"
 	"confesi/lib/logger"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -37,8 +38,14 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
-	if req.SchoolId == 0 && !req.AllSchools {
+	if req.SchoolId == "" && !req.AllSchools {
 		response.New(http.StatusBadRequest).Err("school id or all specification must be provided").Send(c)
+		return
+	}
+
+	unmaskedSchoolId, err := masking.Unmask(req.SchoolId)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid school id").Send(c)
 		return
 	}
 
@@ -113,7 +120,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 
 	// if `all_schools` is true, then we don't need to filter by school
 	if !req.AllSchools {
-		query = query.Where("school_id = ?", req.SchoolId)
+		query = query.Where("school_id = ?", unmaskedSchoolId)
 	}
 
 	err = query.

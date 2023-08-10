@@ -53,7 +53,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	post := db.Post{
 		UserID:        token.UID,
 		SchoolID:      userData.SchoolID,
-		CategoryID:    postCategory.ID,
+		CategoryID:    uint(postCategory.ID.Val),
 		FacultyID:     userData.FacultyID,
 		YearOfStudyID: userData.YearOfStudyID,
 		Title:         title,

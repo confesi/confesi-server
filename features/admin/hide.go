@@ -4,6 +4,7 @@ import (
 	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/logger"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -34,17 +35,23 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		return
 	}
 
+	unmaskedContentId, err := masking.Unmask(req.ContentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
+		return
+	}
+
 	hideLogEntry := db.HideLog{}
 	var commentOrPostIdMatcher string
 
 	var table string
 	if req.ContentType == "comment" {
 		table = "comments"
-		hideLogEntry.CommentID = &req.ContentID
+		hideLogEntry.CommentID = &unmaskedContentId
 		commentOrPostIdMatcher = "comment_id"
 	} else if req.ContentType == "post" {
 		table = "posts"
-		hideLogEntry.PostID = &req.ContentID
+		hideLogEntry.PostID = &unmaskedContentId
 		commentOrPostIdMatcher = "post_id"
 	} else {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
@@ -180,7 +187,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	} else if len(offenders) > 0 {
 		for _, tokenWithOffenderID := range offenders {
 			go fcm.New(h.fb.MsgClient).
-				ToTokens([]string{"tokenWithOffenderID.Token"}).
+				ToTokens([]string{tokenWithOffenderID.Token}).
 				WithMsg(builders.HideOffendingUserNoti()).
 				WithData(builders.HideOffendingUserData(tokenWithOffenderID.HideLogID)).
 				Send(*h.db)

@@ -2,11 +2,11 @@ package admin
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 	// get id from query param id
 	id := c.Query("id")
 
-	idNumeric, err := strconv.Atoi(id)
+	unmaskedId, err := masking.Unmask(id)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return
@@ -25,7 +25,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 	report := db.Report{}
 	err = h.db.
 		Preload("ReportType"). // preload the ReportType field of the Report
-		Where("id = ?", idNumeric).
+		Where("id = ?", unmaskedId).
 		First(&report).
 		Error
 	if err != nil {

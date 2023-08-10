@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/masking"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
@@ -19,13 +20,20 @@ type sentimentAnalysis struct {
 
 func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	postID := c.Query("id")
+
+	unmaskedPostId, err := masking.Unmask(postID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid post id").Send(c)
+		return
+	}
+
 	var post db.Post
-	err := h.db.
+	err = h.db.
 		Preload("School").
 		Preload("Category").
 		Preload("Faculty").
 		Preload("YearOfStudy").
-		First(&post, postID).Error
+		First(&post, unmaskedPostId).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusBadRequest).Err("post not found").Send(c)
