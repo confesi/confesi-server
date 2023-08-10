@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Tests require `MASK_SECRET` env var to be set to pass
+
 func TestUniqueMasksMapToSameID(t *testing.T) {
 	// Test case: Masking the same ID twice should result in different encrypted values
 	id := uint(5)

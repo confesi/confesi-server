@@ -7,11 +7,20 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 )
 
-// todo: .ENV
-var secretKey = []byte("your_16_byte_key")
+var secretKey []byte
+
+func init() {
+	// load from .env
+	m := os.Getenv("MASK_SECRET")
+	if m == "" {
+		panic("MASK_SECRET env not found")
+	}
+	secretKey = []byte(m)
+}
 
 func Mask(id uint) (string, error) {
 	block, err := aes.NewCipher(secretKey)
