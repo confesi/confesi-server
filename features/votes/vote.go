@@ -184,7 +184,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Where("comments.id = ? AND users.id <> ?", vote.CommentID, uid).
 			Pluck("fcm_tokens.token", &tokens).
 			Error
-		if err == nil && len(tokens) > 0 {
+		if err == nil && len(tokens) > 0 && ((votes.Upvote+votes.Downvote)%5 == 0) {
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnCommentNoti(vote.Vote, votes.Upvote-votes.Downvote)).
@@ -200,7 +200,8 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Where("posts.id = ? AND users.id <> ?", vote.PostID, uid).
 			Pluck("fcm_tokens.token", &tokens).
 			Error
-		if err == nil && len(tokens) > 0 {
+		// print((votes.Upvote + votes.Downvote%5))
+		if err == nil && len(tokens) > 0 && ((votes.Upvote+votes.Downvote)%5 == 0) {
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnPostNoti(vote.Vote, votes.Upvote-votes.Downvote)).
