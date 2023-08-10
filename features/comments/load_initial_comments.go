@@ -25,11 +25,11 @@ type CommentThreadGroup struct {
 
 const (
 	seenCommentsCacheExpiry = 24 * time.Hour // one day
+
 )
 
 func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, commentSpecificKey string) ([]CommentThreadGroup, error) {
 	var comments []CommentDetail
-
 	excludedIDQuery := ""
 	if len(excludedIDs) > 0 {
 		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
@@ -123,6 +123,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 				return nil, errors.New("failed to update redis cache")
 			}
 		}
+
 	}
 
 	// Create the final list of comment threads
@@ -142,7 +143,9 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 			} else {
 
 			}
-
+			if len(thread.Replies) == 0 {
+				thread.Replies = []CommentDetail{}
+			}
 			commentThreads = append(commentThreads, thread)
 		}
 	}
@@ -153,9 +156,11 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 
 func (h *handler) handleGetComments(c *gin.Context) {
 	// extract request
+
 	var req validation.InitialCommentQuery
 	err := utils.New(c).Validate(&req)
 	if err != nil {
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
