@@ -90,7 +90,7 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 		Error
 
 	if err == nil && len(tokens) > 0 {
-		fcm.New(h.fb.MsgClient).
+		go fcm.New(h.fb.MsgClient).
 			ToTokens(tokens).
 			WithData(builders.NotificationSettingsSyncData()).
 			Send(*h.db)

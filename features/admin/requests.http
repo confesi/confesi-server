@@ -89,7 +89,7 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImNmM2I1YWRhM2NhMzkxNTQ4ZDM1OT
 
 {
     "content_type": "post",
-    "content_id": 1,
+    "content_id": 17,
     "hide": false,
     "reviewed_by_mod": true,
     "reason": "spammmmm"
