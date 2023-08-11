@@ -228,7 +228,7 @@ func (c Comment) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Hash           string  `json:"h_id"`
 		ParentRootHash *string `json:"h_parent_root_id"`
-		PostID         string  `json:"post_id"`
+		PostID         string  `json:"h_post_id"`
 		*Alias
 	}{
 		Hash:           encryption.Hash(c.ID.Val),
