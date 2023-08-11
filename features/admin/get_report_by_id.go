@@ -2,7 +2,7 @@ package admin
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
@@ -16,7 +16,7 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 	// get id from query param id
 	id := c.Query("id")
 
-	unmaskedId, err := masking.Unmask(id)
+	unmaskedId, err := encryption.Unmask(id)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

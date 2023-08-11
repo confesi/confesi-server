@@ -4,7 +4,7 @@ import (
 	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/algorithm"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -228,7 +228,7 @@ func (h *handler) handleVote(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.ContentID)
+	unmaskedId, err := encryption.Unmask(req.ContentID)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 		return

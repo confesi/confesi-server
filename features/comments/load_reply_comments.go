@@ -2,7 +2,7 @@ package comments
 
 import (
 	"confesi/config"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -30,7 +30,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.ParentRoot)
+	unmaskedId, err := encryption.Unmask(req.ParentRoot)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

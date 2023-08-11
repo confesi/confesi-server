@@ -1,7 +1,7 @@
 package db
 
 import (
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -18,7 +18,7 @@ type MaskedID struct {
 }
 
 func (mu MaskedID) MarshalJSON() ([]byte, error) {
-	masked, err := masking.Mask(mu.Val)
+	masked, err := encryption.Mask(mu.Val)
 	if err != nil {
 		return nil, err
 	}
@@ -51,15 +51,28 @@ type ModLevel struct {
 }
 
 type School struct {
-	ID            MaskedID `gorm:"primary_key;column:id" json:"id"`
-	Name          string   `json:"name"`
-	Abbr          string   `json:"abbr"`
-	Lat           float32  `json:"lat"`
-	Lon           float32  `json:"lon"`
-	DailyHottests int      `json:"daily_hottests"`
-	Domain        string   `json:"domain"`
-	ImgUrl        string   `json:"img_url"`
-	Website       string   `json:"website"`
+	ID            MaskedID   `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt     TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	Name          string     `json:"name"`
+	Abbr          string     `json:"abbr"`
+	Lat           float32    `json:"lat"`
+	Lon           float32    `json:"lon"`
+	DailyHottests int        `json:"daily_hottests"`
+	Domain        string     `json:"domain"`
+	ImgUrl        string     `json:"img_url"`
+	Website       string     `json:"website"`
+}
+
+func (s School) MarshalJSON() ([]byte, error) {
+	type Alias School
+	return json.Marshal(&struct {
+		Hash string `json:"hash"`
+		*Alias
+	}{
+		Hash:  encryption.Hash(s.ID.Val),
+		Alias: (*Alias)(&s),
+	})
 }
 
 type Faculty struct {
@@ -144,6 +157,17 @@ type SchoolFollow struct {
 	SchoolID  uint       `gorm:"column:school_id" json:"-"`
 }
 
+func (p Post) MarshalJSON() ([]byte, error) {
+	type Alias Post
+	return json.Marshal(&struct {
+		Hash string `json:"hash"`
+		*Alias
+	}{
+		Hash:  encryption.Hash(p.ID.Val),
+		Alias: (*Alias)(&p),
+	})
+}
+
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
 	ID            MaskedID        `gorm:"primary_key;column:id" json:"id"`
@@ -194,6 +218,17 @@ func (c *Comment) CensorComment() Comment {
 	return *c
 }
 
+func (c Comment) MarshalJSON() ([]byte, error) {
+	type Alias Comment
+	return json.Marshal(&struct {
+		Hash string `json:"hash"`
+		*Alias
+	}{
+		Hash:  encryption.Hash(c.ID.Val),
+		Alias: (*Alias)(&c),
+	})
+}
+
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Comment struct {
 	ID                        MaskedID   `gorm:"primary_key;column:id" json:"id"`
@@ -204,7 +239,7 @@ type Comment struct {
 	NumericalReplyingUser     *uint      `gorm:"column:numerical_replying_user" json:"numerical_replying_user"`             // this is a pointer because it can be null
 	NumericalUserIsOp         *bool      `gorm:"column:numerical_user_is_op" json:"numerical_user_is_op"`                   // this is a pointer because it can be null
 	NumericalReplyingUserIsOp *bool      `gorm:"column:numerical_replying_user_is_op" json:"numerical_replying_user_is_op"` // this is a pointer because it can be null
-	ParentRoot                *uint      `gorm:"column:parent_root" json:"parent_root"`
+	ParentRoot                *MaskedID  `gorm:"column:parent_root" json:"parent_root"`
 	ChildrenCount             uint       `gorm:"column:children_count" json:"children_count"`
 	UserID                    string     `gorm:"column:user_id" json:"-"`
 	Content                   string     `gorm:"column:content" json:"content"`
@@ -290,11 +325,11 @@ const (
 
 // ! Important not to serialize some fields!!
 type Vote struct {
-	ID        MaskedID
-	Vote      int    `db:"vote" json:"vote"`
-	UserID    string `db:"user_id" json:"-"`
-	PostID    *uint  `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
-	CommentID *uint  `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
+	ID        MaskedID `gorm:"primary_key;column:id" json:"id"`
+	Vote      int      `db:"vote" json:"vote"`
+	UserID    string   `db:"user_id" json:"-"`
+	PostID    *uint    `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
+	CommentID *uint    `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
 }
 
 // ! Important not to serialize some fields!!
@@ -326,7 +361,7 @@ type Feedback struct {
 }
 
 type ReportType struct {
-	ID   MaskedID `gorm:"primary_key;column:id" json:"-"`
+	ID   MaskedID `gorm:"primary_key;column:id" json:"id"`
 	Type string   `gorm:"column:type" json:"type"`
 }
 
@@ -335,12 +370,12 @@ func (ReportType) TableName() string {
 }
 
 type FeedbackType struct {
-	ID   MaskedID `gorm:"primary_key;column:id" json:"-"`
+	ID   MaskedID `gorm:"primary_key;column:id" json:"id"`
 	Type string   `gorm:"column:type" json:"type"`
 }
 
 type YearOfStudy struct {
-	ID   MaskedID    `gorm:"primaryKey" json:"-"`
+	ID   MaskedID    `gorm:"primaryKey;column:id" json:"id"`
 	Name null.String `gorm:"column:name" json:"type"`
 }
 
@@ -353,7 +388,7 @@ func (FeedbackType) TableName() string {
 }
 
 type HideLog struct {
-	ID        MaskedID   `gorm:"primaryKey" json:"id"`
+	ID        MaskedID   `gorm:"primaryKey;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	PostID    *uint      `db:"post_id" gorm:"default:NULL" json:"-"`
@@ -371,7 +406,7 @@ func (HideLog) TableName() string {
 
 // ! Important not to serialize some fields!!
 type Report struct {
-	ID             MaskedID    `gorm:"primaryKey" json:"id"`
+	ID             MaskedID    `gorm:"primaryKey;column:id" json:"id"`
 	CreatedAt      TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt      TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	ReportedBy     string      `gorm:"column:reported_by" json:"-"`
@@ -387,7 +422,7 @@ type Report struct {
 }
 
 type CronJob struct {
-	ID        MaskedID       `gorm:"primaryKey" json:"id"`
+	ID        MaskedID       `gorm:"primaryKey;column:id" json:"id"`
 	CreatedAt TimeMicros     `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	Ran       datatypes.Date `gorm:"column:ran" json:"ran"`
 	Type      string         `gorm:"column:type" json:"type"`

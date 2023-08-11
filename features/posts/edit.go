@@ -2,7 +2,7 @@ package posts
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -26,7 +26,7 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		return
 	}
 
-	unmaskedID, err := masking.Unmask(req.PostID)
+	unmaskedID, err := encryption.Unmask(req.PostID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

@@ -2,7 +2,7 @@ package comments
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -26,7 +26,7 @@ func (h *handler) handleEditComment(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.CommentID)
+	unmaskedId, err := encryption.Unmask(req.CommentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

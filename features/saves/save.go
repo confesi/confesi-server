@@ -2,8 +2,8 @@ package saves
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
-	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -64,7 +64,7 @@ func (h *handler) handleSave(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.ContentID)
+	unmaskedId, err := encryption.Unmask(req.ContentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

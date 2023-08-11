@@ -2,7 +2,7 @@ package posts
 
 import (
 	tags "confesi/lib/emojis"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
@@ -17,7 +17,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 	postID := c.Query("id")
 
 	// cast as MaskedInt type else throw 400
-	maskedId, err := masking.Unmask(postID)
+	maskedId, err := encryption.Unmask(postID)
 	if err != nil {
 		fmt.Println(err)
 		response.New(http.StatusBadRequest).Err("invalid post id").Send(c)

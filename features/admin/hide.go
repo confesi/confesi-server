@@ -3,8 +3,8 @@ package admin
 import (
 	"confesi/config/builders"
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
-	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -35,7 +35,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		return
 	}
 
-	unmaskedContentId, err := masking.Unmask(req.ContentID)
+	unmaskedContentId, err := encryption.Unmask(req.ContentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
 		return

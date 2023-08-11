@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -18,7 +18,7 @@ func (h *handler) handleReviewContentByMod(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.ContentID)
+	unmaskedId, err := encryption.Unmask(req.ContentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
 		return

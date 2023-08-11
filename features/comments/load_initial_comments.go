@@ -2,8 +2,8 @@ package comments
 
 import (
 	"confesi/config"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
-	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -115,7 +115,7 @@ func fetchComments(postID uint, gm *gorm.DB, excludedIDs []string, sort string, 
 		if comment.Comment.ParentRoot != nil {
 			// aka, it's a reply
 			parentID := comment.Comment.ParentRoot
-			parentMap[int(*parentID)] = append(parentMap[int(*parentID)], *comment)
+			parentMap[int(parentID.Val)] = append(parentMap[int(parentID.Val)], *comment)
 		} else {
 			id := fmt.Sprint(comment.Comment.ID)
 			err := h.redis.SAdd(c, commentSpecificKey, id).Err()
@@ -171,7 +171,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
-	unmaskedPostID, err := masking.Unmask(req.PostID)
+	unmaskedPostID, err := encryption.Unmask(req.PostID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
 		return

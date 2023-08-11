@@ -2,7 +2,7 @@ package admin
 
 import (
 	"confesi/config"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -19,7 +19,7 @@ func (h *handler) handleFetchReportForPostById(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.PostID)
+	unmaskedId, err := encryption.Unmask(req.PostID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
 		return

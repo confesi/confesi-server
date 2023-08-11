@@ -2,7 +2,7 @@ package schools
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -39,7 +39,7 @@ func (h *handler) handleUnwatchSchool(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.SchoolID)
+	unmaskedId, err := encryption.Unmask(req.SchoolID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

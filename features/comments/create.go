@@ -3,8 +3,8 @@ package comments
 import (
 	"confesi/config/builders"
 	"confesi/db"
+	"confesi/lib/encryption"
 	fcm "confesi/lib/firebase_cloud_messaging"
-	"confesi/lib/masking"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -72,7 +72,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// start a transaction
 	tx := h.db.Begin()
 
-	unmaskedPostId, err := masking.Unmask(req.PostID)
+	unmaskedPostId, err := encryption.Unmask(req.PostID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(invalidInput.Error()).Send(c)
 		return
@@ -80,7 +80,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	var unmaskedCommentId uint
 	if req.ParentCommentID != nil {
-		unmaskedCommentId, err = masking.Unmask(*req.ParentCommentID)
+		unmaskedCommentId, err = encryption.Unmask(*req.ParentCommentID)
 		if err != nil {
 			response.New(http.StatusBadRequest).Err(invalidInput.Error()).Send(c)
 			return
@@ -147,7 +147,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 			return
 		}
 		if parentComment.ParentRoot == nil {
-			comment.ParentRoot = &parentComment.ID.Val
+			comment.ParentRoot = &parentComment.ID
 		} else {
 			comment.ParentRoot = parentComment.ParentRoot
 		}

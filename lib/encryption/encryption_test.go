@@ -1,4 +1,4 @@
-package masking
+package encryption
 
 import (
 	"fmt"
@@ -7,9 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Tests require `MASK_SECRET` env var to be set to pass
+//! Tests require `MASK_SECRET` env var to be set to pass
+
+func TestUniqueHash(t *testing.T) {
+	id := uint(78)
+	hash := Hash(id)
+	assert.Equal(t, "NJxBIBti24URkmZcUEs1D_mMa0X7YqiiFh94tlNNjek", hash, "Hashes do not match")
+}
 
 func TestUniqueMasksMapToSameID(t *testing.T) {
+
 	// Test case: Masking the same ID twice should result in different encrypted values
 	id := uint(5)
 

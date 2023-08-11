@@ -1,7 +1,7 @@
 package comments
 
 import (
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
@@ -14,7 +14,7 @@ import (
 func (h *handler) handleGetCommentById(c *gin.Context) {
 	commentID := c.Query("id")
 
-	unmaskedId, err := masking.Unmask(commentID)
+	unmaskedId, err := encryption.Unmask(commentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return

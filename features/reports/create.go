@@ -2,7 +2,7 @@ package reports
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -30,7 +30,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 		return
 	}
 
-	unmaskedId, err := masking.Unmask(req.ContentID)
+	unmaskedId, err := encryption.Unmask(req.ContentID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(invalidContentId.Error()).Send(c)
 		return

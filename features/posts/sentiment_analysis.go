@@ -2,7 +2,7 @@ package posts
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
@@ -21,7 +21,7 @@ type sentimentAnalysis struct {
 func (h *handler) sentimentAnaylsis(c *gin.Context) {
 	postID := c.Query("id")
 
-	unmaskedPostId, err := masking.Unmask(postID)
+	unmaskedPostId, err := encryption.Unmask(postID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid post id").Send(c)
 		return

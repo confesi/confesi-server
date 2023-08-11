@@ -2,7 +2,7 @@ package admin
 
 import (
 	"confesi/db"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 func (h *handler) handleFeedbackID(c *gin.Context) {
 	feedbackID := c.Param("feedbackID")
 
-	unmaskedFeedbackId, err := masking.Unmask(feedbackID)
+	unmaskedFeedbackId, err := encryption.Unmask(feedbackID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid feedback id").Send(c)
 		return

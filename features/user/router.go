@@ -16,13 +16,6 @@ var (
 	serverError = errors.New("server error")
 )
 
-type PostDetail struct {
-	db.Post  `json:"post"`
-	UserVote int      `json:"user_vote"`
-	Owner    bool     `json:"owner"`
-	Emojis   []string `json:"emojis" gorm:"-"`
-}
-
 type handler struct {
 	db    *gorm.DB
 	fb    *fire.FirebaseApp

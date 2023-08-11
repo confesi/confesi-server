@@ -2,7 +2,7 @@ package schools
 
 import (
 	"confesi/config"
-	"confesi/lib/masking"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
@@ -14,7 +14,7 @@ func (h *handler) handleGetRandomSchool(c *gin.Context) {
 	schoolDetail := SchoolDetail{}
 
 	withoutSchoolId := c.Query("without-school")
-	unmaskedId, err := masking.Unmask(withoutSchoolId)
+	unmaskedId, err := encryption.Unmask(withoutSchoolId)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return
