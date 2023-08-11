@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE schools DROP COLUMN website;
+
+END;

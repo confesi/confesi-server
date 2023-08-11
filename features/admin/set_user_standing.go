@@ -75,14 +75,14 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 		// don't handle errors here, because it's not a big deal if the notification doesn't send
 		if req.Standing == "limited" || req.Standing == "enabled" {
 			isLimited := req.Standing == "limited"
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.AccountStandingLimitedNoti(isLimited)).
 				WithData(builders.AccountStandingLimitedData(isLimited)).
 				Send(*h.db)
 		} else if req.Standing == "banned" || req.Standing == "unbanned" {
 			isBanned := req.Standing == "banned"
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.AccountStandingBannedNoti(isBanned)).
 				WithData(builders.AccountStandingBannedData(isBanned)).

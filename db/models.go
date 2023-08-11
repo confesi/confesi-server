@@ -26,6 +26,7 @@ type School struct {
 	DailyHottests int     `json:"daily_hottests"`
 	Domain        string  `json:"domain"`
 	ImgUrl        string  `json:"img_url"`
+	Website       string  `json:"website"`
 }
 
 type Faculty struct {

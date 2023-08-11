@@ -37,6 +37,11 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
+	if req.SchoolId == 0 && !req.AllSchools {
+		response.New(http.StatusBadRequest).Err("school id or all specification must be provided").Send(c)
+		return
+	}
+
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
 	idSessionKey, err := utils.CreateCacheKey(config.RedisPostsCache, token.UID, req.SessionKey)
 	if err != nil {
