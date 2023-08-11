@@ -2,6 +2,7 @@ package comments
 
 import (
 	"confesi/config"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -28,11 +29,16 @@ const (
 
 )
 
-func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, commentSpecificKey string) ([]CommentThreadGroup, error) {
+func fetchComments(postID uint, gm *gorm.DB, excludedIDs []string, sort string, uid string, h handler, c *gin.Context, commentSpecificKey string) ([]CommentThreadGroup, error) {
 	var comments []CommentDetail
-	excludedIDQuery := ""
+	var possibleExclusion string
 	if len(excludedIDs) > 0 {
-		excludedIDQuery = "AND comments.id NOT IN (" + strings.Join(excludedIDs, ",") + ")"
+		cleanedIds := make([]string, len(excludedIDs))
+		for i, id := range excludedIDs {
+			cleanedIds[i] = strings.Trim(id, "{}") // remove curly braces
+		}
+		idsStr := strings.Join(cleanedIds, ", ") // convert the cleaned ids slice to a comma-separated string
+		possibleExclusion = "AND comments.id NOT IN ( " + idsStr + " )"
 	}
 
 	var sortField string
@@ -53,7 +59,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 			SELECT *
 			FROM comments
 			WHERE parent_root IS NULL AND post_id = ?
-            `+excludedIDQuery+`
+            `+possibleExclusion+`
             ORDER BY `+sortField+`
 			LIMIT ?
 		), ranked_replies AS (
@@ -114,7 +120,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 		if comment.Comment.ParentRoot != nil {
 			// aka, it's a reply
 			parentID := comment.Comment.ParentRoot
-			parentMap[int(*parentID)] = append(parentMap[int(*parentID)], *comment)
+			parentMap[int(parentID.Val)] = append(parentMap[int(parentID.Val)], *comment)
 		} else {
 			id := fmt.Sprint(comment.Comment.ID)
 			err := h.redis.SAdd(c, commentSpecificKey, id).Err()
@@ -132,7 +138,7 @@ func fetchComments(postID int64, gm *gorm.DB, excludedIDs []string, sort string,
 		if comment.Comment.ParentRoot == nil {
 			thread := CommentThreadGroup{
 				Root:    comment,
-				Replies: parentMap[int(comment.Comment.ID)],
+				Replies: parentMap[int(comment.Comment.ID.Val)],
 			}
 
 			// Set the Next cursor for the last thread
@@ -170,6 +176,12 @@ func (h *handler) handleGetComments(c *gin.Context) {
 		return
 	}
 
+	unmaskedPostID, err := encryption.Unmask(req.PostID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(utils.UuidError.Error()).Send(c)
+		return
+	}
+
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
 	commentSpecificKey, err := utils.CreateCacheKey(config.RedisCommentsCache, token.UID, req.SessionKey)
 	if err != nil {
@@ -198,7 +210,7 @@ func (h *handler) handleGetComments(c *gin.Context) {
 	}
 
 	// fetch comments using the translated SQL query
-	comments, err := fetchComments(int64(req.PostID), h.db, ids, req.Sort, token.UID, *h, c, commentSpecificKey)
+	comments, err := fetchComments(unmaskedPostID, h.db, ids, req.Sort, token.UID, *h, c, commentSpecificKey)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return

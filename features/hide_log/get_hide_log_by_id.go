@@ -2,19 +2,17 @@ package hideLog
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 func (h *handler) handleGetHideLogById(c *gin.Context) {
-	// get id from query param id
-	id := c.Query("id")
 
 	// get the user's token
 	token, err := utils.UserTokenFromContext(c)
@@ -23,7 +21,10 @@ func (h *handler) handleGetHideLogById(c *gin.Context) {
 		return
 	}
 
-	idNumeric, err := strconv.Atoi(id)
+	// get id from query param id
+	id := c.Query("id")
+
+	unmaskedId, err := encryption.Unmask(id)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return
@@ -32,7 +33,7 @@ func (h *handler) handleGetHideLogById(c *gin.Context) {
 	hideLog := db.HideLog{}
 
 	err = h.db.
-		Where("id = ? AND user_id = ?", idNumeric, token.UID).
+		Where("id = ? AND user_id = ?", unmaskedId, token.UID).
 		First(&hideLog).
 		Error
 	if err != nil {

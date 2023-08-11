@@ -2,6 +2,7 @@ package drafts
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,13 +26,19 @@ func (h *handler) handleEditDraft(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.DraftID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	updates := map[string]interface{}{
 		"title":   req.Title,
 		"content": req.Body,
 	}
 
 	results := h.db.Model(&db.Draft{}).
-		Where("id = ?", req.DraftID).
+		Where("id = ?", unmaskedId).
 		Where("user_id = ?", token.UID).
 		Updates(updates)
 

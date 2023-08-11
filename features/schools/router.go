@@ -28,10 +28,10 @@ type handler struct {
 
 // value that gets sent back to client for each of their watched schools
 type SchoolDetail struct {
-	db.School
-	Home     bool     `json:"home"`
-	Watched  bool     `json:"watched"`
-	Distance *float64 `json:"distance"`
+	db.School `json:"school"`
+	Home      bool     `json:"home"`
+	Watched   bool     `json:"watched"`
+	Distance  *float64 `json:"distance"`
 }
 
 type Coordinate struct {
@@ -40,7 +40,6 @@ type Coordinate struct {
 	radius float64
 }
 
-// todo: could use this in future: https://socketloop.com/tutorials/golang-find-location-by-ip-address-and-display-with-google-map
 // Algo from:
 // https://stackoverflow.com/a/365853
 func (c *Coordinate) getDistance(dest db.School) float64 {

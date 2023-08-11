@@ -3,11 +3,13 @@ package posts
 import (
 	"confesi/config"
 	tags "confesi/lib/emojis"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
+	"strings"
 
 	"fmt"
 	"net/http"
@@ -37,9 +39,18 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
-	if req.SchoolId == 0 && !req.AllSchools {
+	if req.SchoolId == "" && !req.AllSchools {
 		response.New(http.StatusBadRequest).Err("school id or all specification must be provided").Send(c)
 		return
+	}
+
+	var unmaskedSchoolId uint
+	if req.SchoolId != "" && !req.AllSchools {
+		unmaskedSchoolId, err = encryption.Unmask(req.SchoolId)
+		if err != nil {
+			response.New(http.StatusBadRequest).Err("invalid school id").Send(c)
+			return
+		}
 	}
 
 	// session key that can only be created by *this* user, so it can't be guessed to manipulate others' feeds
@@ -84,6 +95,16 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		return
 	}
 
+	var possibleExclusion string
+	if len(ids) > 0 {
+		cleanedIds := make([]string, len(ids))
+		for i, id := range ids {
+			cleanedIds[i] = strings.Trim(id, "{}") // remove curly braces
+		}
+		idsStr := strings.Join(cleanedIds, ", ") // convert the cleaned ids slice to a comma-separated string
+		possibleExclusion = "posts.id NOT IN ( " + idsStr + " )"
+	}
+
 	// select all posts that are not in the retrieved post IDs
 	var posts []PostDetail
 	query := h.db.
@@ -105,15 +126,12 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 		Preload("YearOfStudy").
 		Preload("Faculty").
 		Order(sortField).
+		Where(possibleExclusion).
 		Where("hidden = ?", false)
-
-	if len(ids) > 0 {
-		query = query.Where("posts.id NOT IN (?)", ids)
-	}
 
 	// if `all_schools` is true, then we don't need to filter by school
 	if !req.AllSchools {
-		query = query.Where("school_id = ?", req.SchoolId)
+		query = query.Where("school_id = ?", unmaskedSchoolId)
 	}
 
 	err = query.

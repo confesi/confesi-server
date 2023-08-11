@@ -33,6 +33,10 @@ cat env-example > .env
 
 Open the `.env` file and follow the [link](https://generate-random.org/api-token-generator) to create the `APPCHECK_TOKEN` env variable.
 
+**Ensure you have the correct 16-byte `MASK_SECRET` in the `.env` file.**
+
+An example is provided in the `env-example`, but obviously generate your own for prod.
+
 **Add your AWS data to the `.env` file.**
 
 Specifically what IAM roles are needed will be determined in the future. Currently, a general admin user suffices.

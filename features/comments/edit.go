@@ -2,6 +2,7 @@ package comments
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,9 +26,15 @@ func (h *handler) handleEditComment(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.CommentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	// Update the `Content` and `Edited` fields of the comment in a single query
 	results := h.db.Model(&db.Comment{}).
-		Where("id = ?", req.CommentID).
+		Where("id = ?", unmaskedId).
 		Where("hidden = false").
 		Where("user_id = ?", token.UID).
 		Updates(map[string]interface{}{

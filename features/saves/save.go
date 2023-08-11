@@ -2,6 +2,7 @@ package saves
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/logger"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -15,19 +16,19 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.SaveContentDetails) error {
+func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.SaveContentDetails, unmaskedId uint) error {
 	// bit of saved content
 	var err error
 	if req.ContentType == "post" {
 		savedPost := db.SavedPost{
 			UserID: token.UID,
-			PostID: req.ContentID,
+			PostID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Create(&savedPost).Error
 	} else if req.ContentType == "comment" {
 		savedComment := db.SavedComment{
 			UserID:    token.UID,
-			CommentID: req.ContentID,
+			CommentID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Create(&savedComment).Error
 	} else {
@@ -58,9 +59,14 @@ func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.
 func (h *handler) handleSave(c *gin.Context) {
 	// extract request
 	var req validation.SaveContentDetails
-
 	err := utils.New(c).Validate(&req)
 	if err != nil {
+		return
+	}
+
+	unmaskedId, err := encryption.Unmask(req.ContentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
 		return
 	}
 
@@ -70,7 +76,7 @@ func (h *handler) handleSave(c *gin.Context) {
 		return
 	}
 
-	err = h.saveContent(c, token, req)
+	err = h.saveContent(c, token, req, unmaskedId)
 	if err != nil {
 		// switch over err
 		switch err {

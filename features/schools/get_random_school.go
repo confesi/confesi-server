@@ -2,23 +2,28 @@ package schools
 
 import (
 	"confesi/config"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *handler) handleGetRandomSchool(c *gin.Context) {
+
 	schoolDetail := SchoolDetail{}
 
 	withoutSchoolId := c.Query("without-school")
 
-	// parse without-school parameter
-	parsedWithoutSchoolId, err := strconv.ParseInt(withoutSchoolId, 10, 64)
-	if err != nil {
-		parsedWithoutSchoolId = -1 // Set to a value that won't match any school ID
+	var unmaskedId *uint
+	if withoutSchoolId != "" {
+		unmasked, err := encryption.Unmask(withoutSchoolId)
+		unmaskedId = &unmasked
+		if err != nil {
+			response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+			return
+		}
 	}
 
 	token, err := utils.UserTokenFromContext(c)
@@ -44,7 +49,7 @@ func (h *handler) handleGetRandomSchool(c *gin.Context) {
 	`
 
 	// modify the query if without-school parameter is provided
-	if parsedWithoutSchoolId > 0 {
+	if unmaskedId != nil {
 		query += "WHERE s.id != ?"
 	}
 
@@ -53,8 +58,8 @@ func (h *handler) handleGetRandomSchool(c *gin.Context) {
 
 	// prepare arguments for the query
 	args := []interface{}{token.UID, token.UID}
-	if parsedWithoutSchoolId > 0 {
-		args = append(args, parsedWithoutSchoolId)
+	if unmaskedId != nil {
+		args = append(args, unmaskedId)
 	}
 
 	// execute the query
