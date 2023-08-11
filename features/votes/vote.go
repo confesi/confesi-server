@@ -139,7 +139,6 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 	// update the score of the content
 	query := tx.Model(&content.model).
 		Where("id = ?", content.id).
-		Clauses(clause.Locking{Strength: "UPDATE"}).
 		Updates(columnUpdates).
 		Clauses(clause.Returning{}).
 		Select("upvote, downvote").

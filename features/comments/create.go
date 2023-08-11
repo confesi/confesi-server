@@ -48,10 +48,10 @@ func getNextIdentifier(tx *gorm.DB, postId uint) (uint, error) {
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, serverError
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.CommentNumerics == nil {
+	if errors.Is(err, gorm.ErrRecordNotFound) || highestIdentifier.CommentNumerics == 0 {
 		return 1, nil
 	} else {
-		return *highestIdentifier.CommentNumerics + 1, nil
+		return highestIdentifier.CommentNumerics + 1, nil
 	}
 }
 
