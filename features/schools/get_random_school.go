@@ -11,13 +11,19 @@ import (
 )
 
 func (h *handler) handleGetRandomSchool(c *gin.Context) {
+
 	schoolDetail := SchoolDetail{}
 
 	withoutSchoolId := c.Query("without-school")
-	unmaskedId, err := encryption.Unmask(withoutSchoolId)
-	if err != nil {
-		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
-		return
+
+	var unmaskedId *uint
+	if withoutSchoolId != "" {
+		unmasked, err := encryption.Unmask(withoutSchoolId)
+		unmaskedId = &unmasked
+		if err != nil {
+			response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+			return
+		}
 	}
 
 	token, err := utils.UserTokenFromContext(c)
@@ -43,7 +49,7 @@ func (h *handler) handleGetRandomSchool(c *gin.Context) {
 	`
 
 	// modify the query if without-school parameter is provided
-	if unmaskedId > 0 {
+	if unmaskedId != nil {
 		query += "WHERE s.id != ?"
 	}
 
@@ -52,7 +58,7 @@ func (h *handler) handleGetRandomSchool(c *gin.Context) {
 
 	// prepare arguments for the query
 	args := []interface{}{token.UID, token.UID}
-	if unmaskedId > 0 {
+	if unmaskedId != nil {
 		args = append(args, unmaskedId)
 	}
 
