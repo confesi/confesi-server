@@ -33,6 +33,12 @@ func (h *handler) handleGetRankedPostsByReport(c *gin.Context) {
 		return
 	}
 
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -73,13 +79,18 @@ func (h *handler) handleGetRankedPostsByReport(c *gin.Context) {
 
 	posts := []db.Post{}
 	// fetch comments
-	err = h.db.
+	query := h.db.
 		Preload("Faculty").
 		Preload("School").
 		Preload("Category").
 		Preload("YearOfStudy").
-		Where("reviewed_by_mod = ?"+excludedIDQuery, req.ReviewedByMod).
-		Order("report_count DESC").
+		Where("reviewed_by_mod = ?"+excludedIDQuery, req.ReviewedByMod)
+
+	if len(userRoles.SchoolMods) > 0 {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+	}
+
+	err = query.Order("report_count DESC").
 		Find(&posts).
 		Limit(config.AdminPostsSortedByReportsPageSize).
 		Error

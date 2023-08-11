@@ -181,6 +181,7 @@ type Comment struct {
 	ReportCount               uint       `gorm:"column:report_count" json:"-"`
 	ReviewedByMod             bool       `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited                    bool       `gorm:"column:edited" json:"edited"`
+	SchoolID                  uint       `gorm:"column:school_id" json:"-"`
 }
 
 func (c *Comment) ObscureIfHidden() Comment {
@@ -347,6 +348,7 @@ type Report struct {
 	Post           *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
 	CommentID      *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
 	Comment        *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
+	SchoolID       uint        `gorm:"column:school_id" json:"-"`
 }
 
 type CronJob struct {

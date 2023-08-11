@@ -24,10 +24,20 @@ func (h *handler) handleGetReports(c *gin.Context) {
 		return
 	}
 
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
 	fetchResults := FetchedReports{}
 
 	query := h.db.
 		Where(req.Next.Cursor("created_at <"))
+
+	if len(userRoles.SchoolMods) > 0 {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+	}
 
 	if req.Type != "all" {
 		query = query.Where("type = ?", req.Type)

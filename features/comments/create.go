@@ -103,9 +103,10 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	// base comment
 	comment := db.Comment{
-		UserID:  token.UID,
-		PostID:  req.PostID,
-		Content: req.Content,
+		UserID:   token.UID,
+		PostID:   req.PostID,
+		Content:  req.Content,
+		SchoolID: post.SchoolID,
 	}
 
 	parentComment := db.Comment{}

@@ -18,13 +18,24 @@ func (h *handler) handleFetchReportForPostById(c *gin.Context) {
 		return
 	}
 
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
 	fetchResults := fetchResults{}
 
-	err = h.db.
+	query := h.db.
 		Preload("ReportType").
 		Where(req.Next.Cursor("created_at >")).
-		Where("post_id IS NOT NULL").
-		Order("created_at ASC").
+		Where("post_id IS NOT NULL")
+
+	if len(userRoles.SchoolMods) > 0 {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+	}
+
+	err = query.Order("created_at ASC").
 		Find(&fetchResults.Reports).
 		Limit(config.AdminViewAllReportsPerPostId).
 		Error

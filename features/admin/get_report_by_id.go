@@ -22,12 +22,25 @@ func (h *handler) handleGetReportById(c *gin.Context) {
 		return
 	}
 
+	userRoles, err := getUserRoles(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
+		return
+	}
+
 	report := db.Report{}
-	err = h.db.
+	query := h.db.
 		Preload("ReportType"). // preload the ReportType field of the Report
-		Where("id = ?", idNumeric).
-		First(&report).
+		Where("id = ?", idNumeric)
+
+	if len(userRoles.SchoolMods) > 0 {
+		query.Where("school_id IN ?", userRoles.SchoolMods)
+	}
+
+	err = query.First(&report).
 		Error
+
+	// If user does not have access to report or report does not exist, return 404
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.New(http.StatusNotFound).Err(notFound.Error()).Send(c)

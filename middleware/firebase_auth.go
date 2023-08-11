@@ -133,7 +133,7 @@ func UsersOnly(c *gin.Context, auth *auth.Client, allowedUser AllowedUser, roles
 					return
 				}
 			}
-			// fmt.Println(userRoleTypes)
+
 			c.Set("userRoleTypes", *userRoleTypes)
 
 			c.Set("user", token)
@@ -237,7 +237,7 @@ func RetrySyncPostgresAccountCreation(c *gin.Context, token *auth.Token) error {
 
 func createUserRoleTypes(roles []interface{}) (*UserRoleTypes, error) {
 	userRoleTypes := UserRoleTypes{}
-	pattern := `^mod_[0-9]+$`
+	pattern := `^mod\_[0-9]+$`
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, err

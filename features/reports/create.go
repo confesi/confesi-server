@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (h *handler) handleCreateReport(c *gin.Context) {
@@ -55,11 +56,17 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 		return
 	}
 
+	type foundSchoolId struct {
+		SchoolID uint
+	}
+	var SchoolID foundSchoolId
 	// inc the report count for the post/comment by 1
 	err = tx.
 		Model(&modelMatcher).
 		Where("id = ?", req.ContentID).
 		Update("report_count", gorm.Expr("report_count + 1")).
+		Clauses(clause.Returning{}).
+		Scan(&SchoolID).
 		Error
 	if err != nil {
 		tx.Rollback()
@@ -84,6 +91,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 	report.ReportedBy = token.UID
 	report.Description = req.Description
 	report.TypeID = uint(reportType.ID)
+	report.SchoolID = SchoolID.SchoolID
 
 	err = tx.Create(&report).Error
 	if err != nil {

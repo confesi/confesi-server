@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Attempts to execute the cron job once, without retries.
 func (h *handler) handleSetUserRole(c *gin.Context) {
 	// Validate request
 	var req validation.UpdateUserRole
@@ -38,6 +37,7 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 
 	// Obtain Roles
 	roles := user.CustomClaims["roles"].([]interface{})
+	sync := user.CustomClaims["sync"].(bool)
 
 	// Create Role Logs
 	roleLogs := db.RoleAssignmentLog{
@@ -97,7 +97,7 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 
 	// Set Custom Claims (Update User Roles)
 	err = h.fb.AuthClient.SetCustomUserClaims(c, uid, map[string]interface{}{
-		"sync":  true,
+		"sync":  sync,
 		"roles": roles,
 	})
 	if err != nil {

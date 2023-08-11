@@ -52,12 +52,12 @@ func Router(mux *gin.RouterGroup) {
 	mux.PATCH("/hide", h.handleHideContent) // Only posts are uni specific, comments are not
 
 	// ? Reports
-	mux.GET("/report", h.handleGetReportById)                          // TODO: Reports do not have school_id
-	mux.GET("/reports", h.handleGetReports)                            // TODO: Reports do not have school_id
-	mux.GET("/comments-by-report", h.handleGetRankedCommentsByReport)  // TODO: Reports do not have school_id
-	mux.GET("/posts-by-report", h.handleGetRankedPostsByReport)        // TODO: Reports do not have school_id
-	mux.GET("/reports-for-comment", h.handleFetchReportForCommentById) // TODO: Reports do not have school_id
-	mux.GET("/reports-for-post", h.handleFetchReportForPostById)       // TODO: Reports do not have school_id
+	mux.GET("/report", h.handleGetReportById)
+	mux.GET("/reports", h.handleGetReports)
+	mux.GET("/comments-by-report", h.handleGetRankedCommentsByReport)
+	mux.GET("/posts-by-report", h.handleGetRankedPostsByReport)
+	mux.GET("/reports-for-comment", h.handleFetchReportForCommentById)
+	mux.GET("/reports-for-post", h.handleFetchReportForPostById)
 
 	mux.Use(func(c *gin.Context) {
 		//! ADMINS ONLY FOR THESE ROUTES. VERY IMPORTANT. ANY EDITS TO THIS SHOULD RAISE RED FLAGS.
