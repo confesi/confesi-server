@@ -40,7 +40,7 @@ func (h *handler) handleSetUserRole(c *gin.Context) {
 	roles := user.CustomClaims["roles"].([]interface{})
 
 	// Create Role Logs
-	roleLogs := db.RoleAssignmentLogs{
+	roleLogs := db.RoleAssignmentLog{
 		ActionType:     req.Action,
 		ActionUserID:   token.UID,
 		AffectedUserID: uid,

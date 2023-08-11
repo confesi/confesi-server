@@ -49,6 +49,10 @@ func (FcmTopicPref) TableName() string {
 	return "fcm_topic_prefs"
 }
 
+func (RoleAssignmentLog) TableName() string {
+	return "fcm_topic_prefs"
+}
+
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmTopicPref struct {
 	ID                    uint   `gorm:"primaryKey" json:"-"`
@@ -356,7 +360,7 @@ type CronJob struct {
 	Type      string         `gorm:"column:type" json:"type"`
 }
 
-type RoleAssignmentLogs struct {
+type RoleAssignmentLog struct {
 	ID             int        `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt      TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	ActionUserID   string     `gorm:"column:action_user_id" json:"action_user_id"`
