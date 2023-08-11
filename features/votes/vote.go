@@ -238,9 +238,9 @@ func (h *handler) handleVote(c *gin.Context) {
 	vote.UserID = token.UID
 	vote.Vote = int(*req.Value)
 	if req.ContentType == "post" {
-		vote.PostID = &db.MaskedID{Val: unmaskedId}
+		vote.PostID = &db.EncryptedID{Val: unmaskedId}
 	} else if req.ContentType == "comment" {
-		vote.CommentID = &db.MaskedID{Val: unmaskedId}
+		vote.CommentID = &db.EncryptedID{Val: unmaskedId}
 	} else {
 		// should never happen with validated struct, but to be defensive
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("invalid content type")).Send(c)

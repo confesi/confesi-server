@@ -17,13 +17,13 @@ func (h *handler) unsaveContent(c *gin.Context, token *auth.Token, req validatio
 	if req.ContentType == "post" {
 		savedPost := db.SavedPost{
 			UserID: token.UID,
-			PostID: db.MaskedID{Val: unmaskedId},
+			PostID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Delete(&savedPost, "user_id = ? AND post_id = ?", savedPost.UserID, savedPost.PostID).Error
 	} else if req.ContentType == "comment" {
 		savedComment := db.SavedComment{
 			UserID:    token.UID,
-			CommentID: db.MaskedID{Val: unmaskedId},
+			CommentID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Delete(&savedComment, "user_id = ? AND comment_id = ?", savedComment.UserID, savedComment.CommentID).Error
 	} else {

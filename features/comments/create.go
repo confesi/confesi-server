@@ -116,7 +116,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// base comment
 	comment := db.Comment{
 		UserID:  token.UID,
-		PostID:  db.MaskedID{Val: unmaskedPostId},
+		PostID:  db.EncryptedID{Val: unmaskedPostId},
 		Content: req.Content,
 	}
 

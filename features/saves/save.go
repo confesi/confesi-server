@@ -22,13 +22,13 @@ func (h *handler) saveContent(c *gin.Context, token *auth.Token, req validation.
 	if req.ContentType == "post" {
 		savedPost := db.SavedPost{
 			UserID: token.UID,
-			PostID: db.MaskedID{Val: unmaskedId},
+			PostID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Create(&savedPost).Error
 	} else if req.ContentType == "comment" {
 		savedComment := db.SavedComment{
 			UserID:    token.UID,
-			CommentID: db.MaskedID{Val: unmaskedId},
+			CommentID: db.EncryptedID{Val: unmaskedId},
 		}
 		err = h.db.Create(&savedComment).Error
 	} else {

@@ -4,6 +4,7 @@ import (
 	"confesi/config"
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,10 +48,14 @@ func (h *handler) handleGetSchoolsByQuery(c *gin.Context) {
 
 	// Execute the query with the search query as a parameter
 	var schools []SchoolDetail
-	if err := h.DB.Raw(sqlQuery, token.UID, query, query, token.UID, query, query, config.QueryForSchoolsBySearchFloorSimilarityMatchValue, query, query, config.QueryForSchoolsBySearchPageSize).Scan(&schools).Error; err != nil {
+	if err := h.DB.
+		Raw(sqlQuery, token.UID, query, query, token.UID, query, query, config.QueryForSchoolsBySearchFloorSimilarityMatchValue, query, query, config.QueryForSchoolsBySearchPageSize).
+		Scan(&schools).Error; err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	fmt.Println(schools)
 
 	// loop through schools
 	for i := range schools {

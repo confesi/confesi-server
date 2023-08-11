@@ -17,7 +17,7 @@ import (
 func (h *handler) watchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool, unmaskedId uint) error {
 	school := db.SchoolFollow{
 		UserID:   token.UID,
-		SchoolID: db.MaskedID{Val: unmaskedId},
+		SchoolID: db.EncryptedID{Val: unmaskedId},
 	}
 	err := h.DB.Create(&school).Error
 	if err != nil {
