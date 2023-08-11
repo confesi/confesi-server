@@ -52,9 +52,9 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 
 	var content contentMatcher
 	if contentType == "comment" {
-		content = contentMatcher{fieldName: "comment_id", id: vote.CommentID, model: &db.Comment{}}
+		content = contentMatcher{fieldName: "comment_id", id: &vote.CommentID.Val, model: &db.Comment{}}
 	} else if contentType == "post" {
-		content = contentMatcher{fieldName: "post_id", id: vote.PostID, model: &db.Post{}}
+		content = contentMatcher{fieldName: "post_id", id: &vote.PostID.Val, model: &db.Post{}}
 	} else {
 		tx.Rollback()
 		return invalidValue
@@ -189,7 +189,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnCommentNoti(vote.Vote, votes.Upvote-votes.Downvote)).
-				WithData(builders.VoteOnCommentData(*vote.CommentID)).
+				WithData(builders.VoteOnCommentData(vote.CommentID.Val)).
 				Send(*h.db)
 		}
 	} else if vote.PostID != nil {
@@ -206,7 +206,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnPostNoti(vote.Vote, votes.Upvote-votes.Downvote)).
-				WithData(builders.VoteOnCommentData(*vote.PostID)).
+				WithData(builders.VoteOnCommentData(vote.PostID.Val)).
 				Send(*h.db)
 		}
 	}
@@ -238,9 +238,9 @@ func (h *handler) handleVote(c *gin.Context) {
 	vote.UserID = token.UID
 	vote.Vote = int(*req.Value)
 	if req.ContentType == "post" {
-		vote.PostID = &unmaskedId
+		vote.PostID = &db.MaskedID{Val: unmaskedId}
 	} else if req.ContentType == "comment" {
-		vote.CommentID = &unmaskedId
+		vote.CommentID = &db.MaskedID{Val: unmaskedId}
 	} else {
 		// should never happen with validated struct, but to be defensive
 		response.New(http.StatusBadRequest).Err(fmt.Sprintf("invalid content type")).Send(c)

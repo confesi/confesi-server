@@ -67,7 +67,7 @@ type School struct {
 func (s School) MarshalJSON() ([]byte, error) {
 	type Alias School
 	return json.Marshal(&struct {
-		Hash string `json:"hash"`
+		Hash string `json:"h_id"`
 		*Alias
 	}{
 		Hash:  encryption.Hash(s.ID.Val),
@@ -76,7 +76,7 @@ func (s School) MarshalJSON() ([]byte, error) {
 }
 
 type Faculty struct {
-	ID      MaskedID    `gorm:"primaryKey" json:"-"`
+	ID      MaskedID    `gorm:"primaryKey" json:"id"`
 	Faculty null.String `gorm:"column:faculty" json:"faculty"`
 }
 
@@ -98,7 +98,7 @@ func (FcmTopicPref) TableName() string {
 
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmTopicPref struct {
-	ID                    MaskedID `gorm:"primaryKey" json:"-"`
+	ID                    MaskedID `gorm:"primaryKey" json:"id"`
 	UserID                string   `gorm:"column:user_id" json:"-"`
 	DailyHottest          bool     `gorm:"column:daily_hottest" json:"daily_hottest"`
 	Trending              bool     `gorm:"column:trending" json:"trending"`
@@ -123,7 +123,7 @@ func (FcmToken) TableName() string {
 }
 
 type PostCategory struct {
-	ID   MaskedID `gorm:"primaryKey" json:"-"`
+	ID   MaskedID `gorm:"primaryKey" json:"id"`
 	Name string   `gorm:"column:name" json:"name"`
 }
 
@@ -139,11 +139,11 @@ type User struct {
 	ID            string      `gorm:"primaryKey" json:"-"`
 	CreatedAt     TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	YearOfStudyID *uint       `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudyID *MaskedID   `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy   YearOfStudy `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
-	FacultyID     *uint       `gorm:"column:faculty_id" json:"-"`
+	FacultyID     *MaskedID   `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty     `gorm:"foreignKey:FacultyID" json:"faculty"`
-	SchoolID      uint        `gorm:"column:school_id" json:"-"`
+	SchoolID      MaskedID    `gorm:"column:school_id" json:"-"`
 	School        School      `gorm:"foreignKey:SchoolID" json:"school"`
 	IsLimited     bool        `gorm:"is_limited" json:"-"`
 }
@@ -154,13 +154,13 @@ type SchoolFollow struct {
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
-	SchoolID  uint       `gorm:"column:school_id" json:"-"`
+	SchoolID  MaskedID   `gorm:"column:school_id" json:"school_id"`
 }
 
 func (p Post) MarshalJSON() ([]byte, error) {
 	type Alias Post
 	return json.Marshal(&struct {
-		Hash string `json:"hash"`
+		Hash string `json:"h_id"`
 		*Alias
 	}{
 		Hash:  encryption.Hash(p.ID.Val),
@@ -174,11 +174,11 @@ type Post struct {
 	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID        string          `gorm:"column:user_id" json:"-"`
-	SchoolID      uint            `gorm:"column:school_id" json:"-"`
+	SchoolID      MaskedID        `gorm:"column:school_id" json:"-"`
 	School        School          `gorm:"foreignKey:SchoolID" json:"school"`
-	FacultyID     *uint           `gorm:"column:faculty_id" json:"-"`
+	FacultyID     *MaskedID       `gorm:"column:faculty_id" json:"-"`
 	Faculty       Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
-	YearOfStudyID *uint           `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudyID *MaskedID       `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy   YearOfStudy     `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	Title         string          `gorm:"column:title" json:"title"`
 	Content       string          `gorm:"column:content" json:"content"`
@@ -192,7 +192,7 @@ type Post struct {
 	ReportCount   uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited        bool            `gorm:"column:edited" json:"edited"`
-	CategoryID    uint            `gorm:"column:category_id" json:"-"`
+	CategoryID    MaskedID        `gorm:"column:category_id" json:"-"`
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
 }
@@ -220,12 +220,21 @@ func (c *Comment) CensorComment() Comment {
 
 func (c Comment) MarshalJSON() ([]byte, error) {
 	type Alias Comment
+	var parentRootHash *string
+	if c.ParentRoot != nil {
+		hash := encryption.Hash(c.ParentRoot.Val)
+		parentRootHash = &hash
+	}
 	return json.Marshal(&struct {
-		Hash string `json:"hash"`
+		Hash           string  `json:"h_id"`
+		ParentRootHash *string `json:"h_parent_root_id"`
+		PostID         string  `json:"post_id"`
 		*Alias
 	}{
-		Hash:  encryption.Hash(c.ID.Val),
-		Alias: (*Alias)(&c),
+		Hash:           encryption.Hash(c.ID.Val),
+		ParentRootHash: parentRootHash,
+		PostID:         encryption.Hash(c.PostID.Val),
+		Alias:          (*Alias)(&c),
 	})
 }
 
@@ -234,7 +243,7 @@ type Comment struct {
 	ID                        MaskedID   `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt                 TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt                 TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	PostID                    uint       `gorm:"column:post_id" json:"post_id"`
+	PostID                    MaskedID   `gorm:"column:post_id" json:"post_id"`
 	NumericalUser             *uint      `gorm:"column:numerical_user" json:"numerical_user"`                               // this is a pointer because it can be null
 	NumericalReplyingUser     *uint      `gorm:"column:numerical_replying_user" json:"numerical_replying_user"`             // this is a pointer because it can be null
 	NumericalUserIsOp         *bool      `gorm:"column:numerical_user_is_op" json:"numerical_user_is_op"`                   // this is a pointer because it can be null
@@ -325,11 +334,11 @@ const (
 
 // ! Important not to serialize some fields!!
 type Vote struct {
-	ID        MaskedID `gorm:"primary_key;column:id" json:"id"`
-	Vote      int      `db:"vote" json:"vote"`
-	UserID    string   `db:"user_id" json:"-"`
-	PostID    *uint    `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
-	CommentID *uint    `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
+	ID        MaskedID  `gorm:"primary_key;column:id" json:"id"`
+	Vote      int       `db:"vote" json:"vote"`
+	UserID    string    `db:"user_id" json:"-"`
+	PostID    *MaskedID `db:"post_id" gorm:"default:NULL" json:"post_id"`       // Either one of these FKs can be null, but the constraint
+	CommentID *MaskedID `db:"comment_id" gorm:"default:NULL" json:"comment_id"` // is that exactly one of them is a valid FK
 }
 
 // ! Important not to serialize some fields!!
@@ -338,7 +347,7 @@ type SavedPost struct {
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
-	PostID    uint       `gorm:"column:post_id" json:"post_id"`
+	PostID    MaskedID   `gorm:"column:post_id" json:"post_id"`
 }
 
 // ! Important not to serialize some fields!!
@@ -347,7 +356,7 @@ type SavedComment struct {
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID    string     `gorm:"column:user_id" json:"-"`
-	CommentID uint       `gorm:"column:comment_id" json:"comment_id"`
+	CommentID MaskedID   `gorm:"column:comment_id" json:"comment_id"`
 }
 
 // ! Important not to serialize some fields!!
@@ -357,7 +366,7 @@ type Feedback struct {
 	UserID    string        `gorm:"column:user_id" json:"-"`
 	Content   string        `gorm:"column:content" json:"content"`
 	Type      *FeedbackType `gorm:"foreignKey:TypeID" json:"type,omitempty"` // Use "omitempty" here
-	TypeID    uint          `gorm:"column:type_id" json:"-"`                 // references the feedback_type table
+	TypeID    MaskedID      `gorm:"column:type_id" json:"-"`                 // references the feedback_type table
 }
 
 type ReportType struct {
@@ -391,9 +400,9 @@ type HideLog struct {
 	ID        MaskedID   `gorm:"primaryKey;column:id" json:"id"`
 	CreatedAt TimeMicros `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt TimeMicros `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	PostID    *uint      `db:"post_id" gorm:"default:NULL" json:"-"`
+	PostID    *MaskedID  `db:"post_id" gorm:"default:NULL" json:"-"`
 	Post      *Post      `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
-	CommentID *uint      `db:"comment_id" gorm:"default:NULL" json:"-"`
+	CommentID *MaskedID  `db:"comment_id" gorm:"default:NULL" json:"-"`
 	Comment   *Comment   `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 	Reason    string     `gorm:"column:reason" json:"reason"`
 	Removed   bool       `gorm:"column:removed" json:"removed"`
@@ -411,13 +420,13 @@ type Report struct {
 	UpdatedAt      TimeMicros  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	ReportedBy     string      `gorm:"column:reported_by" json:"-"`
 	Description    string      `gorm:"column:description" json:"description"`
-	TypeID         uint        `gorm:"column:type_id" json:"-"` // references the report_type table
+	TypeID         MaskedID    `gorm:"column:type_id" json:"-"` // references the report_type table
 	ReportType     *ReportType `gorm:"foreignKey:TypeID" json:"report_type"`
 	Result         *string     `gorm:"column:result" json:"result"` // can be null
 	HasBeenRemoved bool        `gorm:"column:has_been_removed" json:"has_been_removed"`
-	PostID         *uint       `db:"post_id" gorm:"default:NULL" json:"-"`
+	PostID         *MaskedID   `db:"post_id" gorm:"default:NULL" json:"-"`
 	Post           *Post       `gorm:"foreignKey:PostID" json:"post,omitempty"` // Use "omitempty" here
-	CommentID      *uint       `db:"comment_id" gorm:"default:NULL" json:"-"`
+	CommentID      *MaskedID   `db:"comment_id" gorm:"default:NULL" json:"-"`
 	Comment        *Comment    `gorm:"foreignKey:CommentID" json:"comment,omitempty"` // Use "omitempty" here
 }
 

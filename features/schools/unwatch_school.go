@@ -15,7 +15,7 @@ import (
 func (h *handler) unwatchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool, unmaskedId uint) error {
 	school := db.SchoolFollow{
 		UserID:   token.UID,
-		SchoolID: unmaskedId,
+		SchoolID: db.MaskedID{Val: unmaskedId},
 	}
 	err := h.DB.Delete(&school, "user_id = ? AND school_id = ?", school.UserID, school.SchoolID).Error
 	if err != nil {

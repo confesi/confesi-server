@@ -50,10 +50,10 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 	var modelMatcher interface{}
 	report := db.Report{}
 	if req.ContentType == "post" {
-		report.PostID = &unmaskedId
+		report.PostID = &db.MaskedID{Val: unmaskedId}
 		modelMatcher = &db.Post{}
 	} else if req.ContentType == "comment" {
-		report.CommentID = &unmaskedId
+		report.CommentID = &db.MaskedID{Val: unmaskedId}
 		modelMatcher = &db.Comment{}
 	} else {
 		// should never happen... but to be defensive
@@ -90,7 +90,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 
 	report.ReportedBy = token.UID
 	report.Description = req.Description
-	report.TypeID = reportType.ID.Val
+	report.TypeID = reportType.ID
 
 	err = tx.Create(&report).Error
 	if err != nil {

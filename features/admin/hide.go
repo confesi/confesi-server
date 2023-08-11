@@ -47,11 +47,11 @@ func (h *handler) handleHideContent(c *gin.Context) {
 	var table string
 	if req.ContentType == "comment" {
 		table = "comments"
-		hideLogEntry.CommentID = &unmaskedContentId
+		hideLogEntry.CommentID = &db.MaskedID{Val: unmaskedContentId}
 		commentOrPostIdMatcher = "comment_id"
 	} else if req.ContentType == "post" {
 		table = "posts"
-		hideLogEntry.PostID = &unmaskedContentId
+		hideLogEntry.PostID = &db.MaskedID{Val: unmaskedContentId}
 		commentOrPostIdMatcher = "post_id"
 	} else {
 		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)

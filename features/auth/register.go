@@ -116,7 +116,7 @@ func (h *handler) handleRegister(c *gin.Context) {
 		return
 	}
 
-	userToSaveToPostgres.SchoolID = school.ID.Val
+	userToSaveToPostgres.SchoolID = school.ID
 	userToSaveToPostgres.ID = userIdForPostgres
 
 	// save user to postgres
