@@ -36,7 +36,7 @@ const (
 	QueryForSchoolsBySearchFloorSimilarityMatchValue = 0.05                                     // how much of a match is required for a school to be returned in the search schools page (value is the min percent of match, IE: 0.05 = 5% match at least, or 1 in 20 of the characters match)
 	DefaultRange                                     = 50000                                    // default distance to include schools in, in meters
 	HottestPostNotificationsLowerBound               = "10:00"                                  // the lower bound of the hottest post notifications cron job
-	HottestPostNotificationsUpperBound               = "13:00"                                  // the upper bound of the hottest post notifications cron job
+	HottestPostNotificationsUpperBound               = "14:00"                                  // the upper bound of the hottest post notifications cron job
 )
 
 // ----- DEPLOYMENT CONSTANTS

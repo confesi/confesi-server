@@ -66,10 +66,16 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 	}
 }
 
-func YourSchoolsDailyHottestNoti() *messaging.Notification {
+func YourSchoolsDailyHottestNoti(occurences int) *messaging.Notification {
+	if occurences == 1 {
+		return &messaging.Notification{
+			Title: "Your School is Trending! 🔥",
+			Body:  "Check out todays hottest confession!",
+		}
+	}
 
 	return &messaging.Notification{
-		Title: "Your School is Trending! 🔥",
+		Title: fmt.Sprintf("Your School is Trending %d times! 🔥", occurences),
 		Body:  "Check out todays hottest confessions!",
 	}
 }

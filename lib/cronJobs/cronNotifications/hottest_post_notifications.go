@@ -8,7 +8,6 @@ import (
 	"confesi/lib/fire"
 	"confesi/lib/logger"
 	"errors"
-	"fmt"
 	"time"
 
 	fcmMsg "confesi/lib/firebase_cloud_messaging"
@@ -21,20 +20,20 @@ import (
 // Cron job that runs every  two hours to send notifications to users about the hottest posts.
 func StartDailyHottestPostsCronJob() {
 
-	// upperBound, err := time.Parse("15:04", config.HottestPostNotificationsUpperBound)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// lowerBound, err := time.Parse("15:04", config.HottestPostNotificationsLowerBound)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// intervalTime := upperBound.Sub(lowerBound)
-	// interval := intervalTime.Hours()
+	upperBound, err := time.Parse("15:04", config.HottestPostNotificationsUpperBound)
+	if err != nil {
+		panic(err)
+	}
+	lowerBound, err := time.Parse("15:04", config.HottestPostNotificationsLowerBound)
+	if err != nil {
+		panic(err)
+	}
+	intervalTime := upperBound.Sub(lowerBound)
+	interval := intervalTime.Hours()
 
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Minute().Do(func() {
-		cronJobs.RetryLoop(1000, 1000*60, 2.0, 20, func() error {
+	s.Every(interval).Hour().Do(func() {
+		cronJobs.RetryLoop(1000, 1000*60, 2.0, 2, func() error {
 			return DoHottestPostNotifications(time.Now().UTC())
 		})
 	})
@@ -72,8 +71,8 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 	err := tx.Model(&db.Post{}).
 		Order("hottest_on desc").
 		Where("hottest_on IS NOT NULL").
-		Find(&hottestPosts).
 		Limit(config.HottestPostsPageSize).
+		Find(&hottestPosts).
 		Error
 
 	if err != nil {
@@ -86,7 +85,8 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 	for _, post := range hottestPosts {
 		hottestPostSchoolIds = append(hottestPostSchoolIds, post.SchoolID.Val)
 	}
-	fmt.Println(hottestPostSchoolIds)
+
+	occurences := occurences(hottestPostSchoolIds)
 
 	// get the schools from the database off the school ids
 	var schools []db.School
@@ -129,12 +129,13 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 			}
 
 			tokens := []string{}
+
+			//Obtain fcm_tokens.tokens from fcm_tokens table where user_id is in users table and school_id is in schools table
 			err = tx.
 				Table("fcm_tokens").
-				Table("users").
 				Select("fcm_tokens.token").
-				Joins("JOIN schools ON schools.id = users.id").
 				Joins("JOIN users ON users.id = fcm_tokens.user_id").
+				Joins("JOIN schools ON schools.id = users.school_id").
 				Where("schools.id = ?", school.ID.Val).
 				Pluck("fcm_tokens.token", &tokens).
 				Error
@@ -143,12 +144,14 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 				tx.Rollback()
 				return err
 			}
-			fmt.Println(tokens)
-			fmt.Println("Attempting to send notifications to users")
+
 			// send notifications to users
+
+			hottestOccurences := occurences[school.ID.Val]
+
 			go fcmMsg.New(msgClient).
 				ToTokens(tokens).
-				WithMsg(builders.YourSchoolsDailyHottestNoti()).
+				WithMsg(builders.YourSchoolsDailyHottestNoti(hottestOccurences)).
 				WithData(builders.YourSchoolsDailyHottestData()).
 				Send(*tx)
 
@@ -169,4 +172,23 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 	}
 
 	return nil
+}
+
+// Create a function that returns a dictionary of the number of occurences of each item in a list
+func occurences(list []uint) map[uint]int {
+	// Create a dictionary
+	dict := make(map[uint]int)
+	// Iterate through the list
+	for _, item := range list {
+		// Check if the item is in the dictionary
+		_, exist := dict[item]
+		// If it is, increment the value
+		if exist {
+			dict[item] += 1
+		} else {
+			// If it's not, set the value to 1
+			dict[item] = 1
+		}
+	}
+	return dict
 }
