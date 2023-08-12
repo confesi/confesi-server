@@ -45,7 +45,7 @@ func (h *handler) handleSetFaculty(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("faculty doesn't exist").Send(c)
 		return
 	}
-	facultyID := uint8(faculty.ID)
+	facultyID := faculty.ID.Val
 
 	// update the user's year of study
 	res := tx.

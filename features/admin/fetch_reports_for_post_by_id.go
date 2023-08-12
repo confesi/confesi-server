@@ -2,6 +2,7 @@ package admin
 
 import (
 	"confesi/config"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -18,12 +19,19 @@ func (h *handler) handleFetchReportForPostById(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.PostID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(invalidValue.Error()).Send(c)
+		return
+	}
+
 	fetchResults := fetchResults{}
 
 	err = h.db.
 		Preload("ReportType").
 		Where(req.Next.Cursor("created_at >")).
 		Where("post_id IS NOT NULL").
+		Where("post_id = ?", unmaskedId).
 		Order("created_at ASC").
 		Find(&fetchResults.Reports).
 		Limit(config.AdminViewAllReportsPerPostId).

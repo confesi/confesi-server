@@ -1,6 +1,7 @@
 package comments
 
 import (
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
@@ -12,6 +13,13 @@ import (
 
 func (h *handler) handleGetCommentById(c *gin.Context) {
 	commentID := c.Query("id")
+
+	unmaskedId, err := encryption.Unmask(commentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -34,7 +42,7 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 				FROM comments
 				WHERE comments.id = ?
 				LIMIT 1
-			`, token.UID, commentID).
+			`, token.UID, unmaskedId).
 		First(&comment).
 		Error
 

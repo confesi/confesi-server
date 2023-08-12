@@ -3,6 +3,7 @@ package comments
 import (
 	"confesi/config/builders"
 	"confesi/db"
+	"confesi/lib/encryption"
 	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -74,6 +75,21 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// start a transaction
 	tx := h.db.Begin()
 
+	unmaskedPostId, err := encryption.Unmask(req.PostID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(invalidInput.Error()).Send(c)
+		return
+	}
+
+	var unmaskedCommentId uint
+	if req.ParentCommentID != nil {
+		unmaskedCommentId, err = encryption.Unmask(*req.ParentCommentID)
+		if err != nil {
+			response.New(http.StatusBadRequest).Err(invalidInput.Error()).Send(c)
+			return
+		}
+	}
+
 	// if something goes ary, rollback
 	defer func() {
 		if r := recover(); r != nil {
@@ -85,7 +101,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	var post db.Post
 	err = tx.
-		Where("id = ?", req.PostID).
+		Where("id = ?", unmaskedPostId).
 		First(&post).
 		Error
 	if err != nil {
@@ -103,7 +119,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	// base comment
 	comment := db.Comment{
 		UserID:  token.UID,
-		PostID:  req.PostID,
+		PostID:  db.EncryptedID{Val: unmaskedPostId},
 		Content: req.Content,
 	}
 
@@ -115,7 +131,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		// parent comment
 
 		err = tx.
-			Where("comments.id = ? AND comments.post_id = ?", req.ParentCommentID, req.PostID).
+			Where("comments.id = ? AND comments.post_id = ?", unmaskedCommentId, unmaskedPostId).
 			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Find(&parentComment).
 			Updates(map[string]interface{}{
@@ -147,7 +163,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	var nextIdentifier uint
 	// is OP?
 	if !isOp {
-		nextIdentifier, err = getNextIdentifier(tx, req.PostID)
+		nextIdentifier, err = getNextIdentifier(tx, unmaskedPostId)
 		if err != nil {
 			tx.Rollback()
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -174,7 +190,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	} else {
 
 		comment.NumericalUserIsOp = &f
-		err, alreadyPosted, userNumeric := getAlreadyPostedNumericalUser(tx, req.PostID, token.UID)
+		err, alreadyPosted, userNumeric := getAlreadyPostedNumericalUser(tx, unmaskedPostId, token.UID)
 		if err != nil {
 
 			tx.Rollback()
@@ -219,8 +235,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 	if req.ParentCommentID != nil {
 		res := tx.
 			Model(&db.Post{}).
+			Where("id = ?", unmaskedPostId).
 			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("id = ?", req.PostID).
 			Updates(map[string]interface{}{"comment_count": gorm.Expr("comment_count + ?", 1)})
 		if res.Error != nil {
 			tx.Rollback()
@@ -246,7 +262,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Select("fcm_tokens.token").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
 		Joins("JOIN posts ON posts.user_id = users.id").
-		Where("posts.id = ? AND users.id <> ?", req.PostID, token.UID).
+		Where("posts.id = ? AND users.id <> ?", unmaskedPostId, token.UID).
 		Pluck("fcm_tokens.token", &postTokens).
 		Error
 
@@ -254,7 +270,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		go fcm.New(h.fb.MsgClient).
 			ToTokens(postTokens).
 			WithMsg(builders.CommentAddedToPostNoti(req.Content)).
-			WithData(builders.CommentAddedToPostData(comment.ID, req.PostID)).
+			WithData(builders.CommentAddedToPostData(comment.ID.Val, unmaskedPostId)).
 			Send(*h.db)
 	}
 
@@ -270,14 +286,14 @@ func (h *handler) handleCreate(c *gin.Context) {
 			Select("fcm_tokens.token").
 			Joins("JOIN users ON users.id = fcm_tokens.user_id").
 			Joins("JOIN comments ON comments.user_id = users.id").
-			Where("comments.id = ? AND users.id <> ?", req.ParentCommentID, token.UID).
+			Where("comments.id = ? AND users.id <> ?", unmaskedCommentId, token.UID).
 			Pluck("fcm_tokens.token", &threadTokens).
 			Error
 		if err == nil && len(threadTokens) > 0 {
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(threadTokens).
 				WithMsg(builders.ThreadedCommentReplyNoti(req.Content)).
-				WithData(builders.ThreadedCommentReplyData(*req.ParentCommentID, comment.ID, req.PostID)).
+				WithData(builders.ThreadedCommentReplyData(unmaskedCommentId, comment.ID.Val, unmaskedPostId)).
 				Send(*h.db)
 		}
 	}

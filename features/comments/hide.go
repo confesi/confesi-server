@@ -2,6 +2,7 @@ package comments
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -26,10 +27,16 @@ func (h *handler) handleHideComment(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.CommentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	// Update the "hidden" field on a comment.
 	result := h.db.
 		Model(&db.Comment{}).
-		Where("id = ? AND user_id = ?", req.CommentID, token.UID).
+		Where("id = ? AND user_id = ?", unmaskedId, token.UID).
 		Update("hidden", "true")
 
 	if result.Error != nil {

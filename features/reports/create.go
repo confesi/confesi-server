@@ -2,6 +2,7 @@ package reports
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -29,6 +30,12 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.ContentID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err(invalidContentId.Error()).Send(c)
+		return
+	}
+
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
@@ -43,10 +50,10 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 	var modelMatcher interface{}
 	report := db.Report{}
 	if req.ContentType == "post" {
-		report.PostID = &req.ContentID
+		report.PostID = &db.EncryptedID{Val: unmaskedId}
 		modelMatcher = &db.Post{}
 	} else if req.ContentType == "comment" {
-		report.CommentID = &req.ContentID
+		report.CommentID = &db.EncryptedID{Val: unmaskedId}
 		modelMatcher = &db.Comment{}
 	} else {
 		// should never happen... but to be defensive
@@ -58,7 +65,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 	// inc the report count for the post/comment by 1
 	err = tx.
 		Model(&modelMatcher).
-		Where("id = ?", req.ContentID).
+		Where("id = ?", unmaskedId).
 		Update("report_count", gorm.Expr("report_count + 1")).
 		Error
 	if err != nil {
@@ -83,7 +90,7 @@ func (h *handler) handleCreateReport(c *gin.Context) {
 
 	report.ReportedBy = token.UID
 	report.Description = req.Description
-	report.TypeID = uint(reportType.ID)
+	report.TypeID = reportType.ID
 
 	err = tx.Create(&report).Error
 	if err != nil {

@@ -2,6 +2,7 @@ package user
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -27,11 +28,17 @@ func (h *handler) handleSetSchool(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.SchoolID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	// update the user's school
 	res := h.db.
 		Model(&db.User{}).
 		Where("id = ?", token.UID).
-		Update("school_id", req.SchoolID)
+		Update("school_id", unmaskedId)
 	if res.Error != nil {
 		var pgErr *pgconn.PgError
 		// Gorm doesn't properly handle some errors: https://github.com/go-gorm/gorm/issues/4037

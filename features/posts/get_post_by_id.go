@@ -2,9 +2,11 @@ package posts
 
 import (
 	tags "confesi/lib/emojis"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +15,15 @@ import (
 
 func (h *handler) handleGetPostById(c *gin.Context) {
 	postID := c.Query("id")
+
+	// cast as MaskedInt type else throw 400
+	maskedId, err := encryption.Unmask(postID)
+	if err != nil {
+		fmt.Println(err)
+		response.New(http.StatusBadRequest).Err("invalid post id").Send(c)
+		return
+	}
+
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -40,7 +51,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 				FROM posts
 				WHERE posts.id = ?
 				LIMIT 1
-			`, token.UID, postID).
+			`, token.UID, maskedId).
 		First(&post).
 		Error
 

@@ -2,6 +2,7 @@ package schools
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -11,10 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *handler) unwatchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool) error {
+func (h *handler) unwatchSchool(c *gin.Context, token *auth.Token, req validation.WatchSchool, unmaskedId uint) error {
 	school := db.SchoolFollow{
 		UserID:   token.UID,
-		SchoolID: req.SchoolID,
+		SchoolID: db.EncryptedID{Val: unmaskedId},
 	}
 	err := h.DB.Delete(&school, "user_id = ? AND school_id = ?", school.UserID, school.SchoolID).Error
 	if err != nil {
@@ -37,7 +38,14 @@ func (h *handler) handleUnwatchSchool(c *gin.Context) {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
-	err = h.unwatchSchool(c, token, req)
+
+	unmaskedId, err := encryption.Unmask(req.SchoolID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
+	err = h.unwatchSchool(c, token, req, unmaskedId)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 	}

@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -25,10 +26,16 @@ func (h *handler) handleHidePost(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.PostID)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	// Update the "hidden" field on a post.
 	result := h.db.
 		Model(&db.Post{}).
-		Where("id = ? AND user_id = ?", req.PostID, token.UID).
+		Where("id = ? AND user_id = ?", unmaskedId, token.UID).
 		Update("hidden", "true")
 
 	if result.Error != nil {

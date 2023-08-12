@@ -2,6 +2,7 @@ package comments
 
 import (
 	"confesi/config"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -29,6 +30,12 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 		return
 	}
 
+	unmaskedId, err := encryption.Unmask(req.ParentRoot)
+	if err != nil {
+		response.New(http.StatusBadRequest).Err("invalid id").Send(c)
+		return
+	}
+
 	fetchResults := ReplyComments{}
 
 	err = h.db.
@@ -47,7 +54,7 @@ func (h *handler) handleGetReplies(c *gin.Context) {
 			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC 
 			LIMIT ?
-		`, token.UID, req.ParentRoot, config.RepliesLoadedManually).
+		`, token.UID, unmaskedId, config.RepliesLoadedManually).
 		Find(&fetchResults.Comments).
 		Error
 

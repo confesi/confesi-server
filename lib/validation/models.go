@@ -32,7 +32,7 @@ type CreateDraftDetails struct {
 
 type SaveContentDetails struct {
 	// [required] content id to save/unsave
-	ContentID uint `json:"content_id" validate:"required"`
+	ContentID string `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 }
@@ -48,7 +48,7 @@ type SaveContentCursor struct {
 
 type VoteDetail struct {
 	// [required] content id to vote on
-	ContentID uint `json:"content_id" validate:"required"`
+	ContentID string `json:"content_id" validate:"required"`
 	// [required] "upvote" for upvote, "downvote" for downvote
 	Value *int8 `json:"value" validate:"oneof=-1 0 1"` // pointer required to "required" a zero-value (aka, vote can be 0)
 	// [required] "post" for post, "comment" for comment
@@ -57,7 +57,7 @@ type VoteDetail struct {
 
 type PostQuery struct {
 	Sort       string `json:"sort" validate:"oneof=trending new sentiment"`
-	SchoolId   uint   `json:"school_id"`
+	SchoolId   string `json:"school_id"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
 	AllSchools bool   `json:"all_schools"` // true or false, doesn't have "required" so that the zero-value is OK
@@ -65,7 +65,7 @@ type PostQuery struct {
 
 type WatchSchool struct {
 	// [required] school id to watch
-	SchoolID uint `json:"school_id" validate:"required"`
+	SchoolID string `json:"school_id" validate:"required"`
 }
 
 type UserStanding struct {
@@ -92,31 +92,31 @@ type UpdateFaculty struct {
 
 type UpdateSchool struct {
 	// [required] school to update to
-	SchoolID uint `json:"school_id" validate:"required"`
+	SchoolID string `json:"school_id" validate:"required"`
 }
 
 type CreateComment struct {
 	// [required] the post this comment is associated with
-	PostID uint `json:"post_id" validate:"required"`
+	PostID string `json:"post_id" validate:"required"`
 	// the comment this comment is threaded under. Left empty to indicate this is a "root-level" comment
-	ParentCommentID *uint `json:"parent_comment_id"`
+	ParentCommentID *string `json:"parent_comment_id"`
 	// [required] the actual text content of the comment
 	Content string `json:"content" validate:"required,min=1,max=500" gorm:"not null"`
 }
 
 type HideComment struct {
 	// [required] the id of comment to "delete"
-	CommentID uint `json:"comment_id" validate:"required"`
+	CommentID string `json:"comment_id" validate:"required"`
 }
 
 type HidePost struct {
 	// [required] the id of post to "delete"
-	PostID uint `json:"post_id" validate:"required"`
+	PostID string `json:"post_id" validate:"required"`
 }
 
 type InitialCommentQuery struct {
 	Sort       string `json:"sort" validate:"oneof=trending new"`
-	PostID     uint   `json:"post_id" validate:"required"`
+	PostID     string `json:"post_id" validate:"required"`
 	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
 	SessionKey string `json:"session_key" validate:"required"`
 }
@@ -130,7 +130,7 @@ type RepliesCommentQuery struct {
 	// [required] timestamp of last seen replied comment (microseconds since epoch)
 	Next NullableNext `json:"next"`
 	// [required] the comment to load replies for
-	ParentRoot uint `json:"parent_root" validate:"required"`
+	ParentRoot string `json:"parent_root" validate:"required"`
 }
 
 type FeedbackDetails struct {
@@ -177,7 +177,7 @@ type FcmTokenQuery struct {
 
 type HideContent struct {
 	// [required] content id
-	ContentID uint `json:"content_id" validate:"required"`
+	ContentID string `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 	// [required] true to hide, false to unhide (not having required with pointers to ensure zero-value is OK)
@@ -208,7 +208,7 @@ type FcmNotifictionPref struct {
 
 type ReportQuery struct {
 	// [required] content id to report
-	ContentID uint `json:"content_id" validate:"required"`
+	ContentID string `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 	// [required] report description
@@ -219,7 +219,7 @@ type ReportQuery struct {
 
 type UpdateReviewedByModQuery struct {
 	// [required] content id to report
-	ContentID uint `json:"content_id" validate:"required"`
+	ContentID string `json:"content_id" validate:"required"`
 	// [required] "post" for post, "comment" for comment
 	ContentType string `json:"content_type" validate:"required,oneof=post comment"`
 	// [required] true to mark as reviewed, false to unmark as reviewed (not having required with pointers to ensure zero-value is OK)
@@ -255,28 +255,28 @@ type RankedPostsByReportsQuery struct {
 
 type FetchReportsForCommentById struct {
 	// [required] comment id
-	CommentID uint `json:"comment_id" validate:"required"`
+	CommentID string `json:"comment_id" validate:"required"`
 	// [required] timestamp of last viewed content (ms since unix epoch)
 	Next NullableNext `json:"next"`
 }
 
 type FetchReportsForPostById struct {
 	// [required] post id
-	PostID uint `json:"post_id" validate:"required"`
+	PostID string `json:"post_id" validate:"required"`
 	// [required] timestamp of last viewed content (ms since unix epoch)
 	Next NullableNext `json:"next"`
 }
 
 type EditComment struct {
 	// [required] comment id
-	CommentID uint `json:"comment_id" validate:"required"`
+	CommentID string `json:"comment_id" validate:"required"`
 	// [required] the actual text content of the comment
 	Content string `json:"content" validate:"required,min=1,max=500" gorm:"not null"`
 }
 
 type EditPost struct {
 	// [required] post id
-	PostID uint `json:"post_id" validate:"required"`
+	PostID string `json:"post_id" validate:"required"`
 	// [required if Body empty/null] at most 100 characters
 	Title string `json:"title" validate:"max=100,required_without=Body"`
 	// [required if Title empty/null] at most 2000 characters
@@ -285,7 +285,7 @@ type EditPost struct {
 
 type EditDraft struct {
 	// [required] post id
-	DraftID uint `json:"draft_id" validate:"required"`
+	DraftID string `json:"draft_id" validate:"required"`
 	// [required if Body empty/null] at most 100 characters
 	Title string `json:"title" validate:"max=100,required_without=Body"`
 	// [required if Title empty/null] at most 2000 characters
@@ -294,5 +294,5 @@ type EditDraft struct {
 
 type DeleteDraft struct {
 	// [required] post id
-	DraftID uint `json:"draft_id" validate:"required"`
+	DraftID string `json:"draft_id" validate:"required"`
 }

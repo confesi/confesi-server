@@ -2,10 +2,10 @@ package admin
 
 import (
 	"confesi/db"
+	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -14,13 +14,14 @@ import (
 func (h *handler) handleFeedbackID(c *gin.Context) {
 	feedbackID := c.Param("feedbackID")
 
-	_, err := strconv.ParseInt(feedbackID, 10, 64)
+	unmaskedFeedbackId, err := encryption.Unmask(feedbackID)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err("invalid feedback id").Send(c)
 		return
 	}
+
 	feedback := db.Feedback{}
-	err = h.db.Model(&db.Feedback{}).Where("id = ?", feedbackID).First(&feedback).Error
+	err = h.db.Model(&db.Feedback{}).Where("id = ?", unmaskedFeedbackId).First(&feedback).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		response.New(http.StatusInternalServerError).Err("server error").Send(c)
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
