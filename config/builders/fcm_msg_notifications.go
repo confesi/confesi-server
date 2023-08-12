@@ -66,6 +66,14 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 	}
 }
 
+func YourSchoolsDailyHottestNoti() *messaging.Notification {
+
+	return &messaging.Notification{
+		Title: "Your School is Trending! 🔥",
+		Body:  "Check out todays hottest confessions!",
+	}
+}
+
 func DailyHottestPostsNoti(n int, date string) *messaging.Notification {
 	var confessionWord string
 	if n == 1 {

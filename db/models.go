@@ -67,6 +67,7 @@ type School struct {
 	Domain        string      `json:"domain"`
 	ImgUrl        string      `json:"img_url"`
 	Website       string      `json:"website"`
+	Timezone      string      `json:"timezone"`
 }
 
 type Faculty struct {

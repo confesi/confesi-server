@@ -41,6 +41,12 @@ func DailyHottestPostsData() map[string]string {
 	}
 }
 
+func YourSchoolsDailyHottestData() map[string]string {
+	return map[string]string{
+		"type": "daily_hottest_posts",
+	}
+}
+
 func TrendingPostData(postId uint) map[string]string {
 	return map[string]string{
 		"type":    "trending_post",
