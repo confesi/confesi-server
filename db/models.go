@@ -153,15 +153,15 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	ID              int             `gorm:"primary_key;column:id" json:"id"`
+	ID              EncryptedID     `gorm:"primary_key;column:id" json:"id"`
 	CreatedAt       TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt       TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	UserID          string          `gorm:"column:user_id" json:"-"`
-	SchoolID        uint            `gorm:"column:school_id" json:"-"`
+	SchoolID        EncryptedID     `gorm:"column:school_id" json:"-"`
 	School          School          `gorm:"foreignKey:SchoolID" json:"school"`
-	FacultyID       *uint           `gorm:"column:faculty_id" json:"-"`
+	FacultyID       *EncryptedID    `gorm:"column:faculty_id" json:"-"`
 	Faculty         Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
-	YearOfStudyID   *uint           `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudyID   *EncryptedID    `gorm:"column:year_of_study_id" json:"-"`
 	YearOfStudy     YearOfStudy     `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
 	Title           string          `gorm:"column:title" json:"title"`
 	Content         string          `gorm:"column:content" json:"content"`
@@ -175,7 +175,7 @@ type Post struct {
 	ReportCount     uint            `gorm:"column:report_count" json:"-"`
 	ReviewedByMod   bool            `gorm:"column:reviewed_by_mod" json:"-"`
 	Edited          bool            `gorm:"column:edited" json:"edited"`
-	CategoryID      uint            `gorm:"column:category_id" json:"-"`
+	CategoryID      EncryptedID     `gorm:"column:category_id" json:"-"`
 	Category        PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount    uint            `gorm:"column:comment_count" json:"comment_count"`
 	CommentNumerics uint            `gorm:"column:comment_numerics" json:"comment_numerics"`
