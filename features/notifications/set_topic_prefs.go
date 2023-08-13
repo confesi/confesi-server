@@ -93,7 +93,7 @@ func (h *handler) handleSetTopicPrefs(c *gin.Context) {
 		go fcm.New(h.fb.MsgClient).
 			ToTokens(tokens).
 			WithData(builders.NotificationSettingsSyncData()).
-			Send(*h.db)
+			Send()
 	} else if err != nil {
 		// "handle" the error if fetching tokens fails
 		logger.StdInfo(fmt.Sprintf("failed to send sync request for set topic prefs: %v", err))

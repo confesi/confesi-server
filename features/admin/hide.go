@@ -169,7 +169,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 				ToTokens([]string{tokenWithReportID.Token}).
 				WithMsg(builders.HideReportNoti()).
 				WithData(builders.HideReportData(tokenWithReportID.ReportID)).
-				Send(*h.db)
+				Send()
 		}
 	}
 
@@ -190,7 +190,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 				ToTokens([]string{tokenWithOffenderID.Token}).
 				WithMsg(builders.HideOffendingUserNoti()).
 				WithData(builders.HideOffendingUserData(tokenWithOffenderID.HideLogID)).
-				Send(*h.db)
+				Send()
 		}
 	}
 }

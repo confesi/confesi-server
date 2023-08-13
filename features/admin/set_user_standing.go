@@ -79,14 +79,14 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 				ToTokens(tokens).
 				WithMsg(builders.AccountStandingLimitedNoti(isLimited)).
 				WithData(builders.AccountStandingLimitedData(isLimited)).
-				Send(*h.db)
+				Send()
 		} else if req.Standing == "banned" || req.Standing == "unbanned" {
 			isBanned := req.Standing == "banned"
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.AccountStandingBannedNoti(isBanned)).
 				WithData(builders.AccountStandingBannedData(isBanned)).
-				Send(*h.db)
+				Send()
 		}
 	}
 

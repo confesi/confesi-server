@@ -1,6 +1,7 @@
 package fcm
 
 import (
+	"confesi/db"
 	"confesi/lib/logger"
 	"context"
 	"errors"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"firebase.google.com/go/messaging"
-	"gorm.io/gorm"
 )
 
 var (
@@ -54,7 +54,7 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 	return s
 }
 
-func (s *Sender) Send(db gorm.DB) (error, uint) {
+func (s *Sender) Send() (error, uint) {
 	messages := make([]*messaging.Message, 0)
 
 	if len(s.Tokens) > 0 && s.Topic == "" {
@@ -148,7 +148,7 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 	}
 
 	if len(deadTokens) > 0 {
-		result := db.Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(nil)
+		result := db.New().Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(&db.FcmToken{})
 		if result.Error != nil {
 			// Handle the error if the deletion fails
 			return result.Error, sends
