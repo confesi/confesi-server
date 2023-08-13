@@ -11,7 +11,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    env:
+      CIPHER_KEY: ${{ secrets.CIPHER_KEY }}
+      CIPHER_NONCE: ${{ secrets.CIPHER_NONCE }}
+      HKDF_SECRET: ${{ secrets.HKDF_SECRET }}
+      REDIS_CONN: ${{ secrets.REDIS_CONN }}
+      PUBLIC_DOC_ACCESS: ${{ secrets.PUBLIC_DOC_ACCESS }}
+      MASK_SECRET: ${{ secrets.MASK_SECRET }}
     steps:
       - uses: actions/checkout@v3
       

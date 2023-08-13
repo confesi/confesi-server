@@ -23,6 +23,10 @@
 
 Then put it here, like so `~/assets/IP2LOCATION/IP2LOCATION-LITE-DB5.IPV6.BIN`
 
+**Add required env variables to GitHub Secrets Manager for tests to pass:**
+
+Repo > Settings > Secrets and variables > Actions > New repository secret
+
 **Generate example `.env` file:**
 
 ```sh
