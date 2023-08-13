@@ -58,8 +58,8 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 // Sets if it should be sent as a background message only.
 //
 // Defaults to true.
-func (s *Sender) WithOnlyBackgroundMsg(onlyBackground bool) *Sender {
-	s.ContentAvailable = onlyBackground
+func (s *Sender) ShownInBackgroundOnly(onlyBackground bool) *Sender {
+	s.ContentAvailable = !onlyBackground
 	return s
 }
 
@@ -71,29 +71,51 @@ func (s *Sender) Send() (error, uint) {
 			"method": "POST",
 			"apns-priority": func() string {
 				if s.ContentAvailable {
-					return "5"
+					return "5" // Higher priority for immediate display
 				}
-				return "10"
+				return "10" // Lower priority for background processing
 			}(),
-			"apns-topic":       "com.confesi.app",
-			"apns-push-type":   "alert",
+			"apns-push-type": func() string {
+				if s.ContentAvailable {
+					return "alert" // Show on screen with sound
+				}
+				return "alert" // Background processing without alert
+			}(),
 			"apns-collapse-id": "confesi",
 			"apns-expiration":  "0",
 		},
 		Payload: &messaging.APNSPayload{
 			Aps: &messaging.Aps{
-				Sound:            "defaultCritical",
+				Sound: func() string {
+					if s.ContentAvailable {
+						return "default" // Play sound for alerts
+					}
+					return "default" // No sound for background processing
+				}(),
 				ContentAvailable: s.ContentAvailable,
+				Alert: func() *messaging.ApsAlert {
+					if s.ContentAvailable {
+						return &messaging.ApsAlert{
+							Title: s.Notification.Title,
+							Body:  s.Notification.Body,
+						}
+					}
+					return nil
+				}(),
 			},
 		},
 	}
 
 	androidConfig := &messaging.AndroidConfig{
+		Notification: &messaging.AndroidNotification{
+			ChannelID: "confesi",
+			Sound:     "default",
+		},
 		Priority: func() string {
 			if s.ContentAvailable {
-				return "high"
+				return "high" // High priority for alerts
 			}
-			return "normal"
+			return "normal" // Normal priority for background processing
 		}(),
 	}
 
@@ -177,7 +199,7 @@ func (s *Sender) Send() (error, uint) {
 	}
 
 	// log how many sends
-	logger.StdInfo(fmt.Sprintf("sent %d fcm messages successfully of %d attempts", sends, len(messages)))
+	logger.StdInfo(fmt.Sprintf("sent %d of %d fcm messages successfully", sends, len(messages)))
 
 	return nil, sends
 }

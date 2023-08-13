@@ -69,14 +69,14 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 func YourSchoolsDailyHottestNoti(occurences int) *messaging.Notification {
 	if occurences == 1 {
 		return &messaging.Notification{
-			Title: "Your school hit the Daily Hottest!",
-			Body:  fmt.Sprintf("Check it out in app!"),
+			Title: "Daily Hottest",
+			Body:  fmt.Sprintf("🔥 Your school reached the Daily Hottest page today"),
 		}
 	}
 
 	return &messaging.Notification{
-		Title: "Your school hit the Daily Hottest!",
-		Body:  fmt.Sprintf("%d times", occurences),
+		Title: "Daily Hottest",
+		Body:  fmt.Sprintf("🔥 Your school reached the Daily Hottest page %d times today", occurences),
 	}
 }
 
