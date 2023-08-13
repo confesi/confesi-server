@@ -8,25 +8,6 @@ on:
 
   workflow_dispatch:
 
-
-## Secrets I want to be in the env file for the unit tests
-
-
-# CIPHER_KEY="7571DFF385A22617"
-
-# CIPHER_NONCE="47363bcf91a1545668f0fd7a"
-
-# HKDF_SECRET="some-secret-string"
-
-# REDIS_CONN="redis:6379"
-
-# PUBLIC_DOC_ACCESS=true
-
-# MASK_SECRET="your_16_byte_key"
-
-
-
-
 jobs:
   build:
     runs-on: ubuntu-latest
