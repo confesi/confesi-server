@@ -18,7 +18,6 @@ var (
 type handler struct {
 	db *gorm.DB
 	fb *fire.FirebaseApp
-	
 }
 
 func Router(mux *gin.RouterGroup) {
