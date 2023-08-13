@@ -19,12 +19,13 @@ var (
 )
 
 type Sender struct {
-	Client         *messaging.Client
-	Tokens         []string
-	Topic          string
-	Data           map[string]string
-	Notification   *messaging.Notification
-	ContextTimeout time.Duration
+	Client           *messaging.Client
+	Tokens           []string
+	Topic            string
+	Data             map[string]string
+	Notification     *messaging.Notification
+	ContextTimeout   time.Duration
+	ContentAvailable bool
 }
 
 func New(client *messaging.Client) *Sender {
@@ -54,12 +55,52 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 	return s
 }
 
+// Sets if it should be sent as a background message only.
+//
+// Defaults to true.
+func (s *Sender) WithOnlyBackgroundMsg(onlyBackground bool) *Sender {
+	s.ContentAvailable = onlyBackground
+	return s
+}
+
 func (s *Sender) Send() (error, uint) {
 	messages := make([]*messaging.Message, 0)
+
+	apnsConfig := &messaging.APNSConfig{
+		Headers: map[string]string{
+			"method": "POST",
+			"apns-priority": func() string {
+				if s.ContentAvailable {
+					return "5"
+				}
+				return "10"
+			}(),
+			"apns-topic":       "com.confesi.app",
+			"apns-push-type":   "alert",
+			"apns-collapse-id": "confesi",
+			"apns-expiration":  "0",
+		},
+		Payload: &messaging.APNSPayload{
+			Aps: &messaging.Aps{
+				Sound:            "defaultCritical",
+				ContentAvailable: s.ContentAvailable,
+			},
+		},
+	}
+
+	androidConfig := &messaging.AndroidConfig{
+		Priority: func() string {
+			if s.ContentAvailable {
+				return "high"
+			}
+			return "normal"
+		}(),
+	}
 
 	if len(s.Tokens) > 0 && s.Topic == "" {
 		// Create messages for individual tokens
 		for _, token := range s.Tokens {
+			apnsConfig.Headers["path"] = "/3/device/" + token
 			message := &messaging.Message{
 				FCMOptions: &messaging.FCMOptions{
 					AnalyticsLabel: "confesi",
@@ -67,26 +108,8 @@ func (s *Sender) Send() (error, uint) {
 				Token:        token,
 				Data:         s.Data,
 				Notification: s.Notification,
-				Android: &messaging.AndroidConfig{ // todo: Android CONFIG (content available, priority, etc)
-					Priority: "high", // default to high to get that sweet "ding"
-
-				},
-				APNS: &messaging.APNSConfig{
-					Headers: map[string]string{
-						"method":           "POST",
-						"path":             "/3/device/" + token,
-						"apns-priority":    "10",
-						"apns-topic":       "com.confesi.app",
-						"apns-push-type":   "alert",
-						"apns-collapse-id": "confesi",
-						"apns-expiration":  "0",
-					},
-					Payload: &messaging.APNSPayload{
-						Aps: &messaging.Aps{
-							Sound: "defaultCritical",
-						},
-					},
-				}, // todo: APNS CONFIG (content available, priority, etc)
+				Android:      androidConfig,
+				APNS:         apnsConfig,
 			}
 
 			messages = append(messages, message)
@@ -97,11 +120,9 @@ func (s *Sender) Send() (error, uint) {
 			Topic:        s.Topic,
 			Data:         s.Data,
 			Notification: s.Notification,
-			Android: &messaging.AndroidConfig{
-				Priority: "high", // default to high to get that sweet "ding"
-			},
-			APNS:    &messaging.APNSConfig{},
-			Webpush: &messaging.WebpushConfig{},
+			Android:      androidConfig,
+			APNS:         apnsConfig,
+			Webpush:      &messaging.WebpushConfig{},
 		}
 
 		messages = append(messages, message)
