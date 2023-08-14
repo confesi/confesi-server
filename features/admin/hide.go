@@ -165,7 +165,7 @@ func (h *handler) handleHideContent(c *gin.Context) {
 		logger.StdInfo(fmt.Sprintf("error while fetching tokens for reports: %s", err))
 	} else if len(reports) > 0 {
 		for _, tokenWithReportID := range reports {
-			fcm.New(h.fb.MsgClient).
+			go fcm.New(h.fb.MsgClient).
 				ToTokens([]string{tokenWithReportID.Token}).
 				WithMsg(builders.HideReportNoti()).
 				WithData(builders.HideReportData(tokenWithReportID.ReportID)).

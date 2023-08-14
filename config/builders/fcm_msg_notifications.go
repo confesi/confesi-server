@@ -119,6 +119,13 @@ func HideReportNoti() *messaging.Notification {
 	}
 }
 
+func AdminSendNotificationNoti(title string, body string) *messaging.Notification {
+	return &messaging.Notification{
+		Title: title,
+		Body:  body,
+	}
+}
+
 func AccountStandingBannedNoti(isBanned bool) *messaging.Notification {
 	var word string
 	if isBanned {
