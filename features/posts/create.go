@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
@@ -18,7 +19,7 @@ var (
 	errorInvalidCategory = errors.New("invalid category")
 )
 
-func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token, category string) error {
+func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token, category string) (error, *db.Post) {
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
@@ -35,10 +36,10 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err := tx.Select("id").Where("name ILIKE ?", category).First(&postCategory).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		return serverError
+		return serverError, nil
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		return errorInvalidCategory
+		return errorInvalidCategory, nil
 	}
 
 	// fetch the user's facultyId, and schoolId
@@ -46,7 +47,7 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err = tx.Select("faculty_id, school_id, year_of_study_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
 		tx.Rollback()
-		return serverError
+		return serverError, nil
 	}
 
 	// post to save to postgres
@@ -75,19 +76,19 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	post.Sentiment = &sentimentValue
 
 	// save user to postgres
-	err = tx.Create(&post).Error
+	err = tx.Create(&post).Preload("School").Preload("YearOfStudy").Preload("Category").Preload("Faculty").Find(&post).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(serverError.Error())
+		return errors.New(serverError.Error()), nil
 	}
 
 	// commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
 		tx.Rollback()
-		return serverError
+		return serverError, nil
 	}
-	return nil
+	return nil, &post
 }
 
 func (h *handler) handleCreate(c *gin.Context) {
@@ -109,12 +110,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	err = h.createPost(c, title, body, token, req.Category)
+	err, post := h.createPost(c, title, body, token, req.Category)
 	if err != nil {
 		response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
 		return
 	}
 
 	// if all goes well, send 201
-	response.New(http.StatusCreated).Send(c)
+	response.New(http.StatusCreated).Val(PostDetail{Post: *post, UserVote: 0, Owner: true, Emojis: emojis.GetEmojis(post)}).Send(c)
 }
