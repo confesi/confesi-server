@@ -4,22 +4,57 @@ import (
 	"confesi/db"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
+	"confesi/lib/uploads"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"errors"
 	"net/http"
 	"strings"
 
-	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 var (
-	errorInvalidCategory = errors.New("invalid category")
+	invalidCategory = errors.New("invalid category")
 )
 
-func (h *handler) createPost(c *gin.Context, title string, body string, token *auth.Token, category string) (error, *db.Post) {
+func (h *handler) handleCreate(c *gin.Context) {
+
+	token, err := utils.UserTokenFromContext(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
+	// extract request
+	var req validation.CreatePostDetails
+	err = utils.New(c).ForceCustomTag("required_without", validation.RequiredWithout).Validate(&req)
+	if err != nil {
+		return
+	}
+
+	// Read the image from the request
+	imageFile, header, err := c.Request.FormFile("image") // assuming "image" is the field name
+	if err != nil && err != http.ErrMissingFile {
+		response.New(http.StatusBadRequest).Err("Error reading image").Send(c)
+		return
+	}
+
+	// If the image exists, attempt to upload
+	if imageFile != nil {
+		imageURL, err := uploads.Upload(imageFile, header.Filename)
+		if err != nil {
+			response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
+			return
+		}
+		post.ImageURL = imageURL
+	}
+
+	// strip whitespace from title and body (custom validator already confirmed this is still not empty)
+	title := strings.TrimSpace(req.Title)
+	body := strings.TrimSpace(req.Body)
+
 	// start a transaction
 	tx := h.db.Begin()
 	// if something goes ary, rollback
@@ -33,13 +68,15 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 
 	// check if category is valid
 	var postCategory db.PostCategory
-	err := tx.Select("id").Where("name ILIKE ?", category).First(&postCategory).Error
+	err = tx.Select("id").Where("name ILIKE ?", req.Category).First(&postCategory).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		return serverError, nil
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
 	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
-		return errorInvalidCategory, nil
+		response.New(http.StatusBadRequest).Err(invalidCategory.Error()).Send(c)
+		return
 	}
 
 	// fetch the user's facultyId, and schoolId
@@ -47,7 +84,8 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err = tx.Select("faculty_id, school_id, year_of_study_id").Where("id = ?", token.UID).First(&userData).Error
 	if err != nil {
 		tx.Rollback()
-		return serverError, nil
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
 	}
 
 	// post to save to postgres
@@ -79,43 +117,18 @@ func (h *handler) createPost(c *gin.Context, title string, body string, token *a
 	err = tx.Create(&post).Preload("School").Preload("YearOfStudy").Preload("Category").Preload("Faculty").Find(&post).Error
 	if err != nil {
 		tx.Rollback()
-		return errors.New(serverError.Error()), nil
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
 	}
 
 	// commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
 		tx.Rollback()
-		return serverError, nil
-	}
-	return nil, &post
-}
-
-func (h *handler) handleCreate(c *gin.Context) {
-
-	// extract request
-	var req validation.CreatePostDetails
-	err := utils.New(c).ForceCustomTag("required_without", validation.RequiredWithout).Validate(&req)
-	if err != nil {
-		return
-	}
-
-	// strip whitespace from title and body (custom validator already confirmed this is still not empty)
-	title := strings.TrimSpace(req.Title)
-	body := strings.TrimSpace(req.Body)
-
-	token, err := utils.UserTokenFromContext(c)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
-	}
-
-	err, post := h.createPost(c, title, body, token, req.Category)
-	if err != nil {
-		response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
 	// if all goes well, send 201
-	response.New(http.StatusCreated).Val(PostDetail{Post: *post, UserVote: 0, Owner: true, Emojis: emojis.GetEmojis(post)}).Send(c)
+	response.New(http.StatusCreated).Val(PostDetail{Post: post, UserVote: 0, Owner: true, Emojis: emojis.GetEmojis(&post)}).Send(c)
 }

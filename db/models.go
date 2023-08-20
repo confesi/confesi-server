@@ -179,6 +179,7 @@ type Post struct {
 	CategoryID    EncryptedID     `gorm:"column:category_id" json:"-"`
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
+	ImgUrl        *string         `gorm:"column:img_url" json:"img_url"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")

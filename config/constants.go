@@ -48,6 +48,12 @@ const (
 	Development        = true                 // development mode
 )
 
+// ---- AWS CONSTANTS
+
+const (
+	UserUploadsBucket = "confesi-uploads"
+)
+
 // ----- ALT CONSTANTS
 
 // -> pther constants are defined directly in the request struct validation tags, here: ~/lib/validation/models.go

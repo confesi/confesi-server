@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// todo: update addresses to be correct
 const (
 	sender  = "mail@confesi.com"
 	charSet = "UTF-8"
