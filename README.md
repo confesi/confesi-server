@@ -147,6 +147,9 @@ docker exec -it confesi-db psql -U postgres confesi
 export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
 export MASK_SECRET="" # taken from .env
 go run ./scripts/main.go --seed-schools
+
+# endpoint speed checker
+go run ./scripts/main.go --test-endpoints-speed
 ```
 
 ## Redis cache
