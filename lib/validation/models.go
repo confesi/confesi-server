@@ -14,15 +14,6 @@ type EmailQuery struct {
 	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 }
 
-type CreatePostDetails struct {
-	// [required if Body empty/null] at most 100 characters
-	Title string `json:"title" validate:"max=100,required_without=Body"`
-	// [required if Title empty/null] at most 2000 characters
-	Body string `json:"body" validate:"max=2000,required_without=Title"`
-	// [required] the category of post
-	Category string `json:"category" validate:"required"`
-}
-
 type CreateDraftDetails struct {
 	// [required if Body empty/null] at most 100 characters
 	Title string `json:"title" validate:"max=100,required_without=Body"`

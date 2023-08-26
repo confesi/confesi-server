@@ -32,13 +32,12 @@ func init() {
 func Upload(file io.Reader, filename string) (string, error) {
 	uuidName := uuid.New().String() + filepath.Ext(filename)
 
-	// Read the file bytes
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file bytes: %v", err)
 	}
 
-	// Check the image using Amazon Rekognition BEFORE uploading to S3
+	// check the image using AWS Rekognition BEFORE uploading to S3
 	input := &rekognition.DetectModerationLabelsInput{
 		Image: &rekognition.Image{
 			Bytes: fileBytes,
@@ -51,22 +50,22 @@ func Upload(file io.Reader, filename string) (string, error) {
 	}
 
 	for _, label := range result.ModerationLabels {
-		if *label.Confidence > 50 {
+		if *label.Confidence > config.AwsRekognitionConfidenceThreshold {
 			if *label.Name == "Explicit Nudity" || *label.Name == "Nudity" ||
 				*label.Name == "Graphic Male Nudity" || *label.Name == "Graphic Female Nudity" ||
-				*label.Name == "Sexual Activity" || *label.Name == "Partial Nudity" {
+				*label.Name == "Sexual Activity" || *label.Name == "Partial Nudity" || *label.Name == "Suggestive" {
 
-				// If inappropriate content is detected, return an error
+				// if inappropriate content is detected, return an error
 				return "", fmt.Errorf("inappropriate content detected in image: %v", *label.Name)
 			}
 		}
 	}
 
-	// If the image is appropriate, upload it to S3
+	// if the image is appropriate, upload it to our S3 bucket
 	_, err = s3svc.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(config.UserUploadsBucket),
 		Key:    aws.String(uuidName),
-		Body:   bytes.NewReader(fileBytes), // Use the bytes we read earlier
+		Body:   bytes.NewReader(fileBytes), // use the bytes read earlier
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to S3: %v", err)

@@ -1,0 +1,7 @@
+BEGIN;
+
+ALTER TABLE posts
+ALTER COLUMN img_url TYPE text USING COALESCE(img_url[1], NULL);
+
+END;
+

@@ -1,13 +1,14 @@
 package posts
 
 import (
+	"confesi/config"
 	"confesi/db"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/uploads"
 	"confesi/lib/utils"
-	"confesi/lib/validation"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -27,33 +28,101 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// extract request
-	var req validation.CreatePostDetails
-	err = utils.New(c).ForceCustomTag("required_without", validation.RequiredWithout).Validate(&req)
+	form, err := c.MultipartForm()
 	if err != nil {
+		response.New(http.StatusBadRequest).Err("ill-formatted form").Send(c)
 		return
 	}
 
-	// Read the image from the request
-	imageFile, header, err := c.Request.FormFile("image") // assuming "image" is the field name
-	if err != nil && err != http.ErrMissingFile {
-		response.New(http.StatusBadRequest).Err("Error reading image").Send(c)
+	fmt.Println("got here 1")
+
+	fmt.Println("form: ", form)
+
+	files := form.File["files"] // Adjusting this to "files" for multiple uploads
+	titles := form.Value["title"]
+	bodies := form.Value["body"]
+	categories := form.Value["category"]
+
+	fmt.Println("got here 2")
+
+	var title, body, category string
+	if len(titles) > 0 {
+		title = titles[0]
+	}
+	if len(bodies) > 0 {
+		body = bodies[0]
+	}
+	if len(categories) > 0 {
+		category = categories[0]
+	}
+
+	// strip whitespace from title & body
+	title = strings.TrimSpace(title)
+	body = strings.TrimSpace(body)
+
+	// input validation & sanitization
+	if len(title) == 0 && len(body) == 0 {
+		response.New(http.StatusBadRequest).Err("title and body cannot be empty").Send(c)
+		return
+	}
+	if len(category) == 0 || len(category) > 100 { // arbitrary max length to ensure no INSANE value is inputted
+		response.New(http.StatusBadRequest).Err("invalid category").Send(c)
 		return
 	}
 
-	// If the image exists, attempt to upload
-	if imageFile != nil {
-		imageURL, err := uploads.Upload(imageFile, header.Filename)
-		if err != nil {
-			response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
-			return
+	if len(files) > 5 {
+		response.New(http.StatusBadRequest).Err("cannot upload more than 5 images").Send(c)
+		return
+	}
+	if len(title) == 0 && len(body) == 0 {
+		response.New(http.StatusBadRequest).Err("title and body cannot be empty").Send(c)
+		return
+	}
+	if len(title) > config.TitleMaxLength {
+		response.New(http.StatusBadRequest).Err("title too long").Send(c)
+		return
+	}
+	if len(body) > config.BodyMaxLength {
+		response.New(http.StatusBadRequest).Err("body too long").Send(c)
+		return
+	}
+
+	fmt.Println("got here 3")
+
+	imgUrls := []string{}
+
+	fmt.Println("prefix", c.Request.Header.Get("Content-Type")) // todo: temp
+	fmt.Println(strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data"))
+	fmt.Println("files: ", files)
+
+	// Check if the request's content type is multipart/form-data before trying to read the image
+	if strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
+		fmt.Println("got here 4")
+		for _, fileHeader := range files {
+			file, err := fileHeader.Open()
+			fmt.Println("got here 5")
+
+			// If an error other than http.ErrMissingFile occurs, send an error response
+			if err != nil {
+				response.New(http.StatusBadRequest).Err("Error reading file").Send(c)
+				return
+			}
+
+			// Attempt to upload
+			fileURL, err := uploads.Upload(file, fileHeader.Filename)
+			if err != nil {
+				response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
+				return
+			}
+
+			imgUrls = append(imgUrls, fileURL)
+
+			// Remember to close the file after processing
+			file.Close()
 		}
-		post.ImageURL = imageURL
 	}
 
-	// strip whitespace from title and body (custom validator already confirmed this is still not empty)
-	title := strings.TrimSpace(req.Title)
-	body := strings.TrimSpace(req.Body)
+	fmt.Println("got here 6")
 
 	// start a transaction
 	tx := h.db.Begin()
@@ -68,7 +137,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 
 	// check if category is valid
 	var postCategory db.PostCategory
-	err = tx.Select("id").Where("name ILIKE ?", req.Category).First(&postCategory).Error
+	err = tx.Select("id").Where("name ILIKE ?", category).First(&postCategory).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -102,6 +171,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
+		ImgUrl:        &imgUrls[0], // todo: change this to a slice of strings
 		// `HottestOn` not included so that it defaults to NULL
 	}
 

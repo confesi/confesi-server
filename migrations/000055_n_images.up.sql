@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE posts
+ALTER COLUMN img_url TYPE text[] USING CASE WHEN img_url IS NOT NULL THEN ARRAY[img_url] ELSE ARRAY[]::text[] END;
+
+END;
