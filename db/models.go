@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"time"
 
@@ -12,6 +13,48 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
+
+type PgTxtArr []string
+
+func (a *PgTxtArr) Scan(src interface{}) error {
+	var str string
+	switch v := src.(type) {
+	case []byte:
+		str = string(v)
+	case string:
+		str = v
+	default:
+		return fmt.Errorf("unable to scan PgTxtArr: unexpected type: %T", src)
+	}
+
+	// Trimming the surrounding curly braces of PostgreSQL arrays
+	str = strings.Trim(str, "{}")
+
+	// If the trimmed string is empty, it means the array was empty.
+	if str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	// Splitting by comma, but be careful about commas inside the URLs
+	pieces := strings.Split(str, ",")
+
+	// Check and handle quoted strings
+	var cleanPieces []string
+	for _, piece := range pieces {
+		if strings.HasPrefix(piece, `"`) && strings.HasSuffix(piece, `"`) {
+			piece = strings.Trim(piece, `"`)
+		}
+		cleanPieces = append(cleanPieces, piece)
+	}
+
+	*a = cleanPieces
+	return nil
+}
+
+func (a PgTxtArr) Value() (driver.Value, error) {
+	return "{" + strings.Join(a, ",") + "}", nil
+}
 
 type EncryptedID struct {
 	Val uint
@@ -179,7 +222,7 @@ type Post struct {
 	CategoryID    EncryptedID     `gorm:"column:category_id" json:"-"`
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
-	ImgUrl        *string         `gorm:"column:img_url" json:"img_url"`
+	ImgUrls       PgTxtArr        `gorm:"column:img_urls" json:"img_urls"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")

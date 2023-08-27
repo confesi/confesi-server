@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,6 +38,13 @@ func Upload(file io.Reader, filename string) (string, error) {
 		return "", fmt.Errorf("failed to read file bytes: %v", err)
 	}
 
+	// detect file type to be either jpg, jpeg or png
+	// if the file type is not one of these, return an error
+	fileType := http.DetectContentType(fileBytes)
+	if fileType != "image/jpeg" && fileType != "image/jpg" && fileType != "image/png" {
+		return "", fmt.Errorf("invalid file type: %v", fileType)
+	}
+
 	// check the image using AWS Rekognition BEFORE uploading to S3
 	input := &rekognition.DetectModerationLabelsInput{
 		Image: &rekognition.Image{
@@ -63,7 +71,7 @@ func Upload(file io.Reader, filename string) (string, error) {
 
 	// if the image is appropriate, upload it to our S3 bucket
 	_, err = s3svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(config.UserUploadsBucket),
+		Bucket: aws.String(config.AwsUserUploadsBucket),
 		Key:    aws.String(uuidName),
 		Body:   bytes.NewReader(fileBytes), // use the bytes read earlier
 	})
@@ -71,5 +79,5 @@ func Upload(file io.Reader, filename string) (string, error) {
 		return "", fmt.Errorf("failed to upload to S3: %v", err)
 	}
 
-	return "https://YOUR_S3_URL/" + uuidName, nil
+	return config.AwsUserUploadsBucketBaseUrl + uuidName, nil
 }

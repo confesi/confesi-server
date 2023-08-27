@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -34,16 +35,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("got here 1")
-
-	fmt.Println("form: ", form)
-
 	files := form.File["files"] // Adjusting this to "files" for multiple uploads
 	titles := form.Value["title"]
 	bodies := form.Value["body"]
 	categories := form.Value["category"]
 
-	fmt.Println("got here 2")
+	fmt.Println("files: ", files)
 
 	var title, body, category string
 	if len(titles) > 0 {
@@ -87,20 +84,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("got here 3")
-
 	imgUrls := []string{}
-
-	fmt.Println("prefix", c.Request.Header.Get("Content-Type")) // todo: temp
-	fmt.Println(strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data"))
-	fmt.Println("files: ", files)
 
 	// Check if the request's content type is multipart/form-data before trying to read the image
 	if strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
-		fmt.Println("got here 4")
 		for _, fileHeader := range files {
 			file, err := fileHeader.Open()
-			fmt.Println("got here 5")
 
 			// If an error other than http.ErrMissingFile occurs, send an error response
 			if err != nil {
@@ -121,8 +110,6 @@ func (h *handler) handleCreate(c *gin.Context) {
 			file.Close()
 		}
 	}
-
-	fmt.Println("got here 6")
 
 	// start a transaction
 	tx := h.db.Begin()
@@ -157,7 +144,9 @@ func (h *handler) handleCreate(c *gin.Context) {
 		return
 	}
 
-	// post to save to postgres
+	// Convert your []string to PgTxtArr
+	imgURLsArray := db.PgTxtArr(imgUrls)
+
 	post := db.Post{
 		UserID:        token.UID,
 		SchoolID:      userData.SchoolID,
@@ -171,9 +160,11 @@ func (h *handler) handleCreate(c *gin.Context) {
 		Upvote:        0,
 		TrendingScore: 0,
 		Hidden:        false,
-		ImgUrl:        &imgUrls[0], // todo: change this to a slice of strings
+		ImgUrls:       imgURLsArray,
 		// `HottestOn` not included so that it defaults to NULL
 	}
+
+	fmt.Println("post: ", post)
 
 	// sentiment analysis of post
 	sentiment := AnalyzeText(title + "\n" + body)

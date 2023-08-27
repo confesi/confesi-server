@@ -53,8 +53,9 @@ const (
 // ---- AWS CONSTANTS
 
 const (
-	UserUploadsBucket                 string  = "confesi-uploads"
+	AwsUserUploadsBucket              string  = "confesi-uploads"
 	AwsRekognitionConfidenceThreshold float64 = 80
+	AwsUserUploadsBucketBaseUrl       string  = "https://confesi-uploads.s3.us-east-2.amazonaws.com/"
 )
 
 // ----- ALT CONSTANTS

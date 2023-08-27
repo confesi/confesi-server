@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE posts
-ALTER COLUMN img_url TYPE text[] USING CASE WHEN img_url IS NOT NULL THEN ARRAY[img_url] ELSE ARRAY[]::text[] END;
+ALTER TABLE posts RENAME COLUMN img_url TO img_urls;
+ALTER TABLE posts ALTER COLUMN img_urls TYPE text[] USING CASE WHEN img_urls IS NOT NULL THEN ARRAY[img_urls] ELSE ARRAY[]::text[] END;
 
 END;
