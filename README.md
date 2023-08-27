@@ -144,10 +144,16 @@ docker exec -it confesi-db psql -U postgres confesi
 ./scripts/database dbml
 
 # seed data (use the POSTGRES_DSN found in `/scripts/test` not `.env`)
-export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
-export MASK_SECRET="" # taken from .env
-go run ./scripts/main.go --seed-schools
-```
+export POSTGRES_DSN="" 
+export MASK_SECRET="" # Found in `.env`
+
+go run ./scripts/main.go --seed-all # Seed every seedable table
+
+go run ./scripts/main.go --seed-schools # Seed schools
+go run ./scripts/main.go --seed-feedback-types # Seed feedback types
+go run ./scripts/main.go --seed-report-types # Seed report types
+go run ./scripts/main.go --seed-post-categories # Seed post categories
+``` 
 
 ## Redis cache
 

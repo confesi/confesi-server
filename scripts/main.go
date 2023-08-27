@@ -12,6 +12,8 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"gorm.io/gorm/clause"
 )
 
 func main() {
@@ -25,11 +27,155 @@ func main() {
 		nonceGenerator()
 	case "--seed-schools":
 		seed_schools()
+	case "--seed-all":
+		seed_all()
+	case "--seed-feedback-types":
+		seed_feedback_types()
+	case "--seed-report-types":
+		seed_report_types()
+	case "--seed-post-categories":
+		seed_post_categories()
+	case "--help":
+		fmt.Println("usage: [--new-nonce] [--seed-schools] [--seed-all] [--seed-feedback-types] [--seed-report-types] [--seed-post-categories]")
 	default:
 		fmt.Println("invalid argument")
-		fmt.Println("usage: [--new-nonce]")
+		fmt.Println("usage: [--help]")
 		os.Exit(0)
 	}
+}
+
+func seed_all() {
+	seed_schools()
+	seed_feedback_types()
+	seed_report_types()
+	seed_post_categories()
+}
+
+func seed_post_categories() {
+	f, err := os.ReadFile("./seeds/seed_post_categories.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	categories := []db.PostCategory{}
+	reader.Read() // skips header
+
+	for {
+
+		result, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			log.Fatal(nil)
+		}
+
+		category := db.PostCategory{
+			Name: result[0],
+		}
+
+		categories = append(categories, category)
+	}
+
+	pg := db.New()
+
+	result := pg.
+		Model(&[]db.PostCategory{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(categories)
+
+	if result.Error != nil {
+		panic(result.Error.Error())
+	}
+	fmt.Println("Seeding Post Categories Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(categories)))
+}
+
+func seed_report_types() {
+	f, err := os.ReadFile("./seeds/seed_report_types.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	types := []db.ReportType{}
+	reader.Read() // skips header
+
+	for {
+		result, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			log.Fatal(nil)
+		}
+
+		report_type := db.ReportType{
+			Type: result[0],
+		}
+
+		types = append(types, report_type)
+	}
+
+	pg := db.New()
+
+	result := pg.
+		Model(&[]db.ReportType{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(types)
+
+	if result.Error != nil {
+		panic(result.Error.Error())
+	}
+	fmt.Println("Seeding Report Types Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
+}
+
+func seed_feedback_types() {
+	f, err := os.ReadFile("./seeds/seed_feedback_types.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	types := []db.FeedbackType{}
+	reader.Read() // skips header
+
+	for {
+		result, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			log.Fatal(nil)
+		}
+
+		feedback_type := db.FeedbackType{
+			Type: result[0],
+		}
+
+		types = append(types, feedback_type)
+	}
+
+	pg := db.New()
+
+	result := pg.
+		Model(&[]db.FeedbackType{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(types)
+
+	if result.Error != nil {
+		panic(result.Error.Error())
+	}
+	fmt.Println("Seeding Feedback Types Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
 }
 
 func seed_schools() {
@@ -64,28 +210,33 @@ func seed_schools() {
 		}
 
 		school := db.School{
-			Name:   result[0],
-			Abbr:   result[1],
-			Lat:    float32(lat),
-			Lon:    float32(lon),
-			Domain: result[4],
+			Name:     result[0],
+			Abbr:     result[1],
+			Lat:      float32(lat),
+			Lon:      float32(lon),
+			Domain:   result[4],
+			ImgUrl:   result[5],
+			Website:  result[6],
+			Timezone: result[7],
 		}
 
 		schools = append(schools, school)
 	}
 
 	pg := db.New()
-	fmt.Print("Delete existing school table")
-	pg.Exec("DELETE FROM schools")
-	fmt.Println("\tOK")
 
-	fmt.Print("Adding data")
-	result := pg.Model(&[]db.School{}).Create(schools)
+	// Create the schools rows in the schools table, but on conflict do not create
+
+	result := pg.
+		Model(&[]db.School{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(schools)
+
 	if result.Error != nil {
-		fmt.Println("\t\t\tERROR")
 		panic(result.Error.Error())
 	}
-	fmt.Println("\t\t\tOK")
+	fmt.Println("Seeding Schools Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(schools)))
 }
 
 func nonceGenerator() {
