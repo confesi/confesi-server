@@ -2,6 +2,7 @@ package posts
 
 import (
 	"confesi/db"
+	"confesi/lib/emojis"
 	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -46,12 +47,31 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		"sentiment": &sentimentValue,
 	}
 
+	var post PostDetail
+
 	// Update the `Title`/`Body` and `Edited` fields of the post in a single query
-	results := h.db.Model(&db.Post{}).
+	results := h.db.
+		Select(`
+			posts.*, COALESCE(
+				(
+					SELECT votes.vote
+					FROM votes
+					WHERE votes.post_id = posts.id
+					AND votes.user_id = ?
+					LIMIT 1
+				),
+				'0'::vote_score_value
+			) AS user_vote`, token.UID).
+		Model(&db.Post{}).
 		Where("id = ?", unmaskedID).
 		Where("hidden = false").
 		Where("user_id = ?", token.UID).
-		Updates(updates)
+		Updates(updates).
+		Preload("School").
+		Preload("YearOfStudy").
+		Preload("Category").
+		Preload("Faculty").
+		Find(&post)
 
 	if results.Error != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
@@ -62,6 +82,6 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		response.New(http.StatusNotFound).Err(notFound.Error()).Send(c)
 		return
 	}
-
-	response.New(http.StatusOK).Send(c)
+	// todo: fix 99 value
+	response.New(http.StatusOK).Val(PostDetail{Post: post.Post, Owner: true, UserVote: post.UserVote, Emojis: emojis.GetEmojis(&post.Post)}).Send(c)
 }
