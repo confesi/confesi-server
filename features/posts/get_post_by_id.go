@@ -62,7 +62,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			response.New(http.StatusBadRequest).Err("post not found").Send(c)
+			response.New(http.StatusNotFound).Err("post not found").Send(c)
 			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
