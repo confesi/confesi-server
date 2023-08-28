@@ -38,6 +38,8 @@ type PostDetail struct {
 	db.Post  `json:"post"`
 	UserVote int      `json:"user_vote"`
 	Owner    bool     `json:"owner"`
+	Saved    bool     `json:"saved"`
+	Reported bool     `json:"reported"`
 	Emojis   []string `json:"emojis" gorm:"-"`
 }
 
