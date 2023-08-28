@@ -26,12 +26,15 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 
 	dateStr := c.Query("day")
 
+	var datePtr *time.Time // Use a pointer
 	var date time.Time
 	if dateStr == "" {
-		// Fetch the most recent day with hottest posts
+		// Try fetching the most recent day with hottest posts
 		err = h.db.Raw("SELECT MAX(hottest_on) FROM posts WHERE hidden = ?", false).Scan(&date).Error
-		if err != nil {
-			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		if err != nil || date.IsZero() { // Check if date is zero value, which means the query returned NULL
+			date = time.Now() // Set to current date
+			dateStr = date.Format("2006-01-02")
+			response.New(http.StatusOK).Val(DailyHottestReturn{Posts: []PostDetail{}, Date: dateStr}).Send(c)
 			return
 		}
 		dateStr = date.Format("2006-01-02")
@@ -46,7 +49,7 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 
 	var posts []PostDetail
 	err = h.db.
-		Where("hottest_on = ?", date).
+		Where("hottest_on = ?", *datePtr). // Dereference the datePtr here
 		Where("hidden = ?", false).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").

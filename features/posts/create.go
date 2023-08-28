@@ -1,6 +1,8 @@
 package posts
 
 import (
+	"bytes"
+	"compress/gzip"
 	"confesi/config"
 	"confesi/db"
 	"confesi/lib/emojis"
@@ -9,6 +11,7 @@ import (
 	"confesi/lib/utils"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"strings"
@@ -16,6 +19,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// This function assumes you've chosen to use gzip for compression.
+func decompressData(data io.Reader) (io.Reader, error) {
+	// Replace with your decompression logic
+	r, err := gzip.NewReader(data)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	var out bytes.Buffer
+	_, err = io.Copy(&out, r)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
 
 var (
 	invalidCategory = errors.New("invalid category")
@@ -96,9 +115,14 @@ func (h *handler) handleCreate(c *gin.Context) {
 				response.New(http.StatusBadRequest).Err("Error reading file").Send(c)
 				return
 			}
+			decompressedFile, err := decompressData(file)
+			if err != nil {
+				response.New(http.StatusBadRequest).Err("Error decompressing file").Send(c)
+				return
+			}
 
 			// Attempt to upload
-			fileURL, err := uploads.Upload(file, fileHeader.Filename)
+			fileURL, err := uploads.Upload(decompressedFile, fileHeader.Filename)
 			if err != nil {
 				response.New(http.StatusBadRequest).Err(err.Error()).Send(c)
 				return
