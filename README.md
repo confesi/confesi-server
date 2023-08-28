@@ -143,6 +143,9 @@ docker exec -it confesi-db psql -U postgres confesi
 # generate a new `confesi.dbml`
 ./scripts/database dbml
 
+# endpoint speed checker
+go run ./scripts/main.go --test-endpoints-speed
+
 # seed data (use the POSTGRES_DSN found in `/scripts/test` not `.env`)
 export POSTGRES_DSN="" 
 export MASK_SECRET="" # Found in `.env`

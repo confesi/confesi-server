@@ -9,9 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm/clause"
@@ -30,6 +35,8 @@ func main() {
 		seedFaculties()
 	case "--seed-schools":
 		seedSchools()
+	case "--test-endpoints-speed":
+		testEndpointsSpeed()
 	case "--seed-all":
 		seedAll()
 	case "--seed-feedback-types":
@@ -345,4 +352,98 @@ func nonceGenerator() {
 
 	nonceStr := hex.EncodeToString(nonce)
 	fmt.Println(nonceStr)
+}
+
+func testEndpointsSpeed() {
+	filePaths := []string{
+		// "features/admin/requests.http",      // Admin
+		// "features/auth/requests.http",       // Auth
+		// "features/hide_log/requests.http",   // Hide log
+		"features/comments/requests.http",      // Comments
+		"features/posts/requests.http",         // Posts
+		"features/schools/requests.http",       // Schools
+		"features/user/requests.http",          // Users
+		"features/votes/requests.http",         // Votes
+		"features/feedback/requests.http",      // Feedback
+		"features/notifications/requests.http", // Notifications
+		"features/saves/requests.http",         // Saves
+		"features/reports/requests.http",       // Reports
+		"features/drafts/requests.http",        // Drafts
+		// Add more file paths here...
+	}
+
+	for _, filePath := range filePaths {
+		content, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			fmt.Printf("Error reading file %s: %v\n", filePath, err)
+			continue
+		}
+
+		// Convert content to string
+		fileContent := string(content)
+
+		// Define regular expressions for request parts
+
+		re := regexp.MustCompile(`(?m)^(GET|POST|DELETE|PATCH|PUT) (http:\/\/[^\s]+)\n(.*(?:\n.+)*)\n\n\{([^}]*)\}$`)
+		matches := re.FindAllStringSubmatch(fileContent, -1)
+
+		for _, match := range matches {
+			method := match[1]
+			url := match[2]
+			headers := match[3]
+			body := match[4]
+
+			// Parse headers
+			headerRegex := regexp.MustCompile(`(?m)([^\n:]+):\s+(.*)`)
+			headerMatches := headerRegex.FindAllStringSubmatch(headers, -1)
+
+			headerMap := make(map[string]string)
+			for _, headerMatch := range headerMatches {
+				headerMap[headerMatch[1]] = headerMatch[2]
+			}
+
+			// Format for marshal
+			body = "{" + body + "}"
+
+			responseTime, err := makeRequest(method, url, headerMap, []byte(body))
+			if err != nil {
+				fmt.Printf("Error making request: %v\n", err)
+				continue
+			}
+
+			if responseTime >= 200*time.Millisecond {
+				fmt.Println("FAIL (>= 200ms)")
+				fmt.Println("Method:", method)
+				fmt.Println("URL:", url)
+				fmt.Println("Body:", body)
+				fmt.Printf("Response time: %s\n", responseTime)
+				fmt.Println(strings.Repeat("-", 20))
+			} else {
+				fmt.Println("PASS (< 200ms)")
+			}
+
+		}
+	}
+}
+
+func makeRequest(method, url string, headers map[string]string, body []byte) (time.Duration, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
+	if err != nil {
+		return 0, err
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	startTime := time.Now()
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	responseTime := time.Since(startTime)
+	return responseTime, nil
 }
