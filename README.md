@@ -153,6 +153,9 @@ go run ./scripts/main.go --seed-schools # Seed schools
 go run ./scripts/main.go --seed-feedback-types # Seed feedback types
 go run ./scripts/main.go --seed-report-types # Seed report types
 go run ./scripts/main.go --seed-post-categories # Seed post categories
+go run ./scripts/main.go --seed-faculties # Seed faculties
+go run ./scripts/main.go --seed-years-of-study # Seed years of study
+
 ``` 
 
 ## Redis cache

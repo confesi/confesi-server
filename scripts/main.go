@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm/clause"
 )
 
@@ -25,16 +26,20 @@ func main() {
 	switch os.Args[1] {
 	case "--new-nonce":
 		nonceGenerator()
+	case "--seed-faculties":
+		seedFaculties()
 	case "--seed-schools":
-		seed_schools()
+		seedSchools()
 	case "--seed-all":
-		seed_all()
+		seedAll()
 	case "--seed-feedback-types":
-		seed_feedback_types()
+		seedFeedbackTypes()
 	case "--seed-report-types":
-		seed_report_types()
+		seedReportTypes()
 	case "--seed-post-categories":
-		seed_post_categories()
+		seedPostCategories()
+	case "--seed-years-of-study":
+		seedYearOfStudies()
 	case "--help":
 		fmt.Println("usage: [--new-nonce] [--seed-schools] [--seed-all] [--seed-feedback-types] [--seed-report-types] [--seed-post-categories]")
 	default:
@@ -44,17 +49,106 @@ func main() {
 	}
 }
 
-func seed_all() {
-	seed_schools()
-	seed_feedback_types()
-	seed_report_types()
-	seed_post_categories()
+func seedAll() {
+	seedSchools()
+	seedFeedbackTypes()
+	seedReportTypes()
+	seedPostCategories()
+	seedFaculties()
+	seedYearOfStudies()
 }
 
-func seed_post_categories() {
+func seedYearOfStudies() {
+	f, err := os.ReadFile("./seeds/seed_year_of_study.csv")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	yearOfStudies := []db.YearOfStudy{}
+	reader.Read() // skips header
+
+	for {
+
+		result, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			log.Fatal(nil)
+		}
+
+		yearOfStudy := db.YearOfStudy{
+			Name: null.NewString(result[0], true),
+		}
+
+		yearOfStudies = append(yearOfStudies, yearOfStudy)
+	}
+
+	pg := db.New()
+
+	result := pg.
+		Model(&[]db.YearOfStudy{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(yearOfStudies)
+
+	if result.Error != nil {
+		panic(result.Error.Error())
+	}
+	fmt.Println("Seeding Years of Study Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(yearOfStudies)))
+}
+
+func seedFaculties() {
+	f, err := os.ReadFile("./seeds/seed_faculties.csv")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	faculties := []db.Faculty{}
+	reader.Read() // skips header
+
+	for {
+
+		result, err := reader.Read()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			log.Fatal(nil)
+		}
+
+		faculty := db.Faculty{
+			Faculty: null.NewString(result[0], true),
+		}
+
+		faculties = append(faculties, faculty)
+	}
+
+	pg := db.New()
+
+	result := pg.
+		Model(&[]db.Faculty{}).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(faculties)
+
+	if result.Error != nil {
+		panic(result.Error.Error())
+	}
+	fmt.Println("Seeding Faculties Completed")
+	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(faculties)))
+}
+
+func seedPostCategories() {
 	f, err := os.ReadFile("./seeds/seed_post_categories.csv")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	buf := bytes.NewReader(f)
@@ -94,10 +188,11 @@ func seed_post_categories() {
 	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(categories)))
 }
 
-func seed_report_types() {
+func seedReportTypes() {
 	f, err := os.ReadFile("./seeds/seed_report_types.csv")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	buf := bytes.NewReader(f)
@@ -136,10 +231,11 @@ func seed_report_types() {
 	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
 }
 
-func seed_feedback_types() {
+func seedFeedbackTypes() {
 	f, err := os.ReadFile("./seeds/seed_feedback_types.csv")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	buf := bytes.NewReader(f)
@@ -178,10 +274,11 @@ func seed_feedback_types() {
 	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
 }
 
-func seed_schools() {
+func seedSchools() {
 	f, err := os.ReadFile("./seeds/seed_schools.csv")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	buf := bytes.NewReader(f)
