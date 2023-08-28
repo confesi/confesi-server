@@ -37,7 +37,6 @@ func main() {
 		seedSchools()
 	case "--test-endpoints-speed":
 		testEndpointsSpeed()
-		seedSchools()
 	case "--seed-all":
 		seedAll()
 	case "--seed-feedback-types":
@@ -413,11 +412,14 @@ func testEndpointsSpeed() {
 			}
 
 			if responseTime >= 200*time.Millisecond {
+				fmt.Println("FAIL (>= 200ms)")
 				fmt.Println("Method:", method)
 				fmt.Println("URL:", url)
 				fmt.Println("Body:", body)
 				fmt.Printf("Response time: %s\n", responseTime)
 				fmt.Println(strings.Repeat("-", 20))
+			} else {
+				fmt.Println("PASS (< 200ms)")
 			}
 
 		}
