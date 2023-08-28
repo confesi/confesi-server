@@ -66,6 +66,19 @@ type UserStanding struct {
 	UserID string `json:"user_id" validate:"required"`
 }
 
+type SendNotification struct {
+	// [required] user ids to send notification to
+	UserIDs []string `json:"user_ids" validate:"required"`
+	// [required] notification title
+	Title string `json:"title" validate:"required"`
+	// [required] notification body
+	Body string `json:"body" validate:"required"`
+	// [optional] notification data
+	Data map[string]string `json:"data"`
+	// [optional] notification type
+	Background bool `json:"background"`
+}
+
 type UserQuery struct {
 	// [required] user id to get info for
 	UserID string `json:"user_id" validate:"required"`

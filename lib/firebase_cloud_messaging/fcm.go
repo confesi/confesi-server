@@ -71,15 +71,15 @@ func (s *Sender) Send() (error, uint) {
 			"method": "POST",
 			"apns-priority": func() string {
 				if s.ContentAvailable {
-					return "5" // Higher priority for immediate display
+					return "10" // Higher priority for immediate display
 				}
-				return "10" // Lower priority for background processing
+				return "5" // Lower priority for background processing
 			}(),
 			"apns-push-type": func() string {
 				if s.ContentAvailable {
 					return "alert" // Show on screen with sound
 				}
-				return "alert" // Background processing without alert
+				return "background" // Background processing without alert
 			}(),
 			"apns-collapse-id": "confesi",
 			"apns-expiration":  "0",
@@ -133,6 +133,12 @@ func (s *Sender) Send() (error, uint) {
 				Android:      androidConfig,
 				APNS:         apnsConfig,
 			}
+
+			test, err := s.Client.Send(context.Background(), message)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(test)
 
 			messages = append(messages, message)
 		}

@@ -1,7 +1,7 @@
 # [Confesi](https://confesi.com)
 
 ![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
-![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
+<!-- ![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg) commented out until linting is added back-->
 
 ## Notes
 
