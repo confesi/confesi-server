@@ -270,7 +270,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	// respond "success" BEFORE sending FCM
-	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true}).Send(c)
+	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true, Reported: false, Saved: false}).Send(c)
 
 	// if threaded comment, parent comment
 	if req.ParentCommentID != nil {

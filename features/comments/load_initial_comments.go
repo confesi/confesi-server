@@ -55,55 +55,68 @@ func fetchComments(postID uint, gm *gorm.DB, excludedIDs []string, sort string, 
 	// query written in raw SQL over pure Gorm because... well this would be a nightmare otherwise and likely impossible
 	query := gm.
 		Raw(`
-		WITH top_root_comments AS (
-			SELECT *
-			FROM comments
-			WHERE parent_root IS NULL AND post_id = ?
-            `+possibleExclusion+`
-            ORDER BY `+sortField+`
-			LIMIT ?
-		), ranked_replies AS (
-			SELECT c.id, c.post_id, c.vote_score, c.edited, c.trending_score, c.content, c.parent_root,
-				CASE WHEN c.parent_root IS NOT NULL THEN c.created_at ELSE tr.created_at END AS created_at,
-				CASE WHEN c.parent_root IS NOT NULL THEN c.updated_at ELSE tr.updated_at END AS updated_at,
-				c.hidden, c.children_count, c.user_id, c.downvote, c.upvote, c.numerical_user, c.numerical_replying_user,
-				c.numerical_replying_user_is_op, c.numerical_user_is_op,
-				ROW_NUMBER() OVER (PARTITION BY c.parent_root ORDER BY c.created_at ASC) AS reply_num
-			FROM comments c
-			JOIN top_root_comments tr ON c.parent_root = tr.id
-			ORDER BY c.created_at ASC
-		)
-		SELECT t.id, t.post_id, t.vote_score, t.edited, t.trending_score, t.content, t.parent_root,
-			t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote,
-			t.numerical_user, t.numerical_replying_user, t.numerical_replying_user_is_op, t.numerical_user_is_op, t.user_vote
-		FROM (
-			SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.edited,
-				combined_comments.trending_score, combined_comments.content, combined_comments.parent_root,
-				combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden,
-				combined_comments.children_count, combined_comments.user_id, combined_comments.downvote,
-				combined_comments.upvote, combined_comments.numerical_user, combined_comments.numerical_replying_user,
-				combined_comments.numerical_replying_user_is_op, combined_comments.numerical_user_is_op,
-				COALESCE(
-					(SELECT votes.vote
-					FROM votes
-					WHERE votes.comment_id = combined_comments.id
-					AND votes.user_id = ?
-					LIMIT 1),
-					'0'::vote_score_value
-				) AS user_vote
-			FROM (
-				SELECT id, post_id, vote_score, edited, trending_score, content, parent_root, created_at, updated_at, hidden,
-					user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user,
-					numerical_replying_user_is_op, numerical_user_is_op FROM top_root_comments
-				UNION ALL
-				SELECT id, post_id, vote_score, edited, trending_score, content, parent_root, created_at, updated_at, hidden,
-					user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user,
-					numerical_replying_user_is_op, numerical_user_is_op
-				FROM ranked_replies
-				WHERE reply_num <= ?
-			) AS combined_comments
-		) AS t;
-    `, postID, config.RootCommentsLoadedInitially, uid, config.RepliesLoadedInitially).
+    WITH top_root_comments AS (
+        SELECT *
+        FROM comments
+        WHERE parent_root IS NULL AND post_id = ?
+        `+possibleExclusion+`
+        ORDER BY `+sortField+`
+        LIMIT ?
+    ), ranked_replies AS (
+        SELECT c.id, c.post_id, c.vote_score, c.edited, c.trending_score, c.content, c.parent_root,
+            CASE WHEN c.parent_root IS NOT NULL THEN c.created_at ELSE tr.created_at END AS created_at,
+            CASE WHEN c.parent_root IS NOT NULL THEN c.updated_at ELSE tr.updated_at END AS updated_at,
+            c.hidden, c.children_count, c.user_id, c.downvote, c.upvote, c.numerical_user, c.numerical_replying_user,
+            c.numerical_replying_user_is_op, c.numerical_user_is_op,
+            ROW_NUMBER() OVER (PARTITION BY c.parent_root ORDER BY c.created_at ASC) AS reply_num
+        FROM comments c
+        JOIN top_root_comments tr ON c.parent_root = tr.id
+        ORDER BY c.created_at ASC
+    )
+    SELECT t.id, t.post_id, t.vote_score, t.edited, t.trending_score, t.content, t.parent_root,
+        t.created_at, t.updated_at, t.hidden, t.children_count, t.user_id, t.downvote, t.upvote,
+        t.numerical_user, t.numerical_replying_user, t.numerical_replying_user_is_op, t.numerical_user_is_op, 
+        t.user_vote, t.saved, t.reported
+    FROM (
+        SELECT combined_comments.id, combined_comments.post_id, combined_comments.vote_score, combined_comments.edited,
+            combined_comments.trending_score, combined_comments.content, combined_comments.parent_root,
+            combined_comments.created_at, combined_comments.updated_at, combined_comments.hidden,
+            combined_comments.children_count, combined_comments.user_id, combined_comments.downvote,
+            combined_comments.upvote, combined_comments.numerical_user, combined_comments.numerical_replying_user,
+            combined_comments.numerical_replying_user_is_op, combined_comments.numerical_user_is_op,
+            COALESCE(
+                (SELECT votes.vote
+                FROM votes
+                WHERE votes.comment_id = combined_comments.id
+                AND votes.user_id = ?
+                LIMIT 1),
+                '0'::vote_score_value
+            ) AS user_vote,
+            EXISTS(
+                SELECT 1
+                FROM saved_comments
+                WHERE saved_comments.comment_id = combined_comments.id
+                AND saved_comments.user_id = ?
+            ) as saved,
+            EXISTS(
+                SELECT 1
+                FROM reports
+                WHERE reports.comment_id = combined_comments.id
+                AND reports.reported_by = ?
+            ) as reported
+        FROM (
+            SELECT id, post_id, vote_score, edited, trending_score, content, parent_root, created_at, updated_at, hidden,
+                user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user,
+                numerical_replying_user_is_op, numerical_user_is_op FROM top_root_comments
+            UNION ALL
+            SELECT id, post_id, vote_score, edited, trending_score, content, parent_root, created_at, updated_at, hidden,
+                user_id, children_count, downvote, upvote, numerical_user, numerical_replying_user,
+                numerical_replying_user_is_op, numerical_user_is_op
+            FROM ranked_replies
+            WHERE reply_num <= ?
+        ) AS combined_comments
+    ) AS t;
+`, postID, config.RootCommentsLoadedInitially, uid, uid, uid, config.RepliesLoadedInitially).
 		Find(&comments)
 
 	if query.Error != nil {
@@ -115,6 +128,9 @@ func fetchComments(postID uint, gm *gorm.DB, excludedIDs []string, sort string, 
 		comment := &comments[i]
 		if !utils.ProfanityEnabled(c) {
 			comment.Comment = comment.Comment.CensorComment()
+		}
+		if comment.Comment.UserID == uid {
+			comment.Owner = true
 		}
 		comment.Comment.ObscureIfHidden()
 		if comment.Comment.ParentRoot != nil {

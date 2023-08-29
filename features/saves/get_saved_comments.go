@@ -21,27 +21,34 @@ func (h *handler) getComments(c *gin.Context, token *auth.Token, req validation.
 	fetchResult := FetchedComments{}
 
 	query := `
-		SELECT comments.*,
-			COALESCE(
-				(
-					SELECT votes.vote
-					FROM votes
-					WHERE votes.comment_id = comments.id
-						AND votes.user_id = ?
-					LIMIT 1
-				),
-				'0'::vote_score_value
-			) AS user_vote
-		FROM comments
-		JOIN saved_comments ON comments.id = saved_comments.comment_id
-		WHERE saved_comments.user_id = ?
-			` + req.Next.Cursor("AND saved_comments.created_at <") + `
-			AND comments.hidden = false
-		ORDER BY saved_comments.created_at DESC
-		LIMIT ?
-		`
+    SELECT comments.*,
+        COALESCE(
+            (
+                SELECT votes.vote
+                FROM votes
+                WHERE votes.comment_id = comments.id
+                    AND votes.user_id = ?
+                LIMIT 1
+            ),
+            '0'::vote_score_value
+        ) AS user_vote,
+        TRUE as saved,  -- because we're joining with saved_comments
+        EXISTS(
+            SELECT 1
+            FROM reports
+            WHERE reports.comment_id = comments.id
+            AND reports.reported_by = ?
+        ) as reported
+    FROM comments
+    JOIN saved_comments ON comments.id = saved_comments.comment_id
+    WHERE saved_comments.user_id = ?
+        ` + req.Next.Cursor("AND saved_comments.created_at <") + `
+        AND comments.hidden = false
+    ORDER BY saved_comments.created_at DESC
+    LIMIT ?
+    `
 
-	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
+	err := h.db.Raw(query, token.UID, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
 		Find(&fetchResult.Comments).Error
 
 	if err != nil {

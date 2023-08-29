@@ -23,6 +23,8 @@ type CommentDetail struct {
 	db.Comment `json:"comment"`
 	UserVote   int  `json:"user_vote" gorm:"column:user_vote"`
 	Owner      bool `json:"owner"`
+	Saved      bool `json:"saved"`
+	Reported   bool `json:"reported"`
 }
 
 type handler struct {

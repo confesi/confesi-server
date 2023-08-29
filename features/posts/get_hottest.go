@@ -26,7 +26,6 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 
 	dateStr := c.Query("day")
 
-	var datePtr *time.Time // Use a pointer
 	var date time.Time
 	if dateStr == "" {
 		// Try fetching the most recent day with hottest posts
@@ -46,10 +45,11 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 			return
 		}
 	}
-
 	var posts []PostDetail
+	// ... [Previous code]
+
 	err = h.db.
-		Where("hottest_on = ?", *datePtr). // Dereference the datePtr here
+		Where("hottest_on = ?", date). // Use the date directly
 		Where("hidden = ?", false).
 		Limit(config.HottestPostsPageSize).
 		Preload("School").
@@ -58,24 +58,38 @@ func (h *handler) handleGetHottest(c *gin.Context) {
 		Preload("YearOfStudy").
 		Order("trending_score DESC").
 		Select(`
-			posts.*,
-			COALESCE(
-				(
-					SELECT votes.vote
-					FROM votes
-					WHERE votes.post_id = posts.id
-					AND votes.user_id = ?
-					LIMIT 1
-				),
-				'0'::vote_score_value
-			) AS user_vote
-		`, token.UID).
+        posts.*,
+        COALESCE(
+            (
+                SELECT votes.vote
+                FROM votes
+                WHERE votes.post_id = posts.id
+                AND votes.user_id = ?
+                LIMIT 1
+            ),
+            '0'::vote_score_value
+        ) AS user_vote,
+        EXISTS(
+            SELECT 1
+            FROM saved_posts
+            WHERE saved_posts.post_id = posts.id
+            AND saved_posts.user_id = ?
+        ) as saved,
+        EXISTS(
+            SELECT 1
+            FROM reports
+            WHERE reports.post_id = posts.id
+            AND reports.reported_by = ?
+        ) as reported
+    `, token.UID, token.UID, token.UID).
 		Find(&posts).
 		Error
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
+
+	// ... [Rest of your code]
 
 	for i := range posts {
 		post := &posts[i]
