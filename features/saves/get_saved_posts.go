@@ -32,7 +32,19 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 				LIMIT 1
 			),
 			'0'::vote_score_value
-		) AS user_vote
+		) AS user_vote,
+		EXISTS(
+			SELECT 1
+			FROM saved_posts
+			WHERE saved_posts.post_id = posts.id
+			AND saved_posts.user_id = ?
+		) as saved,
+		EXISTS(
+			SELECT 1
+			FROM reports
+			WHERE reports.post_id = posts.id
+			AND reports.reported_by = ?
+		) as reported
 	FROM posts
 	JOIN saved_posts ON posts.id = saved_posts.post_id
 	WHERE saved_posts.user_id = ?
@@ -42,7 +54,7 @@ func (h *handler) getPosts(c *gin.Context, token *auth.Token, req validation.Sav
 	LIMIT ?
 `
 
-	err := h.db.Raw(query, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
+	err := h.db.Raw(query, token.UID, token.UID, token.UID, token.UID, config.SavedPostsAndCommentsPageSize).
 		Preload("School").
 		Preload("Category").
 		Preload("YearOfStudy").

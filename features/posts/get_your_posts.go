@@ -33,6 +33,31 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 	fetchResults := FetchResults{}
 
 	err = h.db.
+		Select(`
+        posts.*,
+        COALESCE(
+            (
+                SELECT votes.vote
+                FROM votes
+                WHERE votes.post_id = posts.id
+                AND votes.user_id = ?
+                LIMIT 1
+            ),
+            '0'::vote_score_value
+        ) AS user_vote,
+        EXISTS(
+            SELECT 1
+            FROM saved_posts
+            WHERE saved_posts.post_id = posts.id
+            AND saved_posts.user_id = ?
+        ) as saved,
+        EXISTS(
+            SELECT 1
+            FROM reports
+            WHERE reports.post_id = posts.id
+            AND reports.reported_by = ?
+        ) as reported
+    `, token.UID, token.UID, token.UID).
 		Preload("School").
 		Preload("Category").
 		Preload("Faculty").
@@ -41,8 +66,8 @@ func (h *handler) handleGetYourPosts(c *gin.Context) {
 		Where(req.Next.Cursor("created_at >")).
 		Where("hidden = ?", false).
 		Order("created_at ASC").
-		Find(&fetchResults.Posts).
 		Limit(config.YourPostsPageSize).
+		Find(&fetchResults.Posts).
 		Error
 
 	if err != nil {

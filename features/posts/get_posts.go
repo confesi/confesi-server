@@ -119,8 +119,20 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 				LIMIT 1
 			),
 			'0'::vote_score_value
-		) AS user_vote
-		`, token.UID).
+		) AS user_vote,
+		EXISTS(
+			SELECT 1
+			FROM saved_posts
+			WHERE saved_posts.post_id = posts.id
+			AND saved_posts.user_id = ?
+		) as saved,
+		EXISTS(
+			SELECT 1
+			FROM reports
+			WHERE reports.post_id = posts.id
+			AND reports.reported_by = ?
+		) as reported
+	`, token.UID, token.UID, token.UID).
 		Preload("School").
 		Preload("Category").
 		Preload("YearOfStudy").
