@@ -41,13 +41,25 @@ func (h *handler) handleGetYourComments(c *gin.Context) {
 						AND votes.user_id = ?
 					LIMIT 1),
 					'0'::vote_score_value
-				) AS user_vote
+				) AS user_vote,
+				EXISTS(
+					SELECT 1
+					FROM saved_comments
+					WHERE saved_comments.comment_id = comments.id
+					AND saved_comments.user_id = ?
+				) as saved,
+				EXISTS(
+					SELECT 1
+					FROM reports
+					WHERE reports.comment_id = comments.id
+					AND reports.reported_by = ?
+				) as reported
 			FROM comments
 			WHERE user_id = ?
 			`+req.Next.Cursor("AND created_at >")+`
 			ORDER BY created_at ASC
 			LIMIT ?
-		`, token.UID, token.UID, config.YourCommentsPageSize).
+		`, token.UID, token.UID, token.UID, token.UID, config.YourCommentsPageSize).
 		Find(&fetchResults.Comments).
 		Error
 

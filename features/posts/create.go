@@ -20,7 +20,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// This function assumes you've chosen to use gzip for compression.
 func decompressData(data io.Reader) (io.Reader, error) {
 	// Replace with your decompression logic
 	r, err := gzip.NewReader(data)
@@ -215,5 +214,5 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 
 	// if all goes well, send 201
-	response.New(http.StatusCreated).Val(PostDetail{Post: post, UserVote: 0, Owner: true, Emojis: emojis.GetEmojis(&post)}).Send(c)
+	response.New(http.StatusCreated).Val(PostDetail{Post: post, UserVote: 0, Owner: true, Emojis: emojis.GetEmojis(&post), Saved: false, Reported: false}).Send(c)
 }
