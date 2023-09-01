@@ -45,5 +45,3 @@ func (h *handler) handleSendNotification(c *gin.Context) {
 	// if all goes well send 200
 	response.New(http.StatusOK).Send(c)
 }
-
-// todo: send fcm

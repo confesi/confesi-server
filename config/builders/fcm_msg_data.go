@@ -88,3 +88,15 @@ func AccountStandingLimitedData(isLimited bool) map[string]string {
 		"limited": fmt.Sprintf("%v", isLimited),
 	}
 }
+
+func NewRoomCreatedData() map[string]string {
+	return map[string]string{
+		"type": "new_room_created",
+	}
+}
+
+func NewChatData() map[string]string {
+	return map[string]string{
+		"type": "new_chat",
+	}
+}

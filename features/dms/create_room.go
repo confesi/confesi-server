@@ -1,8 +1,10 @@
 package dms
 
 import (
+	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/encryption"
+	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"errors"
@@ -93,7 +95,28 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		return
 	}
 
-	// Return a success response if room creation works
+	// Obtain FCM tokens for the affected other user
+	var tokens []string
+	err = h.db.
+		Table("fcm_tokens").
+		Select("fcm_tokens.token").
+		Joins("JOIN users ON users.id = fcm_tokens.user_id").
+		Where("users.id = ?", post.UserID).
+		Pluck("fcm_tokens.token", &tokens).
+		Error
+
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		return
+	}
+
+	go fcm.New(h.fb.MsgClient).
+		ToTokens(tokens).
+		WithMsg(builders.AdminSendNotificationNoti("title", "body")).
+		WithData(map[string]string{}).
+		Send()
+
+	// Send a success response
 	response.New(http.StatusOK).Send(c)
 }
 

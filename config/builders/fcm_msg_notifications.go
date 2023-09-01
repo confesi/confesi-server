@@ -151,3 +151,17 @@ func AccountStandingLimitedNoti(isLimited bool) *messaging.Notification {
 		Body:  "Contact support for more information",
 	}
 }
+
+func NewRoomCreatedNoti() *messaging.Notification {
+	return &messaging.Notification{
+		Title: "💬 Somebody created a chat room with you",
+		Body:  "Check it out",
+	}
+}
+
+func NewChatNoti(message string, room string) *messaging.Notification {
+	return &messaging.Notification{
+		Title: "💬 " + room,
+		Body:  message,
+	}
+}
