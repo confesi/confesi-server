@@ -9,7 +9,6 @@ import (
 	"confesi/lib/validation"
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -17,10 +16,6 @@ import (
 )
 
 func (h *handler) handleAddChat(c *gin.Context) {
-	// msg
-	// room_id
-	// ensuring that the user is part of the room
-
 	// Validate the JSON body from request
 	var req validation.AddChat
 	err := utils.New(c).Validate(&req)
@@ -31,25 +26,41 @@ func (h *handler) handleAddChat(c *gin.Context) {
 	// Get user token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		response.New(http.StatusInternalServerError).Err("Failed to get user token").Send(c)
 		return
 	}
 
-	// If token.UID is not a subset of room_id, return error
-	// This works because the room_id is a combination of the two user ids with the post ID messaged over
-	if !strings.Contains(req.RoomID, token.UID) {
-		response.New(http.StatusBadRequest).Err("user not part of the room").Send(c)
+	// Fetch the room to check whether the user is part of the room
+	roomSnapshot, err := h.fb.FirestoreClient.Collection("rooms").Doc(req.RoomID).Get(c)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("Failed to get room data").Send(c)
+		return
+	}
+	var room db.Room
+	if err := roomSnapshot.DataTo(&room); err != nil {
+		response.New(http.StatusInternalServerError).Err("Error decoding room data").Send(c)
+		return
+	}
+
+	var userNum int
+	var otherUser string
+	if room.U1 == token.UID {
+		userNum = 1
+		otherUser = room.U2
+	} else if room.U2 == token.UID {
+		userNum = 2
+		otherUser = room.U1
+	} else {
+		response.New(http.StatusBadRequest).Err("User is not part of the room").Send(c)
 		return
 	}
 
 	chat := db.Chat{
 		Msg:    req.Msg,
 		RoomID: req.RoomID,
-		UserID: token.UID,
+		User:   userNum, // Using "User" instead of "UserID"
 		Date:   time.Now().UTC(),
 	}
-
-	var otherUser string
 
 	// Define the transaction function
 	err = h.fb.FirestoreClient.RunTransaction(c, func(ctx context.Context, tx *firestore.Transaction) error {
@@ -63,15 +74,6 @@ func (h *handler) handleAddChat(c *gin.Context) {
 			return err
 		}
 
-		// Fetch the other user from the room document
-		doc, err := tx.Get(roomRef)
-		if err != nil {
-			return err
-		}
-		if val, exists := doc.Data()["UserOther"]; exists && val != token.UID {
-			otherUser = val.(string)
-		}
-
 		// Update last_msg field in the room document
 		updateData := []firestore.Update{
 			{Path: "last_msg", Value: chat.Date},
@@ -81,8 +83,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 
 	// Check transaction result
 	if err != nil {
-		// Handle the Firestore error here
-		response.New(http.StatusInternalServerError).Err("failed to complete transaction").Send(c)
+		response.New(http.StatusInternalServerError).Err("Failed to complete transaction").Send(c)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		Error
 
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusInternalServerError).Err("Server error while obtaining FCM tokens").Send(c)
 		return
 	}
 

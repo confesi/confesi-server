@@ -27,6 +27,7 @@ func Router(mux *gin.RouterGroup) {
 		middleware.UsersOnly(c, h.fb.AuthClient, middleware.RegisteredFbUsers, []string{})
 	})
 
-	mux.POST("/room", h.handleCreateRoom)
+	mux.POST("/rooms", h.handleCreateRoom)
 	mux.POST("/chat", h.handleAddChat)
+	mux.GET("/rooms", h.handleLoadRoomsAndInitialChats)
 }

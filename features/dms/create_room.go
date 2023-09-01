@@ -13,9 +13,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 )
 
@@ -58,38 +55,37 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		return
 	}
 
-	if post.UserID == "" {
-		// Handle the situation where there is no matching non-hidden post for the given ID.
-		response.New(http.StatusBadRequest).Err("post not found or is hidden").Send(c)
-		return
-	}
-
 	if post.UserID == token.UID {
 		response.New(http.StatusBadRequest).Err("you can't DM yourself").Send(c)
 		return
 	}
 
-	uniqueID := generateUniqueID(token.UID, post.UserID, post.ID.ToString())
-	docRef := h.fb.FirestoreClient.Collection("rooms").Doc(uniqueID)
+	// Check if room with these users and postID already exists
+	// Get an iterator of matching documents
+	iter := h.fb.FirestoreClient.Collection("rooms").
+		Where("u_1", "==", token.UID).
+		Where("u_2", "==", post.UserID).
+		Where("post_id", "==", post.ID.ToInt()).
+		Documents(c)
 
-	room := db.Room{
-		UserCreator: token.UID,
-		UserOther:   post.UserID,
-		PostID:      post.ID.ToInt(),
-		Name:        uuid.New().String(), // temp name before (if) a participant changes it
-		LastMsg:     time.Now().UTC(),
+	// Check if any document exists
+	doc, err := iter.Next()
+	if err == nil && doc != nil {
+		response.New(http.StatusBadRequest).Err("room with this combination already exists").Send(c)
+		return
 	}
 
-	// Try to create the room with the unique ID
-	_, err = docRef.Create(c, room)
-	if err != nil {
-		// If the document already exists, Firestore will return an error
-		if status.Code(err) == codes.AlreadyExists {
-			response.New(http.StatusBadRequest).Err("room with this combination already exists").Send(c)
-			return
-		}
+	room := db.Room{
+		U1:      token.UID,
+		U2:      post.UserID,
+		PostID:  post.ID.ToInt(),
+		Name:    "New chat",
+		LastMsg: time.Now().UTC(),
+	}
 
-		// For other errors:
+	// Create the room with Firestore's automatic ID generation
+	_, _, err = h.fb.FirestoreClient.Collection("rooms").Add(c, room)
+	if err != nil {
 		fmt.Println(err)
 		response.New(http.StatusInternalServerError).Err("failed to create room").Send(c)
 		return
@@ -112,16 +108,10 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
-		WithMsg(builders.AdminSendNotificationNoti("title", "body")).
+		WithMsg(builders.NewRoomCreatedNoti()).
 		WithData(map[string]string{}).
 		Send()
 
 	// Send a success response
 	response.New(http.StatusOK).Send(c)
-}
-
-// Generate a unique ID from the given values
-func generateUniqueID(userCreator, userOther, postID string) string {
-	combined := userCreator + ":" + userOther + ":" + postID
-	return combined
 }
