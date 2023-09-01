@@ -1,17 +1,18 @@
 package dms
 
 import (
+	"confesi/config"
 	"confesi/db"
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"confesi/lib/validation"
 	"net/http"
-	"sort"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 )
-
-const InitialChatCount = 10 // number of initial chats per room to load
 
 type LoadedRoom struct {
 	db.Room
@@ -20,6 +21,11 @@ type LoadedRoom struct {
 	UserNum int       `json:"user_num"`
 }
 
+const (
+	roomsCacheExpiry = 24 * time.Hour
+	InitialChatCount = 10
+)
+
 func (h *handler) handleLoadRoomsAndInitialChats(c *gin.Context) {
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
@@ -27,71 +33,133 @@ func (h *handler) handleLoadRoomsAndInitialChats(c *gin.Context) {
 		return
 	}
 
-	processedRooms := make(map[string]bool) // map to track processed rooms by their document ID
-	loadedRooms := make([]LoadedRoom, 0)
+	var req validation.FetchRooms
+	if err := utils.New(c).Validate(&req); err != nil {
+		return
+	}
 
-	// Helper function to process rooms
-	processRooms := func(iter *firestore.DocumentIterator, userNum int) {
+	cacheKey := createCacheKey(token.UID, req.SessionKey)
+
+	if req.PurgeCache && h.redis.Del(c, cacheKey).Err() != nil {
+		response.New(http.StatusInternalServerError).Err("error purging cache").Send(c)
+		return
+	}
+
+	cachedRooms, err := getCachedRooms(h, c, cacheKey)
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("error accessing cache").Send(c)
+		return
+	}
+
+	loadedRooms, err := fetchRoomsFromFirestore(h, c, token.UID, cachedRooms)
+	if err != nil {
+		if err.Error() == "no more items in iterator" {
+			response.New(http.StatusInternalServerError).Err("error fetching rooms from firestore: no more items in iterator").Send(c)
+			return
+		}
+		response.New(http.StatusInternalServerError).Err("error fetching rooms from firestore: " + err.Error()).Send(c)
+		return
+	}
+
+	if h.redis.Expire(c, cacheKey, roomsCacheExpiry).Err() != nil {
+		response.New(http.StatusInternalServerError).Err("error setting cache expiry").Send(c)
+		return
+	}
+
+	response.New(http.StatusOK).Val(loadedRooms).Send(c)
+}
+
+func createCacheKey(uid, sessionKey string) string {
+	return config.RedisRoomsCache + ":" + uid + ":" + sessionKey
+}
+
+func getCachedRooms(h *handler, c *gin.Context, cacheKey string) (map[string]bool, error) {
+	cachedIDs, err := h.redis.SMembers(c, cacheKey).Result()
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	roomMap := make(map[string]bool)
+	for _, id := range cachedIDs {
+		roomMap[id] = true
+	}
+	return roomMap, nil
+}
+
+func fetchRoomsFromFirestore(h *handler, c *gin.Context, uid string, cachedRooms map[string]bool) ([]LoadedRoom, error) {
+	var loadedRooms []LoadedRoom
+
+	processRooms := func(iter *firestore.DocumentIterator, userNum int) error {
 		for {
 			doc, err := iter.Next()
+
 			if err != nil {
-				break
+				if err.Error() == "no more items in iterator" {
+					break
+				}
+				return err
 			}
 
-			// If the room is already processed, skip
-			if _, exists := processedRooms[doc.Ref.ID]; exists {
+			roomID := doc.Ref.ID
+			if _, alreadyProcessed := cachedRooms[roomID]; alreadyProcessed {
 				continue
 			}
-			processedRooms[doc.Ref.ID] = true
 
 			var room db.Room
 			if err := doc.DataTo(&room); err != nil {
-				response.New(http.StatusInternalServerError).Err("error decoding room data").Send(c)
-				return
+				return err
 			}
 
-			// Fetch initial chats
-			chatsIter := h.fb.FirestoreClient.Collection("chats").
-				Where("room_id", "==", doc.Ref.ID).
-				OrderBy("date", firestore.Desc).
-				Limit(InitialChatCount).
-				Documents(c)
-
-			chats := make([]db.Chat, 0)
-			for {
-				chatDoc, chatErr := chatsIter.Next()
-				if chatErr != nil {
-					break
-				}
-				var chat db.Chat
-				if chatErr := chatDoc.DataTo(&chat); chatErr != nil {
-					response.New(http.StatusInternalServerError).Err("error decoding chat data").Send(c)
-					return
-				}
-				chats = append(chats, chat)
+			chats, err := fetchInitialChats(h, c, roomID)
+			if err != nil {
+				return err
 			}
-
-			// Reverse chats for chronological order
-			sort.SliceStable(chats, func(i, j int) bool {
-				return chats[i].Date.Before(chats[j].Date)
-			})
 
 			loadedRooms = append(loadedRooms, LoadedRoom{
 				Room:    room,
-				ID:      doc.Ref.ID,
+				ID:      roomID,
 				Chats:   chats,
 				UserNum: userNum,
 			})
+
+			h.redis.SAdd(c, roomID)
 		}
+		return nil
 	}
 
-	// Get rooms by u_1
-	iterU1 := h.fb.FirestoreClient.Collection("rooms").Where("u_1", "==", token.UID).Documents(c)
-	processRooms(iterU1, 1)
+	if err := processRooms(h.fb.FirestoreClient.Collection("rooms").Where("u_1", "==", uid).Documents(c), 1); err != nil {
+		return nil, err
+	}
+	if err := processRooms(h.fb.FirestoreClient.Collection("rooms").Where("u_2", "==", uid).Documents(c), 2); err != nil {
+		return nil, err
+	}
+	return loadedRooms, nil
+}
 
-	// Get rooms by u_2
-	iterU2 := h.fb.FirestoreClient.Collection("rooms").Where("u_2", "==", token.UID).Documents(c)
-	processRooms(iterU2, 2)
+func fetchInitialChats(h *handler, c *gin.Context, roomID string) ([]db.Chat, error) {
+	chatsIter := h.fb.FirestoreClient.Collection("chats").
+		Where("room_id", "==", roomID).
+		OrderBy("date", firestore.Desc).
+		Limit(InitialChatCount).
+		Documents(c)
 
-	response.New(http.StatusOK).Val(loadedRooms).Send(c)
+	var chats []db.Chat
+	for {
+		chatDoc, err := chatsIter.Next()
+
+		if err != nil {
+			if err.Error() == "no more items in iterator" {
+				break
+			}
+			return nil, err
+		}
+
+		var chat db.Chat
+		if err := chatDoc.DataTo(&chat); err != nil {
+			return nil, err
+		}
+		chats = append(chats, chat)
+	}
+
+	return chats, nil
 }
