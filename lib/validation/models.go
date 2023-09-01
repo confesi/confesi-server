@@ -301,3 +301,7 @@ type DeleteDraft struct {
 	DraftID string `json:"draft_id" validate:"required"`
 }
 
+type AddChat struct {
+	RoomID string `json:"room_id" validate:"required"`
+	Msg    string `json:"msg" validate:"required,min=1,max=500"`
+}

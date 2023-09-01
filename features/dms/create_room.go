@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -42,11 +43,12 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 	err = h.db.
 		Where("id = ?", unmaskedPostId).
 		Where("hidden = ?", false).
+		// Where("chat_post = ?", true). // todo: add chat post
 		First(&post).
 		Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		// Handle the error appropriately
-		response.New(http.StatusInternalServerError).Err("failed to fetch post data").Send(c)
+		response.New(http.StatusInternalServerError).Err("failed to fetch post data, or invalid post").Send(c)
 		return
 	} else if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		// Handle the situation where there is no matching non-hidden post for the given ID.
@@ -73,6 +75,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		UserOther:   post.UserID,
 		PostID:      post.ID.ToInt(),
 		Name:        uuid.New().String(), // temp name before (if) a participant changes it
+		LastMsg:     time.Now().UTC(),
 	}
 
 	// Try to create the room with the unique ID

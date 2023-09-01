@@ -28,4 +28,5 @@ func Router(mux *gin.RouterGroup) {
 	})
 
 	mux.POST("/room", h.handleCreateRoom)
+	mux.POST("/chat", h.handleAddChat)
 }
