@@ -300,3 +300,4 @@ type DeleteDraft struct {
 	// [required] post id
 	DraftID string `json:"draft_id" validate:"required"`
 }
+
