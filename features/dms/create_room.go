@@ -140,10 +140,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
-		return
-	}
+	// ignore errors
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).

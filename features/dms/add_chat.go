@@ -40,10 +40,10 @@ func (h *handler) handleAddChat(c *gin.Context) {
 	roomSnapshot, err := roomSnapshotIterator.Next()
 
 	if err == iterator.Done {
-		response.New(http.StatusBadRequest).Err("Room not found with given criteria").Send(c)
+		response.New(http.StatusBadRequest).Err("room not found with given criteria").Send(c)
 		return
 	} else if err != nil {
-		response.New(http.StatusInternalServerError).Err("Error querying room").Send(c)
+		response.New(http.StatusInternalServerError).Err("error querying room").Send(c)
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 	}
 
 	if token.UID != room.UserID {
-		response.New(http.StatusBadRequest).Err("User is not part of the room").Send(c)
+		response.New(http.StatusBadRequest).Err("user is not part of the room").Send(c)
 		return
 	}
 
@@ -104,10 +104,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("Server error while obtaining FCM tokens").Send(c)
-		return
-	}
+	// ignore errors
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
