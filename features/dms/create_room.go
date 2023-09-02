@@ -7,20 +7,22 @@ import (
 	fcm "confesi/lib/firebase_cloud_messaging"
 	"confesi/lib/response"
 	"confesi/lib/utils"
+	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 	"gorm.io/gorm"
 )
 
 func (h *handler) handleCreateRoom(c *gin.Context) {
-
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c) // Fix for the undefined serverError
+		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return
 	}
 
@@ -37,21 +39,18 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		return
 	}
 
-	// find user_id from the post by id if it's not hidden
 	var post db.Post
 	err = h.db.
 		Where("id = ?", unmaskedPostId).
 		Where("hidden = ?", false).
-		// Where("chat_post = ?", true). // todo: add chat post
 		First(&post).
 		Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		// Handle the error appropriately
-		response.New(http.StatusInternalServerError).Err("failed to fetch post data, or invalid post").Send(c)
-		return
-	} else if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		// Handle the situation where there is no matching non-hidden post for the given ID.
-		response.New(http.StatusBadRequest).Err("post not found").Send(c)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.New(http.StatusBadRequest).Err("post not found").Send(c)
+		} else {
+			response.New(http.StatusInternalServerError).Err("failed to fetch post data").Send(c)
+		}
 		return
 	}
 
@@ -60,34 +59,74 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		return
 	}
 
-	// Check if room with these users and postID already exists
-	// Get an iterator of matching documents
-	iter := h.fb.FirestoreClient.Collection("rooms").
-		Where("u_1", "==", token.UID).
-		Where("u_2", "==", post.UserID).
+	// Check if a room involving the token user for this postID already exists
+	_, err = h.fb.FirestoreClient.Collection("rooms").
 		Where("post_id", "==", post.ID.ToInt()).
-		Documents(c)
+		Where("user_id", "==", token.UID).
+		Documents(c).Next()
+	if err != nil && err != iterator.Done {
+		response.New(http.StatusInternalServerError).Err("failed to check for existing rooms").Send(c)
+		return
+	}
+	tokenUserRoomExists := err != iterator.Done
 
-	// Check if any document exists
-	doc, err := iter.Next()
-	if err == nil && doc != nil {
+	// Check if a room involving the post user for this postID already exists
+	_, err = h.fb.FirestoreClient.Collection("rooms").
+		Where("post_id", "==", post.ID.ToInt()).
+		Where("user_id", "==", post.UserID).
+		Documents(c).Next()
+	if err != nil && err != iterator.Done {
+		response.New(http.StatusInternalServerError).Err("failed to check for existing rooms").Send(c)
+		return
+	}
+	postUserRoomExists := err != iterator.Done
+
+	if post.UserID == token.UID {
+		response.New(http.StatusBadRequest).Err("you can't DM yourself").Send(c)
+		return
+	}
+
+	if tokenUserRoomExists || postUserRoomExists {
 		response.New(http.StatusBadRequest).Err("room with this combination already exists").Send(c)
 		return
 	}
 
-	room := db.Room{
-		U1:      token.UID,
-		U2:      post.UserID,
-		PostID:  post.ID.ToInt(),
-		Name:    "New chat",
-		LastMsg: time.Now().UTC(),
+	// Generate a unique room_id using UUID
+	roomID := uuid.New().String()
+
+	// Creating two rooms: one for the token user and another for the post user
+	currentUserRoom := db.Room{
+		UserID:     token.UID,
+		PostID:     post.ID.ToInt(),
+		Name:       "New chat",
+		LastMsg:    time.Now().UTC(),
+		UserNumber: 1,
+		RoomID:     roomID,
 	}
 
-	// Create the room with Firestore's automatic ID generation
-	_, _, err = h.fb.FirestoreClient.Collection("rooms").Add(c, room)
+	postUserRoom := db.Room{
+		UserID:     post.UserID,
+		PostID:     post.ID.ToInt(),
+		Name:       "New chat",
+		LastMsg:    time.Now().UTC(),
+		UserNumber: 2,
+		RoomID:     roomID,
+	}
+
+	// Use Firestore transactions for atomic operations
+	err = h.fb.FirestoreClient.RunTransaction(c, func(ctx context.Context, tx *firestore.Transaction) error {
+		// Add rooms to Firestore
+		if err := tx.Set(h.fb.FirestoreClient.Collection("rooms").NewDoc(), currentUserRoom); err != nil {
+			return err
+		}
+		if err := tx.Set(h.fb.FirestoreClient.Collection("rooms").NewDoc(), postUserRoom); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	if err != nil {
-		fmt.Println(err)
-		response.New(http.StatusInternalServerError).Err("failed to create room").Send(c)
+		response.New(http.StatusInternalServerError).Err("failed to create rooms").Send(c)
 		return
 	}
 
@@ -112,6 +151,5 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		WithData(map[string]string{}).
 		Send()
 
-	// Send a success response
 	response.New(http.StatusOK).Send(c)
 }

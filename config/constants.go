@@ -13,7 +13,6 @@ const (
 	FeedPostsPageSize                                = 10                                       // how many posts are returned in a page size in the regular feed
 	RankedSchoolsPageSize                            = 2                                        // how many schools are returned in a page size in the ranked schools page
 	RedisPostsCache                                  = "posts"                                  // redis key for posts cache
-	RedisRoomsCache                                  = "rooms"                                  // redis key for rooms cache
 	RedisSchoolsRankCache                            = "schools_rank"                           // redis key for schools rank cache
 	RedisCommentsCache                               = "comments"                               // redis key for comments cache
 	RedisCommentsCacheByReports                      = "comments_by_report"                     // redis key for comments cache by reports

@@ -464,16 +464,17 @@ func (Report) TableName() string {
 //! Firestore models
 
 type Room struct {
-	U1      string    `firestore:"u_1" json:"-"` // never serialize the USER'S ID!
-	U2      string    `firestore:"u_2" json:"-"` // never serialize the OTHER USER'S ID!
-	Name    string    `firestore:"name" json:"name"`
-	LastMsg time.Time `firestore:"last_msg" json:"last_msg"`
-	PostID  int       `firestore:"post_id" json:"post_id"`
+	UserID     string    `firestore:"user_id" json:"-"` // never serialize
+	Name       string    `firestore:"name" json:"name"`
+	RoomID     string    `firestore:"room_id" json:"room_id"`
+	LastMsg    time.Time `firestore:"last_msg" json:"last_msg"`
+	PostID     int       `firestore:"post_id" json:"post_id"`
+	UserNumber int       `firestore:"user_number" json:"user_number"`
 }
 
 type Chat struct {
-	RoomID string    `firestore:"room_id" json:"room_id"`
-	User   int       `firestore:"user" json:"user"`
-	Date   time.Time `firestore:"date" json:"date"`
-	Msg    string    `firestore:"msg" json:"msg"`
+	RoomID     string    `firestore:"room_id" json:"room_id"`
+	UserNumber int       `firestore:"user_number" json:"user_number"`
+	Date       time.Time `firestore:"date" json:"date"`
+	Msg        string    `firestore:"msg" json:"msg"`
 }

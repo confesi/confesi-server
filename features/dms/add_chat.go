@@ -8,68 +8,74 @@ import (
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/iterator"
 )
 
 func (h *handler) handleAddChat(c *gin.Context) {
-	// Validate the JSON body from request
-	var req validation.AddChat
-	err := utils.New(c).Validate(&req)
-	if err != nil {
-		return
-	}
-
 	// Get user token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("Failed to get user token").Send(c)
+		response.New(http.StatusInternalServerError).Err("failed to get user token").Send(c)
 		return
 	}
 
-	// Fetch the room to check whether the user is part of the room
-	roomSnapshot, err := h.fb.FirestoreClient.Collection("rooms").Doc(req.RoomID).Get(c)
+	// extract request
+	var req validation.AddChat
+	err = utils.New(c).Validate(&req)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("Failed to get room data").Send(c)
 		return
 	}
+
+	roomQuery := h.fb.FirestoreClient.Collection("rooms").
+		Where("room_id", "==", req.RoomID).
+		Where("user_id", "==", token.UID)
+
+	roomSnapshotIterator := roomQuery.Documents(c)
+	roomSnapshot, err := roomSnapshotIterator.Next()
+
+	if err == iterator.Done {
+		response.New(http.StatusBadRequest).Err("Room not found with given criteria").Send(c)
+		return
+	} else if err != nil {
+		response.New(http.StatusInternalServerError).Err("Error querying room").Send(c)
+		return
+	}
+
+	// Process roomSnapshot as needed
+
 	var room db.Room
 	if err := roomSnapshot.DataTo(&room); err != nil {
-		response.New(http.StatusInternalServerError).Err("Error decoding room data").Send(c)
+		response.New(http.StatusInternalServerError).Err("failed decoding room data").Send(c)
 		return
 	}
 
-	var userNum int
-	var otherUser string
-	if room.U1 == token.UID {
-		userNum = 1
-		otherUser = room.U2
-	} else if room.U2 == token.UID {
-		userNum = 2
-		otherUser = room.U1
-	} else {
+	if token.UID != room.UserID {
 		response.New(http.StatusBadRequest).Err("User is not part of the room").Send(c)
 		return
 	}
 
-	chat := db.Chat{
-		Msg:    req.Msg,
-		RoomID: req.RoomID,
-		User:   userNum, // Using "User" instead of "UserID"
-		Date:   time.Now().UTC(),
-	}
+	var chat db.Chat
+	chat.RoomID = room.RoomID
+	chat.UserNumber = room.UserNumber
+	chat.Date = time.Now().UTC()
+	chat.Msg = req.Msg
 
 	// Define the transaction function
 	err = h.fb.FirestoreClient.RunTransaction(c, func(ctx context.Context, tx *firestore.Transaction) error {
-		// Get reference to chats and rooms collections
+		// Get reference to chats collection
 		chatsCollectionRef := h.fb.FirestoreClient.Collection("chats")
-		roomRef := h.fb.FirestoreClient.Collection("rooms").Doc(req.RoomID)
+
+		// Directly get the roomRef from the already retrieved roomSnapshot
+		roomRef := roomSnapshot.Ref
 
 		// Add the chat to Firestore
-		_, _, err := chatsCollectionRef.Add(c, chat)
+		_, _, err = chatsCollectionRef.Add(c, chat)
 		if err != nil {
 			return err
 		}
@@ -83,17 +89,18 @@ func (h *handler) handleAddChat(c *gin.Context) {
 
 	// Check transaction result
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("Failed to complete transaction").Send(c)
+		fmt.Println(err)
+		response.New(http.StatusInternalServerError).Err("failed to complete transaction").Send(c)
 		return
 	}
 
-	// Obtain FCM tokens for the affected other user
+	// Obtain FCM tokens for the affected user
 	var tokens []string
 	err = h.db.
 		Table("fcm_tokens").
 		Select("fcm_tokens.token").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
-		Where("users.id = ?", otherUser).
+		Where("users.id = ?", room.UserID).
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
@@ -104,7 +111,8 @@ func (h *handler) handleAddChat(c *gin.Context) {
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
-		WithMsg(builders.AdminSendNotificationNoti("title", "body")).
+		// message, room name
+		WithMsg(builders.NewChatNoti(req.Msg, room.Name)).
 		WithData(map[string]string{}).
 		Send()
 

@@ -305,8 +305,3 @@ type AddChat struct {
 	RoomID string `json:"room_id" validate:"required"`
 	Msg    string `json:"msg" validate:"required,min=1,max=500"`
 }
-
-type FetchRooms struct {
-	PurgeCache bool   `json:"purge_cache"` // true or false, doesn't have "required" so that the zero-value is OK
-	SessionKey string `json:"session_key" validate:"required"`
-}

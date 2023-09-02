@@ -33,5 +33,4 @@ func Router(mux *gin.RouterGroup) {
 
 	mux.POST("/rooms", h.handleCreateRoom)
 	mux.POST("/chat", h.handleAddChat)
-	mux.GET("/rooms", h.handleLoadRoomsAndInitialChats)
 }
