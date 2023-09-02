@@ -31,7 +31,7 @@ func init() {
 func GetLatLong(c *gin.Context) (*LatLongCoord, error) {
 
 	// Create lat long struct
-	latLong := LatLongCoord{}
+	latLong := &LatLongCoord{}
 
 	// Obtain client IP address
 	ip := c.ClientIP()
@@ -40,6 +40,20 @@ func GetLatLong(c *gin.Context) (*LatLongCoord, error) {
 	if strings.Contains(ip, "172") && config.Development {
 		ip = "38.240.226.38"
 	}
+
+	// Get lat long from IP GetLatLongIP
+	latLong, err := GetLatLongIP(ip)
+	if err != nil {
+		return nil, err
+	}
+
+	return latLong, nil
+}
+
+func GetLatLongIP(ip string) (*LatLongCoord, error) {
+
+	// Create lat long struct
+	latLong := LatLongCoord{}
 
 	// Get lat long from IP
 	lat, err := ipDb.Get_latitude(ip)
