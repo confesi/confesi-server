@@ -145,7 +145,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
 		WithMsg(builders.NewRoomCreatedNoti()).
-		WithData(map[string]string{}).
+		WithData(builders.NewRoomCreatedData(roomID)).
 		Send()
 
 	response.New(http.StatusOK).Send(c)

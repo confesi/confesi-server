@@ -32,37 +32,32 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		return
 	}
 
-	roomQuery := h.fb.FirestoreClient.Collection("rooms").
+	// Identify the other user's room document
+	otherUserRoomQuery := h.fb.FirestoreClient.Collection("rooms").
 		Where("room_id", "==", req.RoomID).
-		Where("user_id", "==", token.UID)
+		Where("user_id", "!=", token.UID)
 
-	roomSnapshotIterator := roomQuery.Documents(c)
-	roomSnapshot, err := roomSnapshotIterator.Next()
+	otherUserRoomSnapshotIterator := otherUserRoomQuery.Documents(c)
+	otherUserRoomSnapshot, err := otherUserRoomSnapshotIterator.Next()
 
 	if err == iterator.Done {
-		response.New(http.StatusBadRequest).Err("room not found with given criteria").Send(c)
+		response.New(http.StatusBadRequest).Err("other user's room not found with given criteria").Send(c)
 		return
 	} else if err != nil {
-		response.New(http.StatusInternalServerError).Err("error querying room").Send(c)
+		fmt.Println(err)
+		response.New(http.StatusInternalServerError).Err("error querying other user's room").Send(c)
 		return
 	}
 
-	// Process roomSnapshot as needed
-
-	var room db.Room
-	if err := roomSnapshot.DataTo(&room); err != nil {
-		response.New(http.StatusInternalServerError).Err("failed decoding room data").Send(c)
-		return
-	}
-
-	if token.UID != room.UserID {
-		response.New(http.StatusBadRequest).Err("user is not part of the room").Send(c)
+	var otherUserRoom db.Room
+	if err := otherUserRoomSnapshot.DataTo(&otherUserRoom); err != nil {
+		response.New(http.StatusInternalServerError).Err("failed decoding other user's room data").Send(c)
 		return
 	}
 
 	var chat db.Chat
-	chat.RoomID = room.RoomID
-	chat.UserNumber = room.UserNumber
+	chat.RoomID = otherUserRoom.RoomID
+	chat.UserNumber = otherUserRoom.UserNumber
 	chat.Date = time.Now().UTC()
 	chat.Msg = req.Msg
 
@@ -71,8 +66,8 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		// Get reference to chats collection
 		chatsCollectionRef := h.fb.FirestoreClient.Collection("chats")
 
-		// Directly get the roomRef from the already retrieved roomSnapshot
-		roomRef := roomSnapshot.Ref
+		// Directly get the roomRef from the already retrieved otherUserRoomSnapshot
+		roomRef := otherUserRoomSnapshot.Ref
 
 		// Add the chat to Firestore
 		_, _, err = chatsCollectionRef.Add(c, chat)
@@ -94,23 +89,25 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		return
 	}
 
-	// Obtain FCM tokens for the affected user
+	// Obtain FCM tokens for the affected user (other user in this case)
 	var tokens []string
 	err = h.db.
 		Table("fcm_tokens").
 		Select("fcm_tokens.token").
 		Joins("JOIN users ON users.id = fcm_tokens.user_id").
-		Where("users.id = ?", room.UserID).
+		Where("users.id = ?", otherUserRoom.UserID).
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	// ignore errors
+	if err != nil {
+		response.New(http.StatusInternalServerError).Err("failed to get FCM tokens").Send(c)
+		return
+	}
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
-		// message, room name
-		WithMsg(builders.NewChatNoti(req.Msg, room.Name)).
-		WithData(map[string]string{}).
+		WithMsg(builders.NewChatNoti(req.Msg, otherUserRoom.Name)).
+		WithData(builders.NewChatData(chat.RoomID)).
 		Send()
 
 	// Send a success response

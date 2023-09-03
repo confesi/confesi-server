@@ -230,6 +230,6 @@ swag fmt
 
 ## Todo: Prod
 
-- Update Firebase Security Rules to ensure that a user can only access a document in the `rooms` collection if their `uid` is listed in the `user_id` field.
+- Update Firebase Security Rules to ensure that a user can only access a document in the `rooms` collection if their `uid` is listed in the `user_id` field. Additionally, ensure only read access, as the server does the writing.
 
 - Firebase indices created (else client (possibly server?) throws exceptions).

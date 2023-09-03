@@ -30,8 +30,9 @@ type Sender struct {
 
 func New(client *messaging.Client) *Sender {
 	return &Sender{
-		Client:         client,
-		ContextTimeout: 5 * time.Second,
+		Client:           client,
+		ContextTimeout:   5 * time.Second,
+		ContentAvailable: true, // default
 	}
 }
 
@@ -57,7 +58,7 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 
 // Sets if it should be sent as a background message only.
 //
-// Defaults to true.
+// Defaults to false.
 func (s *Sender) ShownInBackgroundOnly(onlyBackground bool) *Sender {
 	s.ContentAvailable = !onlyBackground
 	return s

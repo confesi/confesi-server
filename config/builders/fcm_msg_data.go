@@ -89,14 +89,16 @@ func AccountStandingLimitedData(isLimited bool) map[string]string {
 	}
 }
 
-func NewRoomCreatedData() map[string]string {
+func NewRoomCreatedData(roomId string) map[string]string {
 	return map[string]string{
-		"type": "new_room_created",
+		"type":    "new_room_created",
+		"room_id": roomId,
 	}
 }
 
-func NewChatData() map[string]string {
+func NewChatData(roomId string) map[string]string {
 	return map[string]string{
-		"type": "new_chat",
+		"type":    "new_chat",
+		"room_id": roomId,
 	}
 }
