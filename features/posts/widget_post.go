@@ -16,9 +16,13 @@ type widgetPost struct {
 	Title        string         `json:"title"`
 	Content      string         `json:"content"`
 	SchoolImgUrl string         `json:"school_img_url"`
+	SchoolAbbr   string         `json:"school_abbr"`
 }
 
 func (h *handler) handleGetWidgetPost(c *gin.Context) {
+
+	// response.New(http.StatusNotFound).Err("post not found").Send(c)
+	// return
 
 	var post db.Post
 
@@ -42,10 +46,12 @@ func (h *handler) handleGetWidgetPost(c *gin.Context) {
 	post = post.CensorPost()
 
 	widgetPost := widgetPost{
+
 		ID:           post.ID,
 		Title:        post.Title,
 		Content:      post.Content,
 		SchoolImgUrl: post.School.ImgUrl,
+		SchoolAbbr:   post.School.Abbr,
 	}
 
 	response.New(http.StatusOK).Val(widgetPost).Send(c)
