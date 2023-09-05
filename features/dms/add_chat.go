@@ -51,9 +51,16 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-		chat.UserNumber = 1
-		if roomSnapshot == nil {
-			chat.UserNumber = 2
+		if roomSnapshot != nil {
+			roomData := roomSnapshot.Data()
+			if val, ok := roomData["user_number"]; ok {
+				userNum, _ := val.(int64)
+				if userNum == 1 || userNum == 2 {
+					chat.UserNumber = int(userNum)
+				} else {
+					// Some error handling or defaulting can be done here if needed
+				}
+			}
 		}
 
 		// Add the chat to Firestore
