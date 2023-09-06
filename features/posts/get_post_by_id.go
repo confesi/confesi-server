@@ -39,19 +39,31 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 		Preload("Faculty").
 		Preload("Category").
 		Raw(`
-				SELECT posts.*, 
-					COALESCE(
-						(SELECT votes.vote
-						FROM votes
-						WHERE votes.post_id = posts.id
-							AND votes.user_id = ?
-						LIMIT 1),
-						'0'::vote_score_value
-					) AS user_vote
-				FROM posts
-				WHERE posts.id = ?
-				LIMIT 1
-			`, token.UID, maskedId).
+            SELECT posts.*, 
+                COALESCE(
+                    (SELECT votes.vote
+                    FROM votes
+                    WHERE votes.post_id = posts.id
+                        AND votes.user_id = ?
+                    LIMIT 1),
+                    '0'::vote_score_value
+                ) AS user_vote,
+                EXISTS(
+                    SELECT 1
+                    FROM saved_posts
+                    WHERE saved_posts.post_id = posts.id
+                    AND saved_posts.user_id = ?
+                ) as saved,
+                EXISTS(
+                    SELECT 1
+                    FROM reports
+                    WHERE reports.post_id = posts.id
+                    AND reports.reported_by = ?
+                ) as reported
+            FROM posts
+            WHERE posts.id = ?
+            LIMIT 1
+        `, token.UID, token.UID, token.UID, maskedId).
 		First(&post).
 		Error
 
@@ -62,7 +74,7 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			response.New(http.StatusBadRequest).Err("post not found").Send(c)
+			response.New(http.StatusNotFound).Err("post not found").Send(c)
 			return
 		}
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

@@ -271,11 +271,11 @@ func (h *handler) handleCreate(c *gin.Context) {
 			ToTokens(postTokens).
 			WithMsg(builders.CommentAddedToPostNoti(req.Content)).
 			WithData(builders.CommentAddedToPostData(comment.ID.Val, unmaskedPostId)).
-			Send(*h.db)
+			Send()
 	}
 
 	// respond "success" BEFORE sending FCM
-	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true}).Send(c)
+	response.New(http.StatusCreated).Val(CommentDetail{Comment: comment, UserVote: 0, Owner: true, Reported: false, Saved: false}).Send(c)
 
 	// if threaded comment, parent comment
 	if req.ParentCommentID != nil {
@@ -294,7 +294,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 				ToTokens(threadTokens).
 				WithMsg(builders.ThreadedCommentReplyNoti(req.Content)).
 				WithData(builders.ThreadedCommentReplyData(unmaskedCommentId, comment.ID.Val, unmaskedPostId)).
-				Send(*h.db)
+				Send()
 		}
 	}
 

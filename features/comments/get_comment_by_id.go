@@ -30,19 +30,33 @@ func (h *handler) handleGetCommentById(c *gin.Context) {
 
 	err = h.db.
 		Raw(`
-				SELECT comments.*,
-					COALESCE(
-						(SELECT votes.vote
+			SELECT comments.*,
+				COALESCE(
+					(
+						SELECT votes.vote
 						FROM votes
 						WHERE votes.comment_id = comments.id
 							AND votes.user_id = ?
-						LIMIT 1),
-						'0'::vote_score_value
-					) AS user_vote
-				FROM comments
-				WHERE comments.id = ?
-				LIMIT 1
-			`, token.UID, unmaskedId).
+						LIMIT 1
+					),
+					'0'::vote_score_value
+				) AS user_vote,
+				EXISTS(
+					SELECT 1
+					FROM saved_comments
+					WHERE saved_comments.comment_id = comments.id
+					AND saved_comments.user_id = ?
+				) as saved,
+				EXISTS(
+					SELECT 1
+					FROM reports
+					WHERE reports.comment_id = comments.id
+					AND reports.reported_by = ?
+				) as reported
+			FROM comments
+			WHERE comments.id = ?
+			LIMIT 1
+		`, token.UID, token.UID, token.UID, unmaskedId).
 		First(&comment).
 		Error
 

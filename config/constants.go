@@ -5,7 +5,7 @@ package config
 const (
 	MaxCommentThreadDepthExcludingRoot               = 1                                        // how many levels of comments are allowed (depth)
 	RootCommentsLoadedInitially                      = 10                                       // how many root comments are returned at once
-	RepliesLoadedInitially                           = 3                                        // how many replies are returned at once
+	RepliesLoadedInitially                           = 2                                        // how many replies are returned at once
 	RepliesLoadedManually                            = 5                                        // how many replies are loaded when user clicks on "load more replies"
 	HottestPostsPageSize                             = 5                                        // how many hottest posts are returned in a page size per day
 	CronJobPageSize                                  = 10                                       // how many cron job results are returned in a page size
@@ -35,15 +35,27 @@ const (
 	QueryForSchoolsBySearchPageSize                  = 10                                       // how many schools are returned in a page size in the search schools page
 	QueryForSchoolsBySearchFloorSimilarityMatchValue = 0.05                                     // how much of a match is required for a school to be returned in the search schools page (value is the min percent of match, IE: 0.05 = 5% match at least, or 1 in 20 of the characters match)
 	DefaultRange                                     = 50000                                    // default distance to include schools in, in meters
+	HottestPostNotificationsLowerBound               = "00:00"                                  // the lower bound of the hottest post notifications cron job - 24h time
+	HottestPostNotificationsUpperBound               = "23:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
+	TitleMaxLength                                   = 100                                      // max length of a post title
+	BodyMaxLength                                    = 1000                                     // max length of a post content/body
 )
 
 // ----- DEPLOYMENT CONSTANTS
 
 const (
-	iOSBundleId        = "com.confesi.app"    // iOS bundle id // TODO: change this
-	AndroidPackageName = "com.confesi.app"    // Android package name // TODO: change this
-	FirebaseProjectID  = "confesi-server-dev" // Firebase project id // TODO: change this
+	iOSBundleId        = "com.confesi.app"
+	AndroidPackageName = "com.confesi.app"
+	FirebaseProjectID  = "confesi-server-dev" // Firebase project id
 	Development        = true                 // development mode
+)
+
+// ---- AWS CONSTANTS
+
+const (
+	AwsUserUploadsBucket              string  = "confesi-uploads"
+	AwsRekognitionConfidenceThreshold float64 = 80
+	AwsUserUploadsBucketBaseUrl       string  = "https://confesi-uploads.s3.us-east-2.amazonaws.com/"
 )
 
 // ----- ALT CONSTANTS

@@ -66,6 +66,20 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 	}
 }
 
+func YourSchoolsDailyHottestNoti(occurences int) *messaging.Notification {
+	if occurences == 1 {
+		return &messaging.Notification{
+			Title: "Daily Hottest",
+			Body:  fmt.Sprintf("🔥 Your school reached the Daily Hottest page today"),
+		}
+	}
+
+	return &messaging.Notification{
+		Title: "Daily Hottest",
+		Body:  fmt.Sprintf("🔥 Your school reached the Daily Hottest page %d times today", occurences),
+	}
+}
+
 func DailyHottestPostsNoti(n int, date string) *messaging.Notification {
 	var confessionWord string
 	if n == 1 {
@@ -102,6 +116,13 @@ func HideReportNoti() *messaging.Notification {
 	return &messaging.Notification{
 		Title: "✅ Moderator action",
 		Body:  "Something you reported was deleted by a mod. Thanks for your input. You can view the report results, if given, in-app.",
+	}
+}
+
+func AdminSendNotificationNoti(title string, body string) *messaging.Notification {
+	return &messaging.Notification{
+		Title: title,
+		Body:  body,
 	}
 }
 

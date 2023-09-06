@@ -1,7 +1,7 @@
 # [Confesi](https://confesi.com)
 
 ![unit tests](https://github.com/mattrltrent/confesi-server/actions/workflows/unit_tests.yml/badge.svg)
-![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg)
+<!-- ![linting](https://github.com/mattrltrent/confesi-server/actions/workflows/linting.yml/badge.svg) commented out until linting is added back-->
 
 ## Notes
 
@@ -22,6 +22,10 @@
 **Download the file `IP2LOCATION-LITE-DB5.IPV6.BIN` externally:**
 
 Then put it here, like so `~/assets/IP2LOCATION/IP2LOCATION-LITE-DB5.IPV6.BIN`
+
+**Add required env variables to GitHub Secrets Manager for tests to pass:**
+
+Repo > Settings > Secrets and variables > Actions > New repository secret
 
 **Generate example `.env` file:**
 
@@ -139,10 +143,23 @@ docker exec -it confesi-db psql -U postgres confesi
 # generate a new `confesi.dbml`
 ./scripts/database dbml
 
+# endpoint speed checker
+go run ./scripts/main.go --test-endpoints-speed
+
 # seed data (use the POSTGRES_DSN found in `/scripts/test` not `.env`)
-export POSTGRES_DSN="" # TODO: make a new bash env scripts that exports all of this
-go run ./scripts/main.go --seed-schools
-```
+export POSTGRES_DSN="" 
+export MASK_SECRET="" # Found in `.env`
+
+go run ./scripts/main.go --seed-all # Seed every seedable table
+
+go run ./scripts/main.go --seed-schools # Seed schools
+go run ./scripts/main.go --seed-feedback-types # Seed feedback types
+go run ./scripts/main.go --seed-report-types # Seed report types
+go run ./scripts/main.go --seed-post-categories # Seed post categories
+go run ./scripts/main.go --seed-faculties # Seed faculties
+go run ./scripts/main.go --seed-years-of-study # Seed years of study
+
+``` 
 
 ## Redis cache
 

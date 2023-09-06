@@ -1,12 +1,12 @@
-Name,Abbr,Lat,Lon,Domain
-University of Victoria,UVIC,48.4634,-123.3117,@uvic.ca
-University of British Columbia,UBC,49.2606,-123.2460,@student.ubc.ca
-Simon Fraser University,SFU,49.2781,-122.9199,@sfu.ca
-University of Northern British Columbia,UNBC,53.8893,-122.8147,@unbc.ca
-University of the Fraser Valley,UFV,49.1312,-121.9728,@ufv.ca
-University of British Columbia Okanagan,UBCO,49.9511,-119.3962,@ubc.ca
-Washington State University,WSU,46.7318,-117.1543,@wsu.edu
-Massachusetts Institute of Technology,MIT,42.3601,-71.0942,@mit.edu
-Harvard University,HARV,42.3770,-71.1167,@college.harvard.edu
-University of California Berkely,UCB,37.8719,-122.2585,@berkeley.edu
-Pennsylvania State University,PSU,40.7982,-77.8599,@psu.edu
+Name,Abbr,Lat,Lon,Domain,Img_URL,Website,Timezone
+University of Victoria,UVIC,48.4634,-123.3117,@uvic.ca,https://google.com,https://uvic.ca,Canada/Pacific
+University of British Columbia,UBC,49.2606,-123.2460,@student.ubc.ca,https://google.com,https://ubc.ca,Canada/Pacific
+Simon Fraser University,SFU,49.2781,-122.9199,@sfu.ca,https://google.com,https://sfu.ca,Canada/Pacific
+University of Northern British Columbia,UNBC,53.8893,-122.8147,@unbc.ca,https://google.com,https://unbc.ca,Canada/Pacific
+University of the Fraser Valley,UFV,49.1312,-121.9728,@ufv.ca,https://google.com,https://ufv.ca,Canada/Pacific
+University of British Columbia Okanagan,UBCO,49.9511,-119.3962,@ubc.ca,https://google.com,https://ok.ubc.ca,Canada/Pacific
+Washington State University,WSU,46.7318,-117.1543,@wsu.edu,https://google.com,https://wsu.edu,Canada/Pacific
+Massachusetts Institute of Technology,MIT,42.3601,-71.0942,@mit.edu,https://google.com,https://mit.edu,Canada/Pacific
+Harvard University,HARV,42.3770,-71.1167,@college.harvard.edu,https://google.com,https://harvard.edu,Canada/Pacific
+University of California Berkely,UCB,37.8719,-122.2585,@berkeley.edu,https://google.com,https://google.com,Canada/Pacific
+Pennsylvania State University,PSU,40.7982,-77.8599,@psu.edu,https://google.com,https://psu.edu,Canada/Pacific

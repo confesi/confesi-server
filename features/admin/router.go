@@ -56,4 +56,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.GET("/posts-by-report", h.handleGetRankedPostsByReport)
 	mux.GET("/reports-for-comment", h.handleFetchReportForCommentById)
 	mux.GET("/reports-for-post", h.handleFetchReportForPostById)
+	mux.POST("/send-notification", h.handleSendNotification)
 }

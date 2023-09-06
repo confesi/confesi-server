@@ -1,6 +1,7 @@
 package fcm
 
 import (
+	"confesi/db"
 	"confesi/lib/logger"
 	"context"
 	"errors"
@@ -8,7 +9,6 @@ import (
 	"time"
 
 	"firebase.google.com/go/messaging"
-	"gorm.io/gorm"
 )
 
 var (
@@ -19,12 +19,13 @@ var (
 )
 
 type Sender struct {
-	Client         *messaging.Client
-	Tokens         []string
-	Topic          string
-	Data           map[string]string
-	Notification   *messaging.Notification
-	ContextTimeout time.Duration
+	Client           *messaging.Client
+	Tokens           []string
+	Topic            string
+	Data             map[string]string
+	Notification     *messaging.Notification
+	ContextTimeout   time.Duration
+	ContentAvailable bool
 }
 
 func New(client *messaging.Client) *Sender {
@@ -54,12 +55,74 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 	return s
 }
 
-func (s *Sender) Send(db gorm.DB) (error, uint) {
+// Sets if it should be sent as a background message only.
+//
+// Defaults to true.
+func (s *Sender) ShownInBackgroundOnly(onlyBackground bool) *Sender {
+	s.ContentAvailable = !onlyBackground
+	return s
+}
+
+func (s *Sender) Send() (error, uint) {
 	messages := make([]*messaging.Message, 0)
+
+	apnsConfig := &messaging.APNSConfig{
+		Headers: map[string]string{
+			"method": "POST",
+			"apns-priority": func() string {
+				if s.ContentAvailable {
+					return "10" // Higher priority for immediate display
+				}
+				return "5" // Lower priority for background processing
+			}(),
+			"apns-push-type": func() string {
+				if s.ContentAvailable {
+					return "alert" // Show on screen with sound
+				}
+				return "background" // Background processing without alert
+			}(),
+			"apns-collapse-id": "confesi",
+			"apns-expiration":  "0",
+		},
+		Payload: &messaging.APNSPayload{
+			Aps: &messaging.Aps{
+				Sound: func() string {
+					if s.ContentAvailable {
+						return "default" // Play sound for alerts
+					}
+					return "default" // No sound for background processing
+				}(),
+				ContentAvailable: s.ContentAvailable,
+				Alert: func() *messaging.ApsAlert {
+					if s.ContentAvailable {
+						return &messaging.ApsAlert{
+							Title: s.Notification.Title,
+							Body:  s.Notification.Body,
+						}
+					}
+					return nil
+				}(),
+			},
+		},
+	}
+
+	androidConfig := &messaging.AndroidConfig{
+		Notification: &messaging.AndroidNotification{
+			ChannelID: "confesi",
+			Sound:     "default",
+		},
+		Priority: func() string {
+			if s.ContentAvailable {
+				return "high" // High priority for alerts
+			}
+			return "normal" // Normal priority for background processing
+		}(),
+	}
 
 	if len(s.Tokens) > 0 && s.Topic == "" {
 		// Create messages for individual tokens
 		for _, token := range s.Tokens {
+			apnsConfig.Headers["path"] = "/3/device/" + token
 			message := &messaging.Message{
 				FCMOptions: &messaging.FCMOptions{
 					AnalyticsLabel: "confesi",
@@ -67,27 +130,15 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 				Token:        token,
 				Data:         s.Data,
 				Notification: s.Notification,
-				Android: &messaging.AndroidConfig{ // todo: Android CONFIG (content available, priority, etc)
-					Priority: "high", // default to high to get that sweet "ding"
-
-				},
-				APNS: &messaging.APNSConfig{
-					Headers: map[string]string{
-						"method":           "POST",
-						"path":             "/3/device/" + token,
-						"apns-priority":    "10",
-						"apns-topic":       "com.confesi.app",
-						"apns-push-type":   "alert",
-						"apns-collapse-id": "confesi",
-						"apns-expiration":  "0",
-					},
-					Payload: &messaging.APNSPayload{
-						Aps: &messaging.Aps{
-							Sound: "defaultCritical",
-						},
-					},
-				}, // todo: APNS CONFIG (content available, priority, etc)
+				Android:      androidConfig,
+				APNS:         apnsConfig,
 			}
+
+			test, err := s.Client.Send(context.Background(), message)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(test)
 
 			messages = append(messages, message)
 		}
@@ -97,11 +148,9 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 			Topic:        s.Topic,
 			Data:         s.Data,
 			Notification: s.Notification,
-			Android: &messaging.AndroidConfig{
-				Priority: "high", // default to high to get that sweet "ding"
-			},
-			APNS:    &messaging.APNSConfig{},
-			Webpush: &messaging.WebpushConfig{},
+			Android:      androidConfig,
+			APNS:         apnsConfig,
+			Webpush:      &messaging.WebpushConfig{},
 		}
 
 		messages = append(messages, message)
@@ -148,7 +197,7 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 	}
 
 	if len(deadTokens) > 0 {
-		result := db.Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(nil)
+		result := db.New().Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(&db.FcmToken{})
 		if result.Error != nil {
 			// Handle the error if the deletion fails
 			return result.Error, sends
@@ -156,7 +205,7 @@ func (s *Sender) Send(db gorm.DB) (error, uint) {
 	}
 
 	// log how many sends
-	logger.StdInfo(fmt.Sprintf("sent %d fcm messages successfully of %d attempts", sends, len(messages)))
+	logger.StdInfo(fmt.Sprintf("sent %d of %d fcm messages successfully", sends, len(messages)))
 
 	return nil, sends
 }

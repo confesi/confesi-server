@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"time"
 
@@ -12,6 +13,48 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
+
+type PgTxtArr []string
+
+func (a *PgTxtArr) Scan(src interface{}) error {
+	var str string
+	switch v := src.(type) {
+	case []byte:
+		str = string(v)
+	case string:
+		str = v
+	default:
+		return fmt.Errorf("unable to scan PgTxtArr: unexpected type: %T", src)
+	}
+
+	// Trimming the surrounding curly braces of PostgreSQL arrays
+	str = strings.Trim(str, "{}")
+
+	// If the trimmed string is empty, it means the array was empty.
+	if str == "" {
+		*a = []string{}
+		return nil
+	}
+
+	// Splitting by comma, but be careful about commas inside the URLs
+	pieces := strings.Split(str, ",")
+
+	// Check and handle quoted strings
+	var cleanPieces []string
+	for _, piece := range pieces {
+		if strings.HasPrefix(piece, `"`) && strings.HasSuffix(piece, `"`) {
+			piece = strings.Trim(piece, `"`)
+		}
+		cleanPieces = append(cleanPieces, piece)
+	}
+
+	*a = cleanPieces
+	return nil
+}
+
+func (a PgTxtArr) Value() (driver.Value, error) {
+	return "{" + strings.Join(a, ",") + "}", nil
+}
 
 type EncryptedID struct {
 	Val uint
@@ -67,6 +110,7 @@ type School struct {
 	Domain        string      `json:"domain"`
 	ImgUrl        string      `json:"img_url"`
 	Website       string      `json:"website"`
+	Timezone      string      `json:"timezone"`
 }
 
 type Faculty struct {
@@ -153,32 +197,33 @@ type SchoolFollow struct {
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
 type Post struct {
-	ID              EncryptedID     `gorm:"primary_key;column:id" json:"id"`
-	CreatedAt       TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
-	UpdatedAt       TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
-	UserID          string          `gorm:"column:user_id" json:"-"`
-	SchoolID        EncryptedID     `gorm:"column:school_id" json:"-"`
-	School          School          `gorm:"foreignKey:SchoolID" json:"school"`
-	FacultyID       *EncryptedID    `gorm:"column:faculty_id" json:"-"`
-	Faculty         Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
-	YearOfStudyID   *EncryptedID    `gorm:"column:year_of_study_id" json:"-"`
-	YearOfStudy     YearOfStudy     `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
-	Title           string          `gorm:"column:title" json:"title"`
-	Content         string          `gorm:"column:content" json:"content"`
-	Downvote        uint            `gorm:"column:downvote" json:"downvote"`
-	Upvote          uint            `gorm:"column:upvote" json:"upvote"`
-	VoteScore       int             `gorm:"column:vote_score" json:"-"` // redundant to return to the user
-	TrendingScore   float64         `gorm:"column:trending_score" json:"trending_score"`
-	HottestOn       *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
-	Hidden          bool            `gorm:"column:hidden" json:"hidden"`
-	Sentiment       *float64        `gorm:"column:sentiment" json:"sentiment"`
-	ReportCount     uint            `gorm:"column:report_count" json:"-"`
-	ReviewedByMod   bool            `gorm:"column:reviewed_by_mod" json:"-"`
-	Edited          bool            `gorm:"column:edited" json:"edited"`
-	CategoryID      EncryptedID     `gorm:"column:category_id" json:"-"`
-	Category        PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
-	CommentCount    uint            `gorm:"column:comment_count" json:"comment_count"`
+	ID            EncryptedID     `gorm:"primary_key;column:id" json:"id"`
+	CreatedAt     TimeMicros      `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	UpdatedAt     TimeMicros      `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+	UserID        string          `gorm:"column:user_id" json:"-"`
+	SchoolID      EncryptedID     `gorm:"column:school_id" json:"-"`
+	School        School          `gorm:"foreignKey:SchoolID" json:"school"`
+	FacultyID     *EncryptedID    `gorm:"column:faculty_id" json:"-"`
+	Faculty       Faculty         `gorm:"foreignKey:FacultyID" json:"faculty"`
+	YearOfStudyID *EncryptedID    `gorm:"column:year_of_study_id" json:"-"`
+	YearOfStudy   YearOfStudy     `gorm:"foreignKey:YearOfStudyID" json:"year_of_study"`
+	Title         string          `gorm:"column:title" json:"title"`
+	Content       string          `gorm:"column:content" json:"content"`
+	Downvote      uint            `gorm:"column:downvote" json:"downvote"`
+	Upvote        uint            `gorm:"column:upvote" json:"upvote"`
+	VoteScore     int             `gorm:"column:vote_score" json:"-"` // redundant to return to the user
+	TrendingScore float64         `gorm:"column:trending_score" json:"trending_score"`
+	HottestOn     *datatypes.Date `gorm:"column:hottest_on" json:"hottest_on"` // intentionally a pointer, so that it defaults to NULL when created and not specified (i.e. not its zero-value)
+	Hidden        bool            `gorm:"column:hidden" json:"hidden"`
+	Sentiment     *float64        `gorm:"column:sentiment" json:"sentiment"`
+	ReportCount   uint            `gorm:"column:report_count" json:"-"`
+	ReviewedByMod bool            `gorm:"column:reviewed_by_mod" json:"-"`
+	Edited        bool            `gorm:"column:edited" json:"edited"`
+	CategoryID    EncryptedID     `gorm:"column:category_id" json:"-"`
+	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
+	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
 	CommentNumerics uint            `gorm:"column:comment_numerics" json:"comment_numerics"`
+	ImgUrls       PgTxtArr        `gorm:"column:img_urls" json:"img_urls"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")

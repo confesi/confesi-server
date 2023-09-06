@@ -15,6 +15,7 @@ import (
 	"confesi/features/user"
 	"confesi/features/votes"
 	"confesi/lib/cronJobs/clearExpiredFcmTokens"
+	"confesi/lib/cronJobs/cronNotifications"
 	"confesi/lib/cronJobs/dailyHottestPosts"
 	"confesi/middleware"
 	"fmt"
@@ -91,6 +92,7 @@ func main() {
 	// Start the CRON job scheduler
 	dailyHottestPosts.StartDailyHottestPostsCronJob()
 	clearExpiredFcmTokens.StartClearExpiredFcmTokensCronJob()
+	cronNotifications.StartDailyHottestPostsCronJob()
 
 	// Start the server
 	r.Run(fmt.Sprintf(":%s", port))

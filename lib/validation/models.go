@@ -14,15 +14,6 @@ type EmailQuery struct {
 	Email string `json:"email" validate:"required,email,excludes= "` // intentional white space
 }
 
-type CreatePostDetails struct {
-	// [required if Body empty/null] at most 100 characters
-	Title string `json:"title" validate:"max=100,required_without=Body"`
-	// [required if Title empty/null] at most 2000 characters
-	Body string `json:"body" validate:"max=2000,required_without=Title"`
-	// [required] the category of post
-	Category string `json:"category" validate:"required"`
-}
-
 type CreateDraftDetails struct {
 	// [required if Body empty/null] at most 100 characters
 	Title string `json:"title" validate:"max=100,required_without=Body"`
@@ -73,6 +64,19 @@ type UserStanding struct {
 	Standing string `json:"standing" validate:"required,oneof=limited banned enabled unbanned"`
 	// [required] the user id to change standing for
 	UserID string `json:"user_id" validate:"required"`
+}
+
+type SendNotification struct {
+	// [required] user ids to send notification to
+	UserIDs []string `json:"user_ids" validate:"required"`
+	// [required] notification title
+	Title string `json:"title" validate:"required"`
+	// [required] notification body
+	Body string `json:"body" validate:"required"`
+	// [optional] notification data
+	Data map[string]string `json:"data"`
+	// [optional] notification type
+	Background bool `json:"background"`
 }
 
 type UserQuery struct {

@@ -13,10 +13,6 @@ HKDF_SECRET="some-secret-string"
 # a 16-byte key
 MASK_SECRET="your_16_byte_key"
 
-# to generate a new nonce for production:
-# go run ./scripts/main.go --new-nonce
-CIPHER_NONCE="47363bcf91a1545668f0fd7a"
-
 # Redis connection string
 REDIS_CONN="redis:6379"
 
