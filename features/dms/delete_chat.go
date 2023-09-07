@@ -18,7 +18,7 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 	}
 
 	// Extract chatID from the request
-	chatID := c.Param("chat-id")
+	chatID := c.Query("id")
 	if chatID == "" {
 		response.New(http.StatusBadRequest).Err("chat-id parameter required").Send(c)
 		return

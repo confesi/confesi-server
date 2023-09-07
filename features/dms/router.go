@@ -34,8 +34,7 @@ func Router(mux *gin.RouterGroup) {
 	mux.POST("/rooms", h.handleCreateRoom)
 	mux.POST("/chat", h.handleAddChat)
 	mux.PUT("/chat", h.handleUpdateChatName)
-	mux.DELETE("/chat/:chat-id", h.handleDeleteChat)
 	mux.DELETE("/room/:room-id", h.handleDeleteEntireRoom)
 	mux.DELETE("/room/clear-chats", h.handleClearEntireChat)
-
+	mux.DELETE("/chat", h.handleDeleteChat)
 }
