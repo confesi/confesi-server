@@ -39,8 +39,19 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		return
 	}
 
+	// start a transaction
+	tx := h.db.Begin()
+	// if something goes ary, rollback
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+			return
+		}
+	}()
+
 	var post db.Post
-	err = h.db.
+	err = tx.
 		Where("id = ?", unmaskedPostId).
 		Where("hidden = ?", false).
 		First(&post).
@@ -51,11 +62,39 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		} else {
 			response.New(http.StatusInternalServerError).Err("failed to fetch post data").Send(c)
 		}
+		tx.Rollback()
 		return
 	}
 
 	if post.UserID == token.UID {
+		tx.Rollback()
 		response.New(http.StatusBadRequest).Err("you can't DM yourself").Send(c)
+		return
+	}
+
+	// query for the db.User of the person you're TRYING to DM
+	userBeingDmd := db.User{}
+	err = tx.
+		Where("id = ?", post.UserID).
+		First(&userBeingDmd).
+		Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	if !userBeingDmd.RoomRequests {
+		tx.Rollback()
+		response.New(http.StatusBadRequest).Err("user has room creation disabled").Send(c)
+		return
+	}
+
+	// commit transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 
@@ -76,6 +115,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		Where("user_id", "==", post.UserID).
 		Documents(c).Next()
 	if err != nil && err != iterator.Done {
+		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err("failed to check for existing rooms").Send(c)
 		return
 	}
@@ -140,7 +180,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 
-	// ignore errors
+	// ignore errors since this is a non-critical function
 
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
