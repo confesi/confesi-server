@@ -21,6 +21,7 @@ type widgetPost struct {
 
 func (h *handler) handleGetWidgetPost(c *gin.Context) {
 
+	// test to simulate error
 	// response.New(http.StatusNotFound).Err("post not found").Send(c)
 	// return
 

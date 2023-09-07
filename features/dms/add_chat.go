@@ -58,7 +58,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 				if userNum == 1 || userNum == 2 {
 					chat.UserNumber = int(userNum)
 				} else {
-					// Some error handling or defaulting can be done here if needed
+					return fmt.Errorf("invalid user number; server error")
 				}
 			}
 		}

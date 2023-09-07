@@ -161,7 +161,7 @@ func NewRoomCreatedNoti() *messaging.Notification {
 
 func NewChatNoti(message string, room string) *messaging.Notification {
 	return &messaging.Notification{
-		Title: "💬 " + room,
+		Title: room,
 		Body:  message,
 	}
 }
