@@ -102,3 +102,9 @@ func NewChatData(roomId string) map[string]string {
 		"room_id": roomId,
 	}
 }
+
+func DeletedChatData() map[string]string {
+	return map[string]string{
+		"type": "deleted_chat",
+	}
+}

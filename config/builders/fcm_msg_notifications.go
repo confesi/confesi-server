@@ -3,6 +3,7 @@ package builders
 import (
 	"confesi/db"
 	"fmt"
+	rnd "math/rand"
 
 	"firebase.google.com/go/messaging"
 )
@@ -164,4 +165,26 @@ func NewChatNoti(message string, room string) *messaging.Notification {
 		Title: room,
 		Body:  message,
 	}
+}
+
+func DeletedChatNoti() *messaging.Notification {
+	return &messaging.Notification{
+		Title: genRandSusEmoji() + " Somebody deleted a chat",
+		Body:  "A typo? A regret? Something sus? Who knows...",
+	}
+}
+
+func genRandSusEmoji() string {
+	possibleEmojis := []string{
+		"👀",
+		"👁",
+		"😏",
+		"🤔",
+		"🤨",
+		"🫣",
+		"🥶",
+	}
+	// rand idx using math/random lib
+	randIdx := rnd.Intn(len(possibleEmojis))
+	return possibleEmojis[randIdx]
 }

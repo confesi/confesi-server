@@ -129,6 +129,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		return
 	}
 
+	// (don't handle error case since it's not necessary)
 	go fcm.New(h.fb.MsgClient).
 		ToTokens(tokens).
 		WithMsg(builders.NewChatNoti(req.Msg, otherUserRoom.Name)).
