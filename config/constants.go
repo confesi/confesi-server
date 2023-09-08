@@ -27,6 +27,7 @@ const (
 	SavedPostsAndCommentsPageSize                    = 2                                        // how many posts and comments are returned in a page size in the saved posts and comments page
 	UserCommentsAdminPageSize                        = 3                                        // how many comments are returned in a page size in the user comments admin page
 	ViewYourReportsPageSize                          = 10                                       // how many reports are returned in a page size in the view your reports page
+	ViewYourNotificationsPageSize                    = 10                                       // how many notifications are returned in a page size in the view your notifications page
 	AdminCommentsSortedByReportsPageSize             = 10                                       // how many comments are returned in a page size in the admin comments sorted by reports page
 	AdminPostsSortedByReportsPageSize                = 10                                       // how many posts are returned in a page size in the admin posts sorted by reports page
 	AdminViewAllReportsPerCommentId                  = 10                                       // how many reports are returned in a page size in the view of reports for a comment given by id

@@ -4,6 +4,7 @@ import (
 	"confesi/db"
 	"confesi/lib/logger"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -203,6 +204,31 @@ func (s *Sender) Send() (error, uint) {
 			return result.Error, sends
 		}
 	}
+
+	data, err := json.Marshal(s.Data)
+	if err != nil {
+		return InvalidPayload, sends
+	}
+
+	dataString := string(data)
+
+	var userIDs []string
+
+	db.New().Table("fcm_tokens").Where("token IN ?", s.Tokens).Pluck("user_id", &userIDs)
+
+	var logs []db.NotificationLog
+
+	for _, user := range userIDs {
+		logs = append(logs, db.NotificationLog{
+			UserID: user,
+			Body:   s.Notification.Body,
+			Title:  s.Notification.Title,
+			Data:   dataString,
+		})
+	}
+
+	// Create Log
+	db.New().Table("notification_logs").Create(&logs)
 
 	// log how many sends
 	logger.StdInfo(fmt.Sprintf("sent %d of %d fcm messages successfully", sends, len(messages)))
