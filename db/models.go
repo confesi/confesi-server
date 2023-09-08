@@ -192,7 +192,7 @@ type User struct {
 	SchoolID      EncryptedID  `gorm:"column:school_id" json:"-"`
 	School        School       `gorm:"foreignKey:SchoolID" json:"school"`
 	IsLimited     bool         `gorm:"is_limited" json:"-"`
-	RoomRequests  bool         `gorm:"room_requests" json:"-"`
+	RoomRequests  bool         `gorm:"room_requests" json:"room_requests"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")
