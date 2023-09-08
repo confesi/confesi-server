@@ -48,6 +48,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 			return
 		}
+
 	}()
 
 	var content contentMatcher
@@ -64,7 +65,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 
 	var model db.Vote
 	// find if there's an existing vote matching id and user and content type
-	if err := tx.Model(&model).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).First(&model).Error; err != nil {
+	if err := tx.Model(&model).Clauses(clause.Locking{Strength: "UPDATE"}).Where(content.fieldName+" = ? AND user_id = ?", content.id, vote.UserID).First(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			oldVote = 0
 		} else {
