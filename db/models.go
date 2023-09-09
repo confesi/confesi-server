@@ -142,6 +142,10 @@ func (FcmTopicPref) TableName() string {
 	return "fcm_topic_prefs"
 }
 
+func (NotificationLog) TableName() string {
+	return "notification_logs"
+}
+
 // ! Very important some fields are NOT serialized (json:"-")
 type FcmTopicPref struct {
 	ID                    EncryptedID `gorm:"primaryKey" json:"id"`
@@ -193,6 +197,16 @@ type User struct {
 	School        School       `gorm:"foreignKey:SchoolID" json:"school"`
 	IsLimited     bool         `gorm:"is_limited" json:"-"`
 	RoomRequests  bool         `gorm:"room_requests" json:"room_requests"`
+}
+
+type NotificationLog struct {
+	ID        EncryptedID `gorm:"primaryKey" json:"id"`
+	Title     string      `gorm:"column:title" json:"title"`
+	Body      string      `gorm:"column:body" json:"body"`
+	Data      string      `gorm:"column:data" json:"data"`
+	UserID    string      `gorm:"column:user_id" json:"-"`
+	CreatedAt TimeMicros  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+	Read      bool        `gorm:"column:read" json:"read"`
 }
 
 // ! Very important some fields are NOT serialized (json:"-")

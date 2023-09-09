@@ -19,7 +19,6 @@ import (
 
 // Cron job that runs every  two hours to send notifications to users about the hottest posts.
 func StartDailyHottestPostsCronJob() {
-	// DoHottestPostNotifications(time.Now().UTC()) // todo: remove this!
 	upperBound, err := time.Parse("15:04", config.HottestPostNotificationsUpperBound)
 	if err != nil {
 		panic(err)
@@ -153,7 +152,6 @@ func DoHottestPostNotifications(dateTime time.Time) error {
 				ToTokens(tokens).
 				WithMsg(builders.YourSchoolsDailyHottestNoti(hottestOccurences)).
 				WithData(builders.YourSchoolsDailyHottestData()).
-				// ShownInBackgroundOnly(true). // todo: remove this!
 				Send()
 
 		}

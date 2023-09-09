@@ -82,6 +82,5 @@ func (h *handler) handleEditPost(c *gin.Context) {
 		response.New(http.StatusNotFound).Err(notFound.Error()).Send(c)
 		return
 	}
-	// todo: fix 99 value
 	response.New(http.StatusOK).Val(PostDetail{Post: post.Post, Owner: true, UserVote: post.UserVote, Emojis: emojis.GetEmojis(&post.Post)}).Send(c)
 }

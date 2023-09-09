@@ -40,6 +40,7 @@ func (h *handler) handleSendNotification(c *gin.Context) {
 		WithMsg(builders.AdminSendNotificationNoti(req.Title, req.Body)).
 		WithData(req.Data).
 		ShownInBackgroundOnly(req.Background).
+		Mergeable(req.NotificationMerge).
 		Send()
 
 	// if all goes well send 200

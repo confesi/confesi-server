@@ -75,13 +75,37 @@ type SendNotification struct {
 	Body string `json:"body" validate:"required"`
 	// [optional] notification data
 	Data map[string]string `json:"data"`
-	// [optional] notification type
+	// [optional] notification background
 	Background bool `json:"background"`
+	// [optional] notification merge
+	NotificationMerge bool `json:"mergeable"`
 }
 
 type UserQuery struct {
 	// [required] user id to get info for
 	UserID string `json:"user_id" validate:"required"`
+}
+
+/*
+id SERIAL PRIMARY KEY,
+title VARCHAR(255),
+body TEXT,
+data TEXT,
+user_id VARCHAR(255) NOT NULL REFERENCES users(id),
+created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+read BOOLEAN NOT NULL DEFAULT FALSE
+*/
+type NotificationLog struct {
+	// [optional] notification title
+	Title *string `json:"title"`
+	// [optional] notification body
+	Body *string `json:"body"`
+	// [optional] notification data
+	Data *string `json:"data"`
+	// [required] user id to send notification to
+	UserID string `json:"user_id" validate:"required"`
+	// [optional] read status
+	Read *bool `json:"read"`
 }
 
 type UpdateYearOfStudy struct {
@@ -164,6 +188,11 @@ type YourDraftsQuery struct {
 
 type YourCommentsQuery struct {
 	// [required] timestamp of last viewed comment content (microseconds since epoch)
+	Next NullableNext `json:"next"`
+}
+
+type YourNotificationsQuery struct {
+	// [required] timestamp of last viewed notification content (microseconds since epoch)
 	Next NullableNext `json:"next"`
 }
 

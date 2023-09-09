@@ -93,5 +93,3 @@ func (h *handler) handleSetUserStanding(c *gin.Context) {
 	// if all goes well (ignoring fcm, because we hope it works, but it's not critical it does), send 200
 	response.New(http.StatusOK).Send(c)
 }
-
-// todo: send fcm
