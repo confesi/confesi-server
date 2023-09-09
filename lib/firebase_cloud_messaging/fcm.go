@@ -20,13 +20,14 @@ var (
 )
 
 type Sender struct {
-	Client           *messaging.Client
-	Tokens           []string
-	Topic            string
-	Data             map[string]string
-	Notification     *messaging.Notification
-	ContextTimeout   time.Duration
-	ContentAvailable bool
+	Client            *messaging.Client
+	Tokens            []string
+	Topic             string
+	Data              map[string]string
+	Notification      *messaging.Notification
+	ContextTimeout    time.Duration
+	ContentAvailable  bool
+	NotificationMerge bool
 }
 
 func New(client *messaging.Client) *Sender {
@@ -61,6 +62,11 @@ func (s *Sender) WithMsg(notification *messaging.Notification) *Sender {
 // Defaults to true.
 func (s *Sender) ShownInBackgroundOnly(onlyBackground bool) *Sender {
 	s.ContentAvailable = !onlyBackground
+	return s
+}
+
+func (s *Sender) Mergeable(mergeable bool) *Sender {
+	s.NotificationMerge = mergeable
 	return s
 }
 
@@ -197,39 +203,99 @@ func (s *Sender) Send() (error, uint) {
 		sends += uint(batchResponse.SuccessCount)
 	}
 
+	// get database pointer
+	h := db.New()
+
+	// Remove dead tokens from database
 	if len(deadTokens) > 0 {
-		result := db.New().Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(&db.FcmToken{})
+		result := h.Table("fcm_tokens").Where("token IN ?", deadTokens).Delete(&db.FcmToken{})
 		if result.Error != nil {
 			// Handle the error if the deletion fails
 			return result.Error, sends
 		}
 	}
 
-	data, err := json.Marshal(s.Data)
-	if err != nil {
-		return InvalidPayload, sends
+	if s.ContentAvailable {
+		// Marshal data
+		data, err := json.Marshal(s.Data)
+		if err != nil {
+			return InvalidPayload, sends
+		}
+
+		dataString := string(data)
+
+		// Get all user ids
+		var userIDs []string
+
+		err = h.Table("fcm_tokens").Where("token IN ?", s.Tokens).Pluck("user_id", &userIDs).Error
+		if err != nil {
+			return err, sends
+		}
+
+		// If we are merging notifications
+		if len(s.Tokens) == 1 {
+			var count int64
+
+			query := h.Table("notification_logs").
+				Where("user_id = ?", userIDs[0]).
+				Where("data = ?", dataString)
+
+			if s.NotificationMerge {
+				query.Count(&count)
+			}
+
+			if query.Error != nil {
+				return query.Error, sends
+			}
+
+			if count != 1 || !s.NotificationMerge { //if there is no existing notification log for this user and data or it is not mergable
+				// Create Log
+				err = h.Table("notification_logs").Create(&db.NotificationLog{
+					UserID: userIDs[0],
+					Body:   s.Notification.Body,
+					Title:  s.Notification.Title,
+					Data:   dataString,
+				}).Error
+
+				if err != nil {
+					return err, sends
+				}
+
+			} else { //else if there is one log existing for this notification we update it
+				// Update Log
+				query.
+					Updates(&db.NotificationLog{
+						Body:  s.Notification.Body,
+						Title: s.Notification.Title,
+					})
+
+				if query.Error != nil {
+					return query.Error, sends
+				}
+
+			}
+
+		} else { //else we are creating a new notification log for each user
+
+			var logs []db.NotificationLog
+
+			for _, user := range userIDs {
+				logs = append(logs, db.NotificationLog{
+					UserID: user,
+					Body:   s.Notification.Body,
+					Title:  s.Notification.Title,
+					Data:   dataString,
+				})
+			}
+
+			// Create Log
+			err = h.Table("notification_logs").Create(&logs).Error
+			if err != nil {
+				return err, sends
+			}
+		}
+
 	}
-
-	dataString := string(data)
-
-	var userIDs []string
-
-	db.New().Table("fcm_tokens").Where("token IN ?", s.Tokens).Pluck("user_id", &userIDs)
-
-	var logs []db.NotificationLog
-
-	for _, user := range userIDs {
-		logs = append(logs, db.NotificationLog{
-			UserID: user,
-			Body:   s.Notification.Body,
-			Title:  s.Notification.Title,
-			Data:   dataString,
-		})
-	}
-
-	// Create Log
-	db.New().Table("notification_logs").Create(&logs)
-
 	// log how many sends
 	logger.StdInfo(fmt.Sprintf("sent %d of %d fcm messages successfully", sends, len(messages)))
 

@@ -75,8 +75,10 @@ type SendNotification struct {
 	Body string `json:"body" validate:"required"`
 	// [optional] notification data
 	Data map[string]string `json:"data"`
-	// [optional] notification type
+	// [optional] notification background
 	Background bool `json:"background"`
+	// [optional] notification merge
+	NotificationMerge bool `json:"mergeable"`
 }
 
 type UserQuery struct {
