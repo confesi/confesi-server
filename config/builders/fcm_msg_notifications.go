@@ -3,6 +3,7 @@ package builders
 import (
 	"confesi/db"
 	"fmt"
+	rnd "math/rand"
 
 	"firebase.google.com/go/messaging"
 )
@@ -150,4 +151,40 @@ func AccountStandingLimitedNoti(isLimited bool) *messaging.Notification {
 		Title: "🎱 Your account has been " + word,
 		Body:  "Contact support for more information",
 	}
+}
+
+func NewRoomCreatedNoti() *messaging.Notification {
+	return &messaging.Notification{
+		Title: "💬 Somebody created a chat room with you",
+		Body:  "Check it out",
+	}
+}
+
+func NewChatNoti(message string, room string) *messaging.Notification {
+	return &messaging.Notification{
+		Title: room,
+		Body:  message,
+	}
+}
+
+func DeletedChatNoti() *messaging.Notification {
+	return &messaging.Notification{
+		Title: genRandSusEmoji() + " Somebody deleted a chat",
+		Body:  "A typo? A regret? Something sus? Who knows...",
+	}
+}
+
+func genRandSusEmoji() string {
+	possibleEmojis := []string{
+		"👀",
+		"👁",
+		"😏",
+		"🤔",
+		"🤨",
+		"🫣",
+		"🥶",
+	}
+	// rand idx using math/random lib
+	randIdx := rnd.Intn(len(possibleEmojis))
+	return possibleEmojis[randIdx]
 }

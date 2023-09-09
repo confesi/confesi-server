@@ -54,6 +54,7 @@ func Router(mux *gin.RouterGroup) {
 
 	// anybody
 	mux.GET("/sentiment", h.sentimentAnaylsis)
+	mux.GET("/widget", h.handleGetWidgetPost)
 
 	// any firebase user
 	anyFirebaseUserRoutes := mux.Group("")

@@ -37,7 +37,6 @@ func (h *handler) handleGetPostById(c *gin.Context) {
 		Preload("Category").
 		Preload("YearOfStudy").
 		Preload("Faculty").
-		Preload("Category").
 		Raw(`
             SELECT posts.*, 
                 COALESCE(

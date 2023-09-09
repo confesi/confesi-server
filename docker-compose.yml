@@ -4,6 +4,7 @@ services:
   db:
     container_name: confesi-db
     image: postgres:14.8-alpine
+    command: postgres -c stats_temp_directory=/tmp
     restart: always
     environment:
       POSTGRES_USER: postgres

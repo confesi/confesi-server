@@ -6,6 +6,7 @@ import (
 	"context"
 	"log"
 
+	"cloud.google.com/go/firestore"
 	fb "firebase.google.com/go"
 	"firebase.google.com/go/auth"
 	"firebase.google.com/go/messaging"
@@ -15,9 +16,10 @@ import (
 var fbApp *FirebaseApp
 
 type FirebaseApp struct {
-	App        *fb.App
-	AuthClient *auth.Client
-	MsgClient  *messaging.Client
+	App             *fb.App
+	AuthClient      *auth.Client
+	MsgClient       *messaging.Client
+	FirestoreClient *firestore.Client
 }
 
 func init() {
@@ -46,10 +48,16 @@ func InitFirebase(secretsPath string) error {
 		return err
 	}
 
+	firestoreClient, err := app.Firestore(context.Background())
+	if err != nil {
+		return err
+	}
+
 	fbApp = &FirebaseApp{
-		App:        app,
-		AuthClient: authClient,
-		MsgClient:  msgClient,
+		App:             app,
+		AuthClient:      authClient,
+		MsgClient:       msgClient,
+		FirestoreClient: firestoreClient,
 	}
 	return nil
 }

@@ -60,6 +60,14 @@ type EncryptedID struct {
 	Val uint
 }
 
+func (i EncryptedID) ToString() string {
+	return fmt.Sprintf("%d", i.Val)
+}
+
+func (i EncryptedID) ToInt() int {
+	return int(i.Val)
+}
+
 func (mu EncryptedID) MarshalJSON() ([]byte, error) {
 	masked, err := encryption.Mask(mu.Val)
 	if err != nil {
@@ -188,6 +196,7 @@ type User struct {
 	SchoolID      EncryptedID  `gorm:"column:school_id" json:"-"`
 	School        School       `gorm:"foreignKey:SchoolID" json:"school"`
 	IsLimited     bool         `gorm:"is_limited" json:"-"`
+	RoomRequests  bool         `gorm:"room_requests" json:"room_requests"`
 }
 
 type NotificationLog struct {
@@ -237,6 +246,7 @@ type Post struct {
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
 	ImgUrls       PgTxtArr        `gorm:"column:img_urls" json:"img_urls"`
+	ChatPost      bool            `gorm:"column:chat_post" json:"chat_post"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
@@ -465,4 +475,22 @@ func (CronJob) TableName() string {
 
 func (Report) TableName() string {
 	return "reports"
+}
+
+//! Firestore models
+
+type Room struct {
+	UserID     string    `firestore:"user_id" json:"-"` // never serialize
+	Name       string    `firestore:"name" json:"name"`
+	RoomID     string    `firestore:"room_id" json:"room_id"`
+	LastMsg    time.Time `firestore:"last_msg" json:"last_msg"`
+	PostID     int       `firestore:"post_id" json:"post_id"`
+	UserNumber int       `firestore:"user_number" json:"user_number"`
+}
+
+type Chat struct {
+	RoomID     string    `firestore:"room_id" json:"room_id"`
+	UserNumber int       `firestore:"user_number" json:"user_number"`
+	Date       time.Time `firestore:"date" json:"date"`
+	Msg        string    `firestore:"msg" json:"msg"`
 }

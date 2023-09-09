@@ -329,3 +329,17 @@ type DeleteDraft struct {
 	// [required] post id
 	DraftID string `json:"draft_id" validate:"required"`
 }
+
+type AddChat struct {
+	RoomID string `json:"room_id" validate:"required"`
+	Msg    string `json:"msg" validate:"required,min=1,max=500"`
+}
+
+type UpdateChatName struct {
+	RoomID  string `json:"room_id" validate:"required"`
+	NewName string `json:"new_name" validate:"required,min=1,max=500"`
+}
+
+type UpdateRoomRequestable struct {
+	Requestable bool `json:"requestable"` // true or false, doesn't have "required" so that the zero-value is OK
+}
