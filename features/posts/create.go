@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"strings"
 
@@ -57,7 +58,12 @@ func (h *handler) handleCreate(c *gin.Context) {
 	titles := form.Value["title"]
 	bodies := form.Value["body"]
 	categories := form.Value["category"]
-
+	isChatPostStr := c.PostForm("is_chat_post")
+	isChatPost, err := strconv.ParseBool(isChatPostStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ill-formatted form"})
+		return
+	}
 	fmt.Println("files: ", files)
 
 	var title, body, category string
@@ -171,6 +177,7 @@ func (h *handler) handleCreate(c *gin.Context) {
 	imgURLsArray := db.PgTxtArr(imgUrls)
 
 	post := db.Post{
+		ChatPost:      isChatPost,
 		UserID:        token.UID,
 		SchoolID:      userData.SchoolID,
 		CategoryID:    postCategory.ID,

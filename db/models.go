@@ -232,6 +232,7 @@ type Post struct {
 	Category      PostCategory    `gorm:"foreignKey:CategoryID" json:"category"`
 	CommentCount  uint            `gorm:"column:comment_count" json:"comment_count"`
 	ImgUrls       PgTxtArr        `gorm:"column:img_urls" json:"img_urls"`
+	ChatPost      bool            `gorm:"column:chat_post" json:"chat_post"`
 }
 
 // ! Very important that SOME FIELDS ARE NOT EVER SERIALIZED TO PROTECT SENSATIVE DATA (json:"-")
