@@ -35,4 +35,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.DELETE("/token", h.handleRemoveToken)
 	mux.GET("/topic-prefs", h.handleGetTopicPrefs)
 	mux.PUT("/topic-prefs", h.handleSetTopicPrefs)
+	mux.GET("/notifications", h.handleGetNotifications)
 }
