@@ -74,6 +74,12 @@ func (s *Sender) Mergeable(mergeable bool) *Sender {
 func (s *Sender) Send() (error, uint) {
 	messages := make([]*messaging.Message, 0)
 
+	// if no tokens or topic is present,
+	// idempotently a "success"
+	if len(s.Tokens) == 0 && s.Topic == "" {
+		return nil, 0
+	}
+
 	apnsConfig := &messaging.APNSConfig{
 		Headers: map[string]string{
 			"method": "POST",

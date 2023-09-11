@@ -35,5 +35,11 @@ func (h *handler) handleGetNotifications(c *gin.Context) {
 		Limit(config.ViewYourNotificationsPageSize).
 		Error
 
+	// if `fetchResults` is nil return an empty array
+	// such that it serializes as [] and not nil ([] auto-serializes as nil)
+	if fetchResults == nil {
+		fetchResults = []db.NotificationLog{}
+	}
+
 	response.New(http.StatusOK).Val(fetchResults).Send(c)
 }
