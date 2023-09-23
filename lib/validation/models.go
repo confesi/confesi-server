@@ -343,3 +343,7 @@ type UpdateChatName struct {
 type UpdateRoomRequestable struct {
 	Requestable bool `json:"requestable"` // true or false, doesn't have "required" so that the zero-value is OK
 }
+
+type ReadRoomRequest struct {
+	RoomID string `json:"room_id" validate:"required"`
+}

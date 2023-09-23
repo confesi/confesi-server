@@ -239,6 +239,11 @@ func (s *Sender) Send() (error, uint) {
 			return err, sends
 		}
 
+		// if userIds empty, return
+		if len(userIDs) == 0 {
+			return InvalidFcmTokenError, sends
+		}
+
 		// If we are merging notifications
 		if len(s.Tokens) == 1 {
 			var count int64

@@ -151,6 +151,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 		LastMsg:    time.Now().UTC(),
 		UserNumber: 2,
 		RoomID:     roomID,
+		Read:       time.Now().UTC(),
 	}
 
 	// Use Firestore transactions for atomic operations

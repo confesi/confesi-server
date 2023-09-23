@@ -39,5 +39,5 @@ func Router(mux *gin.RouterGroup) {
 	mux.DELETE("/chat", h.handleDeleteChat)
 	mux.PUT("/room/requests", h.handleUpdateRoomRequests)
 	mux.GET("/room/requests", h.handleGetRoomRequests)
-
+	mux.PUT("/read", h.handleReadChat)
 }
