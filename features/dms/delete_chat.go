@@ -6,6 +6,7 @@ import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"context"
+	"fmt"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -19,6 +20,8 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 	// Authenticate the user and obtain their token
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
+		fmt.Println("1")
+		fmt.Println(err)
 		response.New(http.StatusInternalServerError).Err("failed to get user token").Send(c)
 		return
 	}
@@ -26,37 +29,33 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 	// Extract chatID from the request
 	chatID := c.Query("id")
 	if chatID == "" {
-		response.New(http.StatusBadRequest).Err("chat-id parameter required").Send(c)
+		response.New(http.StatusBadRequest).Err("id parameter required").Send(c)
+		return
+	}
+
+	fmt.Println(chatID)
+
+	// Fetch the chat details first for later notification use
+	chatRef := h.fb.FirestoreClient.Collection("chats").Doc(chatID)
+	chatSnapshot, err := chatRef.Get(c)
+	if err != nil {
+		fmt.Println("3")
+		fmt.Println(err)
+		response.New(http.StatusInternalServerError).Err("failed to fetch chat message").Send(c)
+		return
+	}
+
+	roomID, ok := chatSnapshot.Data()["room_id"].(string)
+	if !ok {
+		fmt.Println("4")
+		fmt.Println(err)
+		response.New(http.StatusInternalServerError).Err("failed to extract room ID from chat message").Send(c)
 		return
 	}
 
 	err = h.fb.FirestoreClient.RunTransaction(c, func(ctx context.Context, tx *firestore.Transaction) error {
-		// Fetch the chat message within transaction
-		chatRef := h.fb.FirestoreClient.Collection("chats").Doc(chatID)
-		chatSnapshot, err := tx.Get(chatRef)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to fetch chat message: %v", err)
-		}
-
-		// Extract the roomID from the chat message
-		roomID, ok := chatSnapshot.Data()["room_id"].(string)
-		if !ok {
-			return status.Errorf(codes.Internal, "failed to extract room ID from chat message")
-		}
-
-		// Ensure the user is part of the specified chat room
-		thisUsersRoomQuery := h.fb.FirestoreClient.Collection("rooms").
-			Where("room_id", "==", roomID).
-			Where("user_id", "==", token.UID)
-		roomSnapshot, err := thisUsersRoomQuery.Documents(ctx).Next()
-		if err == iterator.Done || roomSnapshot == nil {
-			return status.Errorf(codes.InvalidArgument, "user not part of the specified chat room")
-		} else if err != nil {
-			return status.Errorf(codes.Internal, "error checking chat room membership: %v", err)
-		}
-
 		// Delete the specific chat message within transaction
-		err = tx.Delete(chatRef)
+		err := tx.Delete(chatRef)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to delete chat message: %v", err)
 		}
@@ -65,21 +64,9 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 	})
 
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
-		return
-	}
-
-	// Fetch the chat details to send the notification
-	chatRef := h.fb.FirestoreClient.Collection("chats").Doc(chatID)
-	chatSnapshot, err := chatRef.Get(c)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("failed to fetch chat message").Send(c)
-		return
-	}
-
-	roomID, ok := chatSnapshot.Data()["room_id"].(string)
-	if !ok {
-		response.New(http.StatusInternalServerError).Err("failed to extract room ID from chat message").Send(c)
+		fmt.Println("2")
+		fmt.Println(err)
+		response.New(http.StatusInternalServerError).Err("transaction error").Send(c)
 		return
 	}
 
@@ -93,17 +80,21 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("user not part of the specified chat room").Send(c)
 		return
 	} else if err != nil {
+		fmt.Println("5")
+		fmt.Println(err)
 		response.New(http.StatusInternalServerError).Err("error checking chat room membership").Send(c)
 		return
 	}
 
 	otherUserUid := otherUserRoomSnapshot.Data()["user_id"].(string)
 	if otherUserUid == "" {
+		fmt.Println("6")
+		fmt.Println(err)
 		response.New(http.StatusInternalServerError).Err("failed to extract other user ID from chat message").Send(c)
 		return
 	}
 
-	// spin up light-weight thread to send FCM message
+	// Spin up light-weight thread to send FCM message
 	var tokens []string
 	err = h.db.
 		Table("fcm_tokens").
@@ -113,6 +104,8 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 		Pluck("fcm_tokens.token", &tokens).
 		Error
 	if err != nil {
+		fmt.Println("7")
+		fmt.Println(err)
 		response.New(http.StatusInternalServerError).Err("failed to get FCM tokens").Send(c)
 		return
 	}

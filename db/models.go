@@ -486,6 +486,7 @@ type Room struct {
 	LastMsg    time.Time `firestore:"last_msg" json:"last_msg"`
 	PostID     int       `firestore:"post_id" json:"post_id"`
 	UserNumber int       `firestore:"user_number" json:"user_number"`
+	Read       time.Time `firestore:"read" json:"read"`
 }
 
 type Chat struct {
