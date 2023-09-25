@@ -59,7 +59,6 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to delete chat message: %v", err)
 		}
-
 		return nil
 	})
 
@@ -70,52 +69,63 @@ func (h *handler) handleDeleteChat(c *gin.Context) {
 		return
 	}
 
-	// Get the other user's room
+	// Get all users of the room
 	otherUserRoomQuery := h.fb.FirestoreClient.Collection("rooms").
-		Where("room_id", "==", roomID).
-		Where("user_id", "!=", token.UID)
+		Where("room_id", "==", roomID)
 
-	otherUserRoomSnapshot, err := otherUserRoomQuery.Documents(c).Next()
-	if err == iterator.Done || otherUserRoomSnapshot == nil {
-		response.New(http.StatusBadRequest).Err("user not part of the specified chat room").Send(c)
-		return
-	} else if err != nil {
-		fmt.Println("5")
-		fmt.Println(err)
-		response.New(http.StatusInternalServerError).Err("error checking chat room membership").Send(c)
+	docsIterator := otherUserRoomQuery.Documents(c)
+
+	var otherUserIDs []string
+
+	for {
+		otherUserRoomSnapshot, err := docsIterator.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			fmt.Println("5")
+			fmt.Println(err)
+			response.New(http.StatusInternalServerError).Err("error checking chat room membership").Send(c)
+			return
+		}
+
+		// Check if this userID is different from the authenticated user's UID
+		if uid, ok := otherUserRoomSnapshot.Data()["user_id"].(string); ok && uid != token.UID {
+			otherUserIDs = append(otherUserIDs, uid)
+		}
+	}
+
+	// If there are no other users in the room
+	if len(otherUserIDs) == 0 {
+		response.New(http.StatusBadRequest).Err("No other users found in the specified chat room").Send(c)
 		return
 	}
 
-	otherUserUid := otherUserRoomSnapshot.Data()["user_id"].(string)
-	if otherUserUid == "" {
-		fmt.Println("6")
-		fmt.Println(err)
-		response.New(http.StatusInternalServerError).Err("failed to extract other user ID from chat message").Send(c)
-		return
-	}
+	// Send notifications to all other users
+	for _, otherUserUid := range otherUserIDs {
+		// Spin up light-weight thread to send FCM message
+		var tokens []string
+		err = h.db.
+			Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Where("users.id = ?", otherUserUid).
+			Pluck("fcm_tokens.token", &tokens).
+			Error
+		if err != nil {
+			fmt.Println("7")
+			fmt.Println(err)
+			response.New(http.StatusInternalServerError).Err("failed to get FCM tokens").Send(c)
+			return
+		}
 
-	// Spin up light-weight thread to send FCM message
-	var tokens []string
-	err = h.db.
-		Table("fcm_tokens").
-		Select("fcm_tokens.token").
-		Joins("JOIN users ON users.id = fcm_tokens.user_id").
-		Where("users.id = ?", otherUserUid).
-		Pluck("fcm_tokens.token", &tokens).
-		Error
-	if err != nil {
-		fmt.Println("7")
-		fmt.Println(err)
-		response.New(http.StatusInternalServerError).Err("failed to get FCM tokens").Send(c)
-		return
+		// (don't handle error case since it's not necessary)
+		go fcm.New(h.fb.MsgClient).
+			ToTokens(tokens).
+			WithMsg(builders.DeletedChatNoti()).
+			WithData(builders.DeletedChatData()).
+			Send()
 	}
-
-	// (don't handle error case since it's not necessary)
-	go fcm.New(h.fb.MsgClient).
-		ToTokens(tokens).
-		WithMsg(builders.DeletedChatNoti()).
-		WithData(builders.DeletedChatData()).
-		Send()
 
 	// Respond with success
 	response.New(http.StatusOK).Send(c)

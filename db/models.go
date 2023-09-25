@@ -489,9 +489,18 @@ type Room struct {
 	Read       time.Time `firestore:"read" json:"read"`
 }
 
+type ChatType string
+
+const (
+	Message ChatType = "msg"
+	Clear   ChatType = "clear"
+	Delete  ChatType = "delete"
+)
+
 type Chat struct {
 	RoomID     string    `firestore:"room_id" json:"room_id"`
 	UserNumber int       `firestore:"user_number" json:"user_number"`
 	Date       time.Time `firestore:"date" json:"date"`
 	Msg        string    `firestore:"msg" json:"msg"`
+	Type       ChatType  `firestore:"type" json:"type"`
 }

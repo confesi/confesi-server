@@ -1,5 +1,7 @@
 package dms
 
+// todo: read through, cuz, uh... AI
+
 import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -58,11 +60,21 @@ func (h *handler) handleDeleteEntireRoom(c *gin.Context) {
 		}
 	}
 
-	// Delete the chat room itself
-	_, err = h.fb.FirestoreClient.Collection("rooms").Doc(roomSnapshot.Ref.ID).Delete(c)
-	if err != nil {
-		response.New(http.StatusInternalServerError).Err("failed to delete chat room").Send(c)
-		return
+	// Delete the chat rooms themselves
+	roomsIterator := h.fb.FirestoreClient.Collection("rooms").Where("room_id", "==", roomID).Documents(c)
+	for {
+		roomSnapshot, err := roomsIterator.Next()
+		if err == iterator.Done {
+			break
+		} else if err != nil {
+			response.New(http.StatusInternalServerError).Err("failed to fetch rooms").Send(c)
+			return
+		}
+		_, err = h.fb.FirestoreClient.Collection("rooms").Doc(roomSnapshot.Ref.ID).Delete(c)
+		if err != nil {
+			response.New(http.StatusInternalServerError).Err("failed to delete chat room").Send(c)
+			return
+		}
 	}
 
 	// Respond with success

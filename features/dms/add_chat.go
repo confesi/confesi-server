@@ -42,6 +42,7 @@ func (h *handler) handleAddChat(c *gin.Context) {
 		chat.RoomID = req.RoomID
 		chat.Date = time.Now().UTC()
 		chat.Msg = req.Msg
+		chat.Type = db.Message
 
 		// Determine UserNumber
 		roomQuery := h.fb.FirestoreClient.Collection("rooms").
