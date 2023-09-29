@@ -8,6 +8,7 @@ import (
 	"confesi/features/drafts"
 	"confesi/features/feedback"
 	hideLog "confesi/features/hide_log"
+	"confesi/features/info"
 	"confesi/features/notifications"
 	"confesi/features/posts"
 	"confesi/features/reports"
@@ -64,12 +65,13 @@ func main() {
 	// Gin settings
 	r.SetTrustedProxies(nil)
 
+	// Info endpoint (static assets, likely for users)
+	info.Router(r.Group(""))
+
 	// Version 1 api group
 	api := r.Group("/api/v1")
-	//! Not used for now, since: https://github.com/firebase/firebase-admin-go/issues/572
-	// api.Use(func(c *gin.Context) {
-	// 	middleware.FirebaseAppCheck(c, fire.New().AppCheck)
-	// })
+
+	// Global middlewares
 	api.Use(middleware.RateLimit)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())

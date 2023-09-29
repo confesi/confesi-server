@@ -1,7 +1,5 @@
 package dms
 
-// todo: read through, cuz, uh... AI
-
 import (
 	"confesi/lib/response"
 	"confesi/lib/utils"
