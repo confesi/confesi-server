@@ -1,0 +1,33 @@
+body {
+    padding: 50px;
+    background-color: #63C8FF;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    color: #333333;
+}
+
+p {
+    font-family: 'Poppins', sans-serif;
+    color: #333333;
+}
+
+a {
+    text-decoration: underline;
+    color: #333333;
+}
+
+.logo {
+    width: 150px;
+}
+
+.focal {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; 
+}
+

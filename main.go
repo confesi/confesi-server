@@ -8,9 +8,9 @@ import (
 	"confesi/features/drafts"
 	"confesi/features/feedback"
 	hideLog "confesi/features/hide_log"
-	"confesi/features/info"
 	"confesi/features/notifications"
 	"confesi/features/posts"
+	"confesi/features/public"
 	"confesi/features/reports"
 	"confesi/features/saves"
 	"confesi/features/schools"
@@ -65,17 +65,22 @@ func main() {
 	// Gin settings
 	r.SetTrustedProxies(nil)
 
-	// Info endpoint (static assets, likely for users)
-	info.Router(r.Group(""))
-
 	// Version 1 api group
 	api := r.Group("/api/v1")
 
-	// Global middlewares
+	// api middlewares
 	api.Use(middleware.RateLimit)
 	api.Use(middleware.Cors)
 	api.Use(gin.Recovery())
 	api.Use(middleware.OptionalProfanityCensor)
+
+	// Static assets
+	static := r.Group("/")
+	static.Use(middleware.RateLimit)
+	static.Use(middleware.Cors)
+	static.Use(gin.Recovery())
+
+	// Static middlewares
 
 	// Separate handler groups
 	comments.Router(api.Group("/comments"))
@@ -92,6 +97,9 @@ func main() {
 	hideLog.Router(api.Group("/hide-log"))
 	drafts.Router(api.Group("/drafts"))
 	dms.Router(api.Group("/dms"))
+
+	// static assets like images, css, html, etc. so from root path
+	public.Router(static.Group("/"))
 
 	// Start the CRON job scheduler
 	dailyHottestPosts.StartDailyHottestPostsCronJob()
