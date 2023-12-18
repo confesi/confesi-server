@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Manually Report Errors to Logs
+// Manually Report Errors to Logsstd
 func StdErr(m error) {
 	now := time.Now()
 	year, month, date := now.UTC().Date()
