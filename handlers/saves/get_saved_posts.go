@@ -2,7 +2,7 @@ package saves
 
 import (
 	"confesi/config"
-	"confesi/features/posts"
+	"confesi/handlers/posts"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/utils"

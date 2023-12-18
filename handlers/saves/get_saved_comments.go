@@ -2,7 +2,7 @@ package saves
 
 import (
 	"confesi/config"
-	"confesi/features/comments"
+	"confesi/handlers/comments"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
