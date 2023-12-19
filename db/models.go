@@ -504,3 +504,19 @@ type Chat struct {
 	Msg        string    `firestore:"msg" json:"msg"`
 	Type       ChatType  `firestore:"type" json:"type"`
 }
+
+type AwardType struct {
+	ID          EncryptedID `gorm:"primaryKey;column:id" json:"id"`
+	Name        string      `gorm:"column:name" json:"name"`
+	Description string      `gorm:"column:description" json:"description"`
+	Icon        string      `gorm:"column:icon" json:"icon"`
+}
+
+type Award struct {
+	ID        EncryptedID  `gorm:"primaryKey;column:id" json:"id"`
+	AwardID   EncryptedID  `gorm:"column:award_type_id" json:"award_type_id"`
+	PostID    *EncryptedID `gorm:"column:post_id" json:"post_id"`
+	CommentID *EncryptedID `gorm:"column:comment_id" json:"comment_id"`
+	UserID    string       `gorm:"column:user_id" json:"-"`
+	Quantity  uint         `gorm:"column:quantity" json:"quantity"`
+}

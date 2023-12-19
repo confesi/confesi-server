@@ -62,7 +62,7 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 		voteString = "downvote"
 	}
 	return &messaging.Notification{
-		Title: "New " + voteString + " on your confession " + emoji,
+		Title: "New " + voteString + " " + emoji,
 		Body:  fmt.Sprintf("Total: %d", totalVotes),
 	}
 }

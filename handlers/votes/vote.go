@@ -4,6 +4,7 @@ import (
 	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/algorithm"
+	"confesi/lib/awards"
 	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
@@ -160,6 +161,15 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	if contentType == "post" {
+		err = awards.OnPostVote(tx, uint(votes.Upvote), uint(votes.Downvote), db.EncryptedID{Val: *content.id})
+		if err != nil {
+			fmt.Println("ERROR!!!", err)
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// commit the transaction

@@ -42,8 +42,14 @@ const (
 	BodyMaxLength                                    = 1000                                     // max length of a post content/body
 )
 
-// ----- DEPLOYMENT CONSTANTS
+// ----- AWARD TYPES DB IDs
 
+const (
+	AwardTypeHottestPostsId = 0
+)
+
+// ----- DEPLOYMENT CONSTANTS
+	
 const (
 	iOSBundleId        = "com.confesi.app"
 	AndroidPackageName = "com.confesi.app"
