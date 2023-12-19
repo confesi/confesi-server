@@ -68,6 +68,11 @@ func (i EncryptedID) ToInt() int {
 	return int(i.Val)
 }
 
+func (i EncryptedID) ToMasked() string {
+	masked, _ := encryption.Mask(i.Val)
+	return masked
+}
+
 func (mu EncryptedID) MarshalJSON() ([]byte, error) {
 	masked, err := encryption.Mask(mu.Val)
 	if err != nil {
@@ -512,11 +517,29 @@ type AwardType struct {
 	Icon        string      `gorm:"column:icon" json:"icon"`
 }
 
-type Award struct {
-	ID        EncryptedID  `gorm:"primaryKey;column:id" json:"id"`
-	AwardID   EncryptedID  `gorm:"column:award_type_id" json:"award_type_id"`
-	PostID    *EncryptedID `gorm:"column:post_id" json:"post_id"`
-	CommentID *EncryptedID `gorm:"column:comment_id" json:"comment_id"`
-	UserID    string       `gorm:"column:user_id" json:"-"`
-	Quantity  uint         `gorm:"column:quantity" json:"quantity"`
+func (AwardType) TableName() string {
+	return "award_types"
+}
+
+type AwardsTotal struct {
+	ID          EncryptedID `gorm:"primaryKey;column:id" json:"id"`
+	UserID      string      `gorm:"column:user_id" json:"-"`
+	AwardTypeID EncryptedID `gorm:"column:award_type_id" json:"award_type_id"`
+	Total       uint        `gorm:"column:total" json:"total"`
+}
+
+func (AwardsTotal) TableName() string {
+	return "awards_total"
+}
+
+type AwardsGeneral struct {
+	ID          EncryptedID  `gorm:"primaryKey;column:id" json:"id"`
+	PostID      *EncryptedID `gorm:"column:post_id" json:"post_id"`
+	CommentID   *EncryptedID `gorm:"column:comment_id" json:"comment_id"`
+	UserID      string       `gorm:"column:user_id" json:"-"`
+	AwardTypeID EncryptedID  `gorm:"column:award_type_id" json:"award_type_id"`
+}
+
+func (AwardsGeneral) TableName() string {
+	return "awards_general"
 }

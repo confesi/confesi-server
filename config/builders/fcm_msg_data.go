@@ -41,9 +41,10 @@ func DailyHottestPostsData() map[string]string {
 	}
 }
 
-func YourSchoolsDailyHottestData() map[string]string {
+func YouReachedDailyHottestData(postId string) map[string]string {
 	return map[string]string{
-		"type": "daily_hottest_posts",
+		"type":    "you_reached_daily_hottest",
+		"post_id": fmt.Sprintf("%v", postId),
 	}
 }
 
@@ -51,6 +52,12 @@ func TrendingPostData(postId uint) map[string]string {
 	return map[string]string{
 		"type":    "trending_post",
 		"post_id": fmt.Sprintf("%v", postId),
+	}
+}
+
+func YourSchoolsDailyHottestData() map[string]string {
+	return map[string]string{
+		"type": "daily_hottest_posts",
 	}
 }
 

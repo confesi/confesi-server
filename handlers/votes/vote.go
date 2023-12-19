@@ -164,9 +164,14 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 	}
 
 	if contentType == "post" {
-		err = awards.OnPostVote(tx, uint(votes.Upvote), uint(votes.Downvote), db.EncryptedID{Val: *content.id})
+		err = awards.AwardPostGreaterThanXUpvotes(tx, uint(votes.Upvote), uint(votes.Downvote), db.EncryptedID{Val: *content.id})
 		if err != nil {
-			fmt.Println("ERROR!!!", err)
+			tx.Rollback()
+			return err
+		}
+	} else if contentType == "comment" {
+		err = awards.AwardCommentGreaterThanXUpvotes(tx, uint(votes.Upvote), uint(votes.Downvote), db.EncryptedID{Val: *content.id})
+		if err != nil {
 			tx.Rollback()
 			return err
 		}

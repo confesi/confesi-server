@@ -19,7 +19,7 @@ func (h *handler) handleManuallyTriggerDailyHottestCron(c *gin.Context) {
 		response.New(http.StatusBadRequest).Err("invalid date format").Send(c)
 		return
 	}
-	err = dailyHottestPosts.DoDailyHottestJob(date)
+	err = dailyHottestPosts.DoDailyHottestJob(date, h.fb)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(err.Error()).Send(c)
 		return

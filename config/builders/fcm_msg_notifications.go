@@ -8,6 +8,8 @@ import (
 	"firebase.google.com/go/messaging"
 )
 
+// todo: make all used mid (masked id) and not uid (unmasked id)
+
 const (
 	truncationCommentLength         = 100
 	truncatedPostTitleAndBodyLength = 150
@@ -65,6 +67,14 @@ func VoteOnPostNoti(vote int, totalVotes int) *messaging.Notification {
 		Title: "New " + voteString + " " + emoji,
 		Body:  fmt.Sprintf("Total: %d", totalVotes),
 	}
+}
+
+func YouReachedDailyHottestNoti() *messaging.Notification {
+	return &messaging.Notification{
+		Title: "Daily Hottest 🔥",
+		Body:  fmt.Sprintf("Your confession reached the Daily Hottest page today"),
+	}
+
 }
 
 func YourSchoolsDailyHottestNoti(occurences int) *messaging.Notification {

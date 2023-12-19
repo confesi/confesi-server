@@ -2,14 +2,19 @@ package dailyHottestPosts
 
 import (
 	"confesi/config"
+	"confesi/config/builders"
 	"confesi/db"
+	"confesi/lib/awards"
 	"confesi/lib/cache"
 	"confesi/lib/cronJobs"
+	"confesi/lib/fire"
 	"confesi/lib/logger"
 	"confesi/lib/utils"
 	"context"
 	"errors"
 	"time"
+
+	fcm "confesi/lib/firebase_cloud_messaging"
 
 	"github.com/go-co-op/gocron"
 	"gorm.io/datatypes"
@@ -18,18 +23,18 @@ import (
 )
 
 // Cron job that runs daily to update the hottest posts.
-func StartDailyHottestPostsCronJob() {
+func StartDailyHottestPostsCronJob(fb *fire.FirebaseApp) {
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(1).Day().At("23:55").Do(func() {
+	s.Every(1).Day().At(config.WhenRunDailyHottestCron).Do(func() {
 		cronJobs.RetryLoop(1000, 1000*60, 6.0, 20, func() error {
-			return DoDailyHottestJob(time.Now().UTC())
+			return DoDailyHottestJob(time.Now().UTC(), fb)
 		})
 	})
 	logger.StdInfo("started scheduler for daily hottest posts cron job")
 	s.StartAsync()
 }
 
-func DoDailyHottestJob(dateTime time.Time) error {
+func DoDailyHottestJob(dateTime time.Time, fb *fire.FirebaseApp) error {
 
 	// if trying to run in the future, don't allow
 	if dateTime.After(time.Now().UTC()) {
@@ -103,6 +108,23 @@ func DoDailyHottestJob(dateTime time.Time) error {
 		WHERE "id" IN (SELECT "school_id" FROM updated_posts)
 		`
 
+	var postIDs []db.EncryptedID
+
+	err = tx.Model(&db.Post{}).Select("id").Where("hidden = false AND hottest_on IS NULL").Order("trending_score DESC").Limit(config.HottestPostsPageSize).Scan(&postIDs).Error
+	if err != nil {
+		// handle error
+		tx.Rollback()
+		return err
+	}
+
+	// Now you can pass the postIDs to the awards function
+	err = awards.OnPostBecomingHottest(tx, postIDs)
+	if err != nil {
+		// handle error
+		tx.Rollback()
+		return err
+	}
+
 	// execute the raw SQL query which adds +1 to every school that has a hottest post, and updates the hottest_on date for all of the hottest posts
 	err = tx.Exec(query, dateParsed, time.Now().UTC(), config.HottestPostsPageSize).Error
 	if err != nil {
@@ -117,13 +139,6 @@ func DoDailyHottestJob(dateTime time.Time) error {
 		return err
 	}
 
-	// successfully commit transaction
-	err = tx.Commit().Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
 	// clear the user's seen id cache
 	folder_name := config.RedisSchoolsRankCache
 	store := cache.New() //Redis client
@@ -133,6 +148,38 @@ func DoDailyHottestJob(dateTime time.Time) error {
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	// successfully commit transaction
+	err = tx.Commit().Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, postID := range postIDs {
+		var tokens []string
+
+		// Query for FCM tokens of the user who owns the post
+		err := dbConn.Table("fcm_tokens").
+			Select("fcm_tokens.token").
+			Joins("JOIN users ON users.id = fcm_tokens.user_id").
+			Joins("JOIN posts ON posts.user_id = users.id").
+			Pluck("fcm_tokens.token", &tokens).
+			Error
+
+		// Send notifications if tokens are found (don't error-out if FCM doesn't work!)
+		if err != nil {
+			return err
+		}
+
+		if err == nil && len(tokens) > 0 {
+			go fcm.New(fb.MsgClient).
+				ToTokens(tokens).
+				WithMsg(builders.YouReachedDailyHottestNoti()).
+				WithData(builders.YouReachedDailyHottestData(postID.ToMasked())).
+				Send()
+		}
 	}
 
 	return nil

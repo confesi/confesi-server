@@ -19,6 +19,7 @@ import (
 	"confesi/lib/cronJobs/clearExpiredFcmTokens"
 	"confesi/lib/cronJobs/cronNotifications"
 	"confesi/lib/cronJobs/dailyHottestPosts"
+	"confesi/lib/fire"
 	"confesi/middleware"
 	"fmt"
 	"os"
@@ -102,7 +103,7 @@ func main() {
 	public.Router(static.Group("/"))
 
 	// Start the CRON job scheduler
-	dailyHottestPosts.StartDailyHottestPostsCronJob()
+	dailyHottestPosts.StartDailyHottestPostsCronJob(fire.New())
 	clearExpiredFcmTokens.StartClearExpiredFcmTokensCronJob()
 	cronNotifications.StartDailyHottestPostsCronJob()
 

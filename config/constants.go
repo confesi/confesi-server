@@ -40,16 +40,20 @@ const (
 	HottestPostNotificationsUpperBound               = "23:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
 	TitleMaxLength                                   = 100                                      // max length of a post title
 	BodyMaxLength                                    = 1000                                     // max length of a post content/body
+	WhenRunDailyHottestCron                          = "10:58"                                  // when to run the daily hottest cron job - 24h time (format ex: "23:55")
 )
 
 // ----- AWARD TYPES DB IDs
+// ! Ensure that these values are the same as the ones in the database, this is done so we can change the names and descriptions freely
 
 const (
-	AwardTypeHottestPostsId = 0
+	AwardTypesPostGreaterThanXUpvotes    = 1
+	AwardTypesCommentGreaterThanXUpvotes = 2
+	AwardTypesPostBecomingHottest        = 3
 )
 
 // ----- DEPLOYMENT CONSTANTS
-	
+
 const (
 	iOSBundleId        = "com.confesi.app"
 	AndroidPackageName = "com.confesi.app"
