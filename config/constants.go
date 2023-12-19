@@ -40,7 +40,7 @@ const (
 	HottestPostNotificationsUpperBound               = "23:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
 	TitleMaxLength                                   = 100                                      // max length of a post title
 	BodyMaxLength                                    = 1000                                     // max length of a post content/body
-	WhenRunDailyHottestCron                          = "10:58"                                  // when to run the daily hottest cron job - 24h time (format ex: "23:55")
+	WhenRunDailyHottestCron                          = "23:55"                                  // when to run the daily hottest cron job - 24h time (format ex: "23:55")
 )
 
 // ----- AWARD TYPES DB IDs
