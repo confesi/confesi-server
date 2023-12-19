@@ -511,7 +511,7 @@ type Chat struct {
 }
 
 type AwardType struct {
-	ID          EncryptedID `gorm:"primaryKey;column:id" json:"id"`
+	ID          EncryptedID `gorm:"primaryKey;column:id" json:"-"`
 	Name        string      `gorm:"column:name" json:"name"`
 	Description string      `gorm:"column:description" json:"description"`
 	Icon        string      `gorm:"column:icon" json:"icon"`
@@ -524,7 +524,8 @@ func (AwardType) TableName() string {
 type AwardsTotal struct {
 	ID          EncryptedID `gorm:"primaryKey;column:id" json:"id"`
 	UserID      string      `gorm:"column:user_id" json:"-"`
-	AwardTypeID EncryptedID `gorm:"column:award_type_id" json:"award_type_id"`
+	AwardTypeID EncryptedID `gorm:"column:award_type_id" json:"-"`
+	AwardType   AwardType   `gorm:"foreignKey:AwardTypeID" json:"award_type,omitempty"`
 	Total       uint        `gorm:"column:total" json:"total"`
 }
 

@@ -158,6 +158,7 @@ go run ./scripts/main.go --seed-report-types # Seed report types
 go run ./scripts/main.go --seed-post-categories # Seed post categories
 go run ./scripts/main.go --seed-faculties # Seed faculties
 go run ./scripts/main.go --seed-years-of-study # Seed years of study
+go run ./scripts/main.go --seed-award-types # Seed award types (THIS ORDER MATTERS!!)
 
 ``` 
 

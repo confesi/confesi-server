@@ -13,7 +13,7 @@ func (h *handler) handleClearYearOfStudy(c *gin.Context) {
 
 	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
-		response.New(http.StatusInternalServerError).Err("server error").Send(c)
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
 	}
 

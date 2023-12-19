@@ -13,7 +13,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +25,7 @@ import (
 )
 
 func main() {
+
 	if len(os.Args) < 2 {
 		fmt.Println("missing arg")
 		os.Exit(1)
@@ -43,6 +46,8 @@ func main() {
 		seedFeedbackTypes()
 	case "--seed-report-types":
 		seedReportTypes()
+	case "--seed-award-types":
+		seedAwardTypes()
 	case "--seed-post-categories":
 		seedPostCategories()
 	case "--seed-years-of-study":
@@ -63,28 +68,86 @@ func seedAll() {
 	seedPostCategories()
 	seedFaculties()
 	seedYearOfStudies()
+	seedAwardTypes()
+}
+
+func seedAwardTypes() {
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_award_types.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
+	if err != nil {
+		log.Fatalf("Failed to read seed file: %v", err)
+	}
+	buf := bytes.NewReader(f)
+	reader := csv.NewReader(buf)
+
+	// Initialize a slice to store the award types
+	awardTypes := []db.AwardType{}
+	reader.Read() // Skip the header
+
+	// Read and parse each line of the CSV file
+	for {
+		result, err := reader.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("Error reading CSV: %v", err)
+		}
+
+		// Create an AwardType object and append it to the slice
+		awardType := db.AwardType{
+			Name:        result[0],
+			Description: result[1],
+			Icon:        result[2],
+		}
+		awardTypes = append(awardTypes, awardType)
+	}
+
+	// Connect to the database and insert the award types
+	pg := db.New()
+	result := pg.Model(&[]db.AwardType{}).Clauses(clause.OnConflict{DoNothing: true}).Create(awardTypes)
+	if result.Error != nil {
+		log.Fatalf("Failed to seed award types: %v", result.Error)
+	}
+
+	fmt.Println("Seeding Award Types Completed")
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(awardTypes))
 }
 
 func seedYearOfStudies() {
-	f, err := os.ReadFile("./seeds/seed_year_of_study.csv")
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_year_of_study.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to read seed file: %v", err)
 		return
 	}
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	yearOfStudies := []db.YearOfStudy{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
-
 		result, err := reader.Read()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
 		yearOfStudy := db.YearOfStudy{
@@ -105,29 +168,36 @@ func seedYearOfStudies() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Years of Study Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(yearOfStudies)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(yearOfStudies))
 }
 
 func seedFaculties() {
-	f, err := os.ReadFile("./seeds/seed_faculties.csv")
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_faculties.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to read seed file: %v", err)
 		return
 	}
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	faculties := []db.Faculty{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
-
 		result, err := reader.Read()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
 		faculty := db.Faculty{
@@ -148,30 +218,36 @@ func seedFaculties() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Faculties Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(faculties)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(faculties))
 }
 
 func seedPostCategories() {
-	f, err := os.ReadFile("./seeds/seed_post_categories.csv")
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_post_categories.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to read seed file: %v", err)
 		return
 	}
-
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	categories := []db.PostCategory{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
-
 		result, err := reader.Read()
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
 		category := db.PostCategory{
@@ -192,21 +268,28 @@ func seedPostCategories() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Post Categories Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(categories)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(categories))
 }
 
 func seedReportTypes() {
-	f, err := os.ReadFile("./seeds/seed_report_types.csv")
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_report_types.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to read seed file: %v", err)
 		return
 	}
-
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	types := []db.ReportType{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
 		result, err := reader.Read()
@@ -214,14 +297,14 @@ func seedReportTypes() {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
-		report_type := db.ReportType{
+		reportType := db.ReportType{
 			Type: result[0],
 		}
 
-		types = append(types, report_type)
+		types = append(types, reportType)
 	}
 
 	pg := db.New()
@@ -235,21 +318,28 @@ func seedReportTypes() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Report Types Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(types))
 }
 
 func seedFeedbackTypes() {
-	f, err := os.ReadFile("./seeds/seed_feedback_types.csv")
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
+
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_feedback_types.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to read seed file: %v", err)
 		return
 	}
-
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	types := []db.FeedbackType{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
 		result, err := reader.Read()
@@ -257,14 +347,14 @@ func seedFeedbackTypes() {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
-		feedback_type := db.FeedbackType{
+		feedbackType := db.FeedbackType{
 			Type: result[0],
 		}
 
-		types = append(types, feedback_type)
+		types = append(types, feedbackType)
 	}
 
 	pg := db.New()
@@ -278,21 +368,27 @@ func seedFeedbackTypes() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Feedback Types Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(types)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(types))
 }
 
 func seedSchools() {
-	f, err := os.ReadFile("./seeds/seed_schools.csv")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	// Determine the base path of the current script
+	_, filename, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(filename)
 
+	// Construct the full path to the seed file
+	seedFilePath := filepath.Join(basePath, "../seeds/seed_schools.csv")
+
+	// Read the file
+	f, err := os.ReadFile(seedFilePath)
+	if err != nil {
+		log.Fatalf("Failed to read seed file: %v", err)
+	}
 	buf := bytes.NewReader(f)
 	reader := csv.NewReader(buf)
 
 	schools := []db.School{}
-	reader.Read() // skips header
+	reader.Read() // Skip the header
 
 	for {
 		result, err := reader.Read()
@@ -300,7 +396,7 @@ func seedSchools() {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal(nil)
+			log.Fatal(err)
 		}
 
 		lat, err := strconv.ParseFloat(result[2], 32)
@@ -329,8 +425,6 @@ func seedSchools() {
 
 	pg := db.New()
 
-	// Create the schools rows in the schools table, but on conflict do not create
-
 	result := pg.
 		Model(&[]db.School{}).
 		Clauses(clause.OnConflict{DoNothing: true}).
@@ -340,7 +434,7 @@ func seedSchools() {
 		panic(result.Error.Error())
 	}
 	fmt.Println("Seeding Schools Completed")
-	fmt.Printf(fmt.Sprintf("Rows Updates: %v / %v", result.RowsAffected, len(schools)))
+	fmt.Printf("Rows Updated: %v / %v\n", result.RowsAffected, len(schools))
 }
 
 func nonceGenerator() {
@@ -356,20 +450,20 @@ func nonceGenerator() {
 
 func testEndpointsSpeed() {
 	filePaths := []string{
-		// "features/admin/requests.http",      // Admin
-		// "features/auth/requests.http",       // Auth
-		// "features/hide_log/requests.http",   // Hide log
-		"features/comments/requests.http",      // Comments
-		"features/posts/requests.http",         // Posts
-		"features/schools/requests.http",       // Schools
-		"features/user/requests.http",          // Users
-		"features/votes/requests.http",         // Votes
-		"features/feedback/requests.http",      // Feedback
-		"features/notifications/requests.http", // Notifications
-		"features/saves/requests.http",         // Saves
-		"features/reports/requests.http",       // Reports
-		"features/drafts/requests.http",        // Drafts
-		// Add more file paths here...
+		// "handlers/admin/requests.http",      // Admin
+		// "handlers/auth/requests.http",       // Auth
+		// "handlers/hide_log/requests.http",   // Hide log
+		"handlers/comments/requests.http",      // Comments
+		"handlers/posts/requests.http",         // Posts
+		"handlers/schools/requests.http",       // Schools
+		"handlers/user/requests.http",          // Users
+		"handlers/votes/requests.http",         // Votes
+		"handlers/feedback/requests.http",      // Feedback
+		"handlers/notifications/requests.http", // Notifications
+		"handlers/saves/requests.http",         // Saves
+		"handlers/reports/requests.http",       // Reports
+		"handlers/drafts/requests.http",        // Drafts
+		// todo: add more file paths here...
 	}
 
 	for _, filePath := range filePaths {
