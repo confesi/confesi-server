@@ -131,7 +131,6 @@ func OnPostCreation(tx *gorm.DB, title string, body string, postID db.EncryptedI
 		if err := grantAward(tx, userID, postID, expressiveAwardID); err != nil {
 			return err
 		}
-		fmt.Println("Expressive award granted")
 	}
 
 	// For Expressionless award
@@ -140,7 +139,6 @@ func OnPostCreation(tx *gorm.DB, title string, body string, postID db.EncryptedI
 		if err := grantAward(tx, userID, postID, expressionlessAwardID); err != nil {
 			return err
 		}
-		fmt.Println("Expressionless award granted")
 	}
 
 	return nil
