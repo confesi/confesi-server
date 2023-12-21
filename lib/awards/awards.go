@@ -3,6 +3,9 @@ package awards
 import (
 	"confesi/config"
 	"confesi/db"
+	"errors"
+	"fmt"
+	"regexp"
 
 	"gorm.io/gorm"
 )
@@ -104,6 +107,89 @@ func AwardCommentGreaterThanXUpvotes(tx *gorm.DB, upvotes uint, downvotes uint, 
 				tx.Rollback()
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+func OnPostCreation(tx *gorm.DB, title string, body string, postID db.EncryptedID, userID string) error {
+	// Expressive: Awarded for posting a confession with more than 10 different emojis
+	// Expressionless: Awarded for posting a confession with more than 5000 characters with no emojis
+	emojiRx := regexp.MustCompile(config.EmojiRegex)
+
+	emojis := emojiRx.FindAllString(body+title, -1)
+	uniqueEmojis := make(map[string]bool)
+
+	for _, emoji := range emojis {
+		uniqueEmojis[emoji] = true
+	}
+
+	// For Expressive award
+	if len(uniqueEmojis) > 10 {
+		expressiveAwardID := db.EncryptedID{Val: config.AwardTypesLotsOfEmojis}
+		if err := grantAward(tx, userID, postID, expressiveAwardID); err != nil {
+			return err
+		}
+		fmt.Println("Expressive award granted")
+	}
+
+	// For Expressionless award
+	if len(body+title) > 5000 && len(emojis) == 0 {
+		expressionlessAwardID := db.EncryptedID{Val: config.AwardTypesNoEmojisLargePost}
+		if err := grantAward(tx, userID, postID, expressionlessAwardID); err != nil {
+			return err
+		}
+		fmt.Println("Expressionless award granted")
+	}
+
+	return nil
+}
+
+func grantAward(tx *gorm.DB, userID string, postID db.EncryptedID, awardTypeID db.EncryptedID) error {
+	fmt.Println("grantAward: ", postID, userID, awardTypeID)
+
+	// Check for an existing award
+	var existingAward db.AwardsGeneral
+	result := tx.Where("post_id = ? AND user_id = ? AND award_type_id = ?", postID, userID, awardTypeID).First(&existingAward)
+	if result.RowsAffected == 0 {
+		// Create a new award entry
+		newAward := db.AwardsGeneral{
+			PostID:      &postID,
+			UserID:      userID,
+			AwardTypeID: awardTypeID,
+		}
+
+		if err := tx.Create(&newAward).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Update or create total awards count for the user
+	var totalAward db.AwardsTotal
+	err := tx.Where("user_id = ? AND award_type_id = ?", userID, awardTypeID).First(&totalAward).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Create new total if not found
+			totalAward = db.AwardsTotal{
+				UserID:      userID,
+				AwardTypeID: awardTypeID,
+				Total:       1,
+			}
+			if err = tx.Create(&totalAward).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			tx.Rollback()
+			return err
+		}
+	} else {
+		// Update existing total
+		if err = tx.Model(&totalAward).Update("total", gorm.Expr("total + ?", 1)).Error; err != nil {
+			tx.Rollback()
+			return err
 		}
 	}
 

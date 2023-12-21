@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"confesi/config"
 	"confesi/db"
+	"confesi/lib/awards"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
 	"confesi/lib/uploads"
@@ -204,8 +205,16 @@ func (h *handler) handleCreate(c *gin.Context) {
 	}
 	post.Sentiment = &sentimentValue
 
-	// save user to postgres
+	// save post to postgres
 	err = tx.Create(&post).Preload("School").Preload("YearOfStudy").Preload("Category").Preload("Faculty").Find(&post).Error
+	if err != nil {
+		tx.Rollback()
+		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
+		return
+	}
+
+	fmt.Println("post: ", post.ID)
+	err = awards.OnPostCreation(tx, title, body, post.ID, token.UID)
 	if err != nil {
 		tx.Rollback()
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)

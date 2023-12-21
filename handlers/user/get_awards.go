@@ -11,7 +11,7 @@ import (
 
 func (h *handler) handleGetAwards(c *gin.Context) {
 
-	_, err := utils.UserTokenFromContext(c)
+	token, err := utils.UserTokenFromContext(c)
 	if err != nil {
 		response.New(http.StatusInternalServerError).Err(serverError.Error()).Send(c)
 		return
@@ -22,7 +22,7 @@ func (h *handler) handleGetAwards(c *gin.Context) {
 	query := h.db.
 		Preload("AwardType").
 		Model(db.AwardsTotal{}).
-		Where("user_id = ?", "sqzTjEWLPzdLRUyTUT8hX80oqn42"). // token.UID
+		Where("user_id = ?", token.UID). // token.UID
 		Find(&userAwards).
 		Error
 	if query != nil {
