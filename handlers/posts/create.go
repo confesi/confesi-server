@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"confesi/config"
 	"confesi/db"
+	"confesi/lib/algorithm"
 	"confesi/lib/awards"
 	"confesi/lib/emojis"
 	"confesi/lib/response"
@@ -15,6 +16,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"strings"
 
@@ -178,20 +180,21 @@ func (h *handler) handleCreate(c *gin.Context) {
 	imgURLsArray := db.PgTxtArr(imgUrls)
 
 	post := db.Post{
-		ChatPost:      isChatPost,
-		UserID:        token.UID,
-		SchoolID:      userData.SchoolID,
-		CategoryID:    postCategory.ID,
-		FacultyID:     userData.FacultyID,
-		YearOfStudyID: userData.YearOfStudyID,
-		Title:         title,
-		Content:       body,
-		Sentiment:     nil,
-		Downvote:      0,
-		Upvote:        0,
-		TrendingScore: 0,
-		Hidden:        false,
-		ImgUrls:       imgURLsArray,
+		ChatPost:       isChatPost,
+		UserID:         token.UID,
+		SchoolID:       userData.SchoolID,
+		CategoryID:     postCategory.ID,
+		FacultyID:      userData.FacultyID,
+		YearOfStudyID:  userData.YearOfStudyID,
+		Title:          title,
+		Content:        body,
+		Sentiment:      nil,
+		SentimentScore: 0,
+		Downvote:       0,
+		Upvote:         0,
+		TrendingScore:  0,
+		Hidden:         false,
+		ImgUrls:        imgURLsArray,
 		// `HottestOn` not included so that it defaults to NULL
 	}
 
@@ -204,6 +207,8 @@ func (h *handler) handleCreate(c *gin.Context) {
 		sentimentValue = sentiment.Neutral
 	}
 	post.Sentiment = &sentimentValue
+
+	post.SentimentScore = algorithm.SentimentScore(*post.Sentiment, 0, 0, int(time.Now().Unix()), false)
 
 	// save post to postgres
 	err = tx.Create(&post).Preload("School").Preload("YearOfStudy").Preload("Category").Preload("Faculty").Find(&post).Error

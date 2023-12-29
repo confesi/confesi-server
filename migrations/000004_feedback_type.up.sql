@@ -10,5 +10,4 @@ ALTER TABLE feedbacks
     ADD CONSTRAINT fk_feedbacks_type
     FOREIGN KEY (type_id)
     REFERENCES feedback_types (id);
-
 END;

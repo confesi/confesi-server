@@ -87,7 +87,7 @@ func (h *handler) handleGetPosts(c *gin.Context) {
 	case "trending":
 		sortField = "trending_score DESC"
 	case "sentiment":
-		sortField = "sentiment DESC"
+		sortField = "sentiment_score DESC"
 	default:
 		// should never happen with validated struct, but to be defensive
 		logger.StdErr(errors.New(fmt.Sprintf("invalid sort type: %q", req.Sort)))
