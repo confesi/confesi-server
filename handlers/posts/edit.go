@@ -2,14 +2,12 @@ package posts
 
 import (
 	"confesi/db"
-	"confesi/lib/algorithm"
 	"confesi/lib/emojis"
 	"confesi/lib/encryption"
 	"confesi/lib/response"
 	"confesi/lib/utils"
 	"confesi/lib/validation"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -43,11 +41,10 @@ func (h *handler) handleEditPost(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{
-		"edited":          true,
-		"title":           req.Title,
-		"content":         req.Body,
-		"sentiment":       &sentimentValue,
-		"sentiment_score": algorithm.SentimentScore(sentimentValue, votes.Upvote, votes.Downvote, int(time.Now().Unix()), false),
+		"edited":    true,
+		"title":     req.Title,
+		"content":   req.Body,
+		"sentiment": &sentimentValue,
 	}
 
 	var post PostDetail
