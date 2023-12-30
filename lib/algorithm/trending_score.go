@@ -8,6 +8,7 @@ import "math"
 const (
 	baseTime          = 1257894000 // base time in seconds (aka, the epoch for our trending calculations)
 	limitedMultiplier = 0.5        // multiplier for limited posts
+	decayTimeDivisor  = 45000      // time divisor for linear decay
 )
 
 // Calculates the trending score of a bit of content.
@@ -47,7 +48,7 @@ func TrendingScore(upvotes int, downvotes int, currTime int, limited bool) float
 	}
 
 	// calculate the trending score
-	result := (y*math.Log10(z) + (timeDelta / 45000))
+	result := (y*math.Log10(z) + (timeDelta / decayTimeDivisor))
 	if result < 0 {
 		return result
 	} else {

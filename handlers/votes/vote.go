@@ -133,31 +133,57 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 	}
 
 	type foundVotes struct {
-		Upvote   int
-		Downvote int
+		Upvote    int
+		Downvote  int
+		Sentiment float64
 	}
 
 	var votes foundVotes
+
+	// ! This causes code duplication in the next two blocks, not sure of a better way to do this without doing a seperate query for Sentiment alone
+	// ! Possible work around, instead take in the actual content and do a analysis on that, but that is extra computing.
 	// update the score of the content
-	query := tx.Model(&content.model).
-		Where("id = ?", content.id).
-		// Clauses(clause.Locking{Strength: "UPDATE"}).
-		Updates(columnUpdates).
-		Clauses(clause.Returning{}).
-		Select("upvote, downvote").
-		Scan(&votes)
-	if err := query.Error; err != nil {
+	if contentType == "post" {
+		err = tx.Model(&content.model).
+			Where("id = ?", content.id).
+			// Clauses(clause.Locking{Strength: "UPDATE"}).
+			Updates(columnUpdates).
+			Clauses(clause.Returning{}).
+			Select("upvote, downvote, sentiment").
+			Scan(&votes).Error
+	} else if contentType == "comment" {
+		err = tx.Model(&content.model).
+			Where("id = ?", content.id).
+			Updates(columnUpdates).
+			Clauses(clause.Returning{}).
+			Select("upvote, downvote").
+			Scan(&votes).Error
+	}
+
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// update the post/comment with the modified vote values and the new trending score
-	err = tx.Model(&content.model).
-		Where("id = ?", content.id).
-		Updates(map[string]interface{}{
-			"vote_score":     votes.Upvote - votes.Downvote,                                                        // new overall content score
-			"trending_score": algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new overall trending score
-		}).Error
+	// update the post/comment with the modified vote values and the new trending score and sentiment score (if applicable)
+	if contentType == "post" {
+		err = tx.Model(&content.model).
+			Where("id = ?", content.id).
+			Updates(map[string]interface{}{
+				"vote_score":      votes.Upvote - votes.Downvote,                                                        // new overall content score
+				"trending_score":  algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new overall trending score
+				"sentiment_score": algorithm.SentimentScore(votes.Sentiment, votes.Upvote, votes.Downvote, int(time.Now().Unix()), false),
+			}).Error
+
+	} else if contentType == "comment" {
+		err = tx.Model(&content.model).
+			Where("id = ?", content.id).
+			Updates(map[string]interface{}{
+				"vote_score":     votes.Upvote - votes.Downvote,                                                        // new overall content score
+				"trending_score": algorithm.TrendingScore(votes.Upvote, votes.Downvote, int(time.Now().Unix()), false), // new overall trending score
+			}).Error
+	}
+
 	if err != nil {
 		tx.Rollback()
 		return err

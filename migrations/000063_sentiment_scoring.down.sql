@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE posts DROP COLUMN IF EXISTS sentiment_score;
+
+END;
