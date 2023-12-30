@@ -163,7 +163,7 @@ func fetchComments(postID uint, gm *gorm.DB, excludedIDs []string, sort string, 
 				time := lastReply.Comment.CreatedAt.MicroSeconds()
 				thread.Next = &time
 			} else {
-
+				// do nothing
 			}
 			if len(thread.Replies) == 0 {
 				thread.Replies = []CommentDetail{}
