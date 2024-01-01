@@ -1,6 +1,7 @@
 package dms
 
 import (
+	"confesi/config"
 	"confesi/config/builders"
 	"confesi/db"
 	"confesi/lib/encryption"
@@ -127,7 +128,7 @@ func (h *handler) handleCreateRoom(c *gin.Context) {
 	}
 
 	if tokenUserRoomExists || postUserRoomExists {
-		response.New(http.StatusBadRequest).Err("room with this combination already exists").Send(c)
+		response.New(http.StatusBadRequest).Err("room with this combination already exists").ErrCode(config.ErrorMessageCodeRoomAlreadyCreated).Send(c)
 		return
 	}
 

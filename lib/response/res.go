@@ -16,9 +16,10 @@ import (
 //		Send(c)
 
 type apiResult struct {
-	Code  int         `json:"-"`
-	Error interface{} `json:"error"`
-	Value interface{} `json:"value"`
+	Code      int         `json:"-"`
+	Error     interface{} `json:"error"`
+	ErrorCode interface{} `json:"error_code"`
+	Value     interface{} `json:"value"`
 }
 
 func (r *apiResult) Err(err string) *apiResult {
@@ -28,6 +29,11 @@ func (r *apiResult) Err(err string) *apiResult {
 
 func (r *apiResult) Val(value interface{}) *apiResult {
 	r.Value = value
+	return r
+}
+
+func (r *apiResult) ErrCode(errCode int) *apiResult {
+	r.ErrorCode = errCode
 	return r
 }
 
