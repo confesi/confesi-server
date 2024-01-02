@@ -100,14 +100,13 @@ func DoPostEncouragementNotifications(dateTime time.Time) error {
 				return err
 			}
 			// Obtain the date one day ago
-			oneDayAgo := time.Now().UTC().AddDate(0, 0, -1)
+			timeInPast := time.Now().UTC().AddDate(0, 0, -config.PostEncouragementNotificationsDaysWithoutNotifications)
 
 			// Obtain Users who have not been notified yet today
-			// TODO: Add randomization, grabbing x users at a time (May be inefficient)
 			var usersNotifiedAlready []db.User
 			err = tx.Table("notification_logs").
 				Select("user_id").
-				Where("created_at > ?", oneDayAgo).
+				Where("created_at > ?", timeInPast).
 				Where("user_id IN ?", users).
 				Pluck("user_id", &usersNotifiedAlready).
 				Error
@@ -117,6 +116,7 @@ func DoPostEncouragementNotifications(dateTime time.Time) error {
 				return err
 			}
 
+			// TODO: Add randomization, grabbing x users at a time (May be inefficient)
 			// Obtain Users who have not been notified yet today
 			var usersNotNotifiedYet []db.User
 			err = tx.Model(&db.User{}).
