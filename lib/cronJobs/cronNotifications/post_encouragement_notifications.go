@@ -146,19 +146,17 @@ func DoPostEncouragementNotifications(dateTime time.Time) error {
 
 			// send notifications to users
 
-			hottestOccurences := 1
-
 			go fcmMsg.New(msgClient).
 				ToTokens(tokens).
-				WithMsg(builders.YourSchoolsDailyHottestNoti(hottestOccurences)).
-				WithData(builders.YourSchoolsDailyHottestData()).
+				WithMsg(builders.PostEncouragementNoti()).
+				WithData(builders.PostEncouragementData()).
 				Send()
 
 		}
 	}
 
 	// set job on today ran as successful
-	err = tx.Create(&db.CronJob{Ran: date, Type: cronJobs.HottestPostNotificationsCronJob}).Error
+	err = tx.Create(&db.CronJob{Ran: date, Type: cronJobs.PostEncouragementNotificationsCronJob}).Error
 	if err != nil {
 		tx.Rollback()
 		return err

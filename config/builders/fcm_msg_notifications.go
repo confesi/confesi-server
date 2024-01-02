@@ -91,6 +91,33 @@ func YourSchoolsDailyHottestNoti(occurences int) *messaging.Notification {
 	}
 }
 
+func PostEncouragementNoti() *messaging.Notification {
+	// ! Maybe add this to config?
+	// Map of encouragement messages and titles
+	encouragementBodyMessages := map[int]string{
+		0: "Did something interesting happen today?",
+		1: "What did your prof do that made you laugh?",
+		2: "We know you've wanted to say this for a long time",
+	}
+
+	encouragementTitleMessages := map[int]string{
+		0: "What's the scoop? 🤔",
+		1: "Share the gossip! 🕵️‍♂️",
+		2: "Got Something To Get Off Your Chest? 🤫",
+		3: "Spill it ☕️",
+		4: "Secrets incoming! 🤐",
+		5: "Whats the tea? 🍵",
+	}
+	encouragementTitle := encouragementTitleMessages[rnd.Intn(len(encouragementTitleMessages))]
+
+	// Randomly select an encouragement body
+	encouragementBody := encouragementBodyMessages[rnd.Intn(len(encouragementBodyMessages))]
+	return &messaging.Notification{
+		Title: encouragementTitle,
+		Body:  encouragementBody,
+	}
+}
+
 func DailyHottestPostsNoti(n int, date string) *messaging.Notification {
 	var confessionWord string
 	if n == 1 {
