@@ -36,11 +36,14 @@ const (
 	QueryForSchoolsBySearchPageSize                  = 10                                       // how many schools are returned in a page size in the search schools page
 	QueryForSchoolsBySearchFloorSimilarityMatchValue = 0.05                                     // how much of a match is required for a school to be returned in the search schools page (value is the min percent of match, IE: 0.05 = 5% match at least, or 1 in 20 of the characters match)
 	DefaultRange                                     = 50000                                    // default distance to include schools in, in meters
-	HottestPostNotificationsLowerBound               = "00:00"                                  // the lower bound of the hottest post notifications cron job - 24h time
+	HottestPostNotificationsLowerBound               = "00:00"                                  // the lower bound of the hottest post notifications cron job - 24h time // ! Currently 24 hour range during development - DONT FORGET TO CHANGE
 	HottestPostNotificationsUpperBound               = "23:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
 	TitleMaxLength                                   = 100                                      // max length of a post title
 	BodyMaxLength                                    = 1000                                     // max length of a post content/body
 	WhenRunDailyHottestCron                          = "23:55"                                  // when to run the daily hottest cron job - 24h time (format ex: "23:55")
+	PostEncouragementNotificationsLowerBound         = "10:00"                                  // the lower bound of the hottest post notifications cron job - 24h time
+	PostEncouragementNotificationsUpperBound         = "17:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
+	PostEncouragementNotificationsTimesPerDay        = 10                                       // how many times per day to send post encouragement notifications
 )
 
 // ----- AWARD TYPES DB IDs
