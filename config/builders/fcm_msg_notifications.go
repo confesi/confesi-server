@@ -95,9 +95,12 @@ func PostEncouragementNoti() *messaging.Notification {
 	// ! Maybe add this to config?
 	// Map of encouragement messages and titles
 	encouragementBodyMessages := map[int]string{
-		0: "Did something interesting happen today?",
-		1: "What did your prof do that made you laugh?",
-		2: "We know you've wanted to say this for a long time",
+		0: "Midterm Mayhem: Spill or chill? Share your buzz!",
+		1: "Campus Confidential: Your gossip moment—let it out!",
+		2: "Classroom Chronicles: Time to spill the stories!",
+		3: "We know you have something you are dying to say...",
+		4: "What's the tea? spill it!",
+		5: "Pssst... we know you have something to say...",
 	}
 
 	encouragementTitleMessages := map[int]string{
