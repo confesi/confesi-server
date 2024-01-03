@@ -17,6 +17,7 @@ import (
 
 // Cron job that runs every  two hours to send notifications to users about the hottest posts.
 func StartPostEncouragementCronJob() {
+	// Obtain the number of times per day the cron job should run
 	timesPerDay := config.PostEncouragementNotificationsTimesPerDay
 
 	// Obtain the interval between each run of the cron job
@@ -117,10 +118,13 @@ func DoPostEncouragementNotifications(dateTime time.Time) error {
 			}
 
 			// TODO: Add randomization, grabbing x users at a time (May be inefficient)
+			// https://stackoverflow.com/questions/8674718/best-way-to-select-random-rows-postgresql - Possible solution
 			// Obtain Users who have not been notified yet today
 			var usersNotNotifiedYet []db.User
 			err = tx.Model(&db.User{}).
 				Where("id NOT IN ?", usersNotifiedAlready).
+				Where("school_id = ?", school.ID.Val).
+				Limit(config.PostEncouragementNotificationsUsersPerSchool).
 				Find(&usersNotNotifiedYet).
 				Error
 

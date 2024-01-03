@@ -45,6 +45,7 @@ const (
 	PostEncouragementNotificationsUpperBound               = "17:59"                                  // the upper bound of the hottest post notifications cron job - 24h time
 	PostEncouragementNotificationsTimesPerDay              = 10                                       // how many times per day to send post encouragement notifications
 	PostEncouragementNotificationsDaysWithoutNotifications = 2                                        // how many days without notifications to send post encouragement
+	PostEncouragementNotificationsUsersPerSchool           = 100                                      // how many users to send notifications to per school
 )
 
 // ----- AWARD TYPES DB IDs
