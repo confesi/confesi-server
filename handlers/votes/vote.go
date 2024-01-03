@@ -39,6 +39,42 @@ func voteToColumnName(vote int) (string, error) {
 	}
 }
 
+func notificationRange(vote int) bool {
+	// This uses less computation power to have it hardcoded,
+	// however it can be done by calculating the power of 10 of the vote and checking if it is a multiple of that power-1
+	if vote%10 == 0 && vote != 0 {
+		if vote < 100 {
+			return true
+		}
+		if vote < 1000 {
+			return vote%100 == 0
+		}
+		if vote < 10000 {
+			return vote%1000 == 0
+		}
+		if vote < 100000 {
+			return vote%10000 == 0
+		}
+		if vote < 1000000 {
+			return vote%100000 == 0
+		}
+		if vote < 10000000 {
+			return vote%1000000 == 0
+		}
+		if vote < 100000000 {
+			return vote%10000000 == 0
+		}
+		if vote < 1000000000 {
+			return vote%100000000 == 0
+		}
+		if vote < 10000000000 {
+			return vote%1000000000 == 0
+		}
+
+	}
+	return false
+}
+
 func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid string) error {
 	// start a transaction
 	tx := h.db.Begin()
@@ -226,7 +262,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Where("comments.id = ? AND users.id <> ?", vote.CommentID, uid).
 			Pluck("fcm_tokens.token", &tokens).
 			Error
-		if err == nil && len(tokens) > 0 && ((votes.Upvote+votes.Downvote)%5 == 0) {
+		if err == nil && len(tokens) > 0 && notificationRange(votes.Upvote+votes.Downvote) {
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnCommentNoti(vote.Vote, votes.Upvote-votes.Downvote)).
@@ -243,7 +279,7 @@ func (h *handler) doVote(c *gin.Context, vote db.Vote, contentType string, uid s
 			Pluck("fcm_tokens.token", &tokens).
 			Error
 
-		if err == nil && len(tokens) > 0 && ((votes.Upvote+votes.Downvote)%5 == 0) {
+		if err == nil && len(tokens) > 0 && notificationRange(votes.Upvote+votes.Downvote) {
 			go fcm.New(h.fb.MsgClient).
 				ToTokens(tokens).
 				WithMsg(builders.VoteOnPostNoti(vote.Vote, votes.Upvote-votes.Downvote)).

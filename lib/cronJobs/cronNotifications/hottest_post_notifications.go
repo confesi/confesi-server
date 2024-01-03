@@ -27,6 +27,7 @@ func StartDailyHottestPostsCronJob() {
 	if err != nil {
 		panic(err)
 	}
+	// Calculate the interval between each run of the cron job (in hours)
 	intervalTime := upperBound.Sub(lowerBound)
 	interval := intervalTime.Hours()
 
