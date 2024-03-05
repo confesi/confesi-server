@@ -49,11 +49,11 @@ This includes your: access key, secret access key, and region.
 
 **Add the Firebase API key:**
 
-This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field. Add it as `FB_API_KEY` in the `.env` file.
+This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > gear cog > Project settings > Scroll down till you see "your apps" > Confesi web app. The key should be listed under the `apiKey` field in the right-panel. Add it as `FB_API_KEY` in the `.env` file.
 
 **Add the `firebase-secrets.json` file to the root of the project:**
 
-This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > confesi-server-dev > Project settings > Service accounts > Generate new private key. _Ensure this file is not checked into version control_.
+This can be obtained via: [Online Firebase console](https://console.firebase.google.com/) > gear cog > confesi-server-dev > Project settings > Service accounts > Generate new private key. _Ensure this file is not checked into version control_. Rename to `firebase-secrets.json`.
 
 **Install Node Modules for Cloud Functions:**
 
