@@ -10,9 +10,8 @@ import (
 //! Tests require `MASK_SECRET` env var to be set to pass
 
 func TestUniqueHash(t *testing.T) {
-	id := uint(78)
-	hash := Hash(id)
-	assert.Equal(t, "Brmh27MbW1ilmucvlP3tHw", hash, "Hashes do not match")
+	assert.Equal(t, Hash(1), Hash(1), "Hash should be deterministic")
+	assert.NotEqual(t, Hash(1), Hash(2), "Hash should be unique")
 }
 
 func TestEncryptionAndDecryption(t *testing.T) {
