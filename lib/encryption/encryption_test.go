@@ -23,6 +23,7 @@ func TestEncryptionAndDecryption(t *testing.T) {
 		{123452121},         // sub-test case 2
 		{987654},            // sub-test case 3
 		{42},                // sub-test case 4
+		{123},               // sub-test case 5
 	}
 
 	for _, test := range tests {
@@ -40,18 +41,4 @@ func TestEncryptionAndDecryption(t *testing.T) {
 			assert.Equal(t, test.id, decrypted, "Original and decrypted IDs do not match")
 		})
 	}
-}
-
-func TestEncryptionAndDecryptionSimple(t *testing.T) {
-	val, err := Mask(123)
-	if err != nil {
-		t.Error("Encryption error:", err)
-	}
-
-	decrypted, err := Unmask(val)
-	if err != nil {
-		t.Error("Decryption error:", err)
-	}
-
-	assert.Equal(t, uint(123), decrypted)
 }
