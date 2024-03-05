@@ -11,7 +11,8 @@ APPCHECK_TOKEN="kXfeSRgYTnoUztu6MO8FndqiRayoBaJqyDKQmoqvX3V9sZVlep/cm7cP!mgd-B9H
 HKDF_SECRET="some-secret-string"
 
 # a 16-byte key
-MASK_SECRET="your_16_byte_key"
+# generate with `python3 -c 'import secrets; print(secrets.token_urlsafe(16))'`, for example
+MASK_SECRET="gG9-td9Nvs3tNZDTXEXKaQ"
 
 # Redis connection string
 REDIS_CONN="redis:6379"
