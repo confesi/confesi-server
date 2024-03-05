@@ -13,7 +13,7 @@ firebase-debug.log
 ui-debug.log
 
 # Ignore Apple OSX Finder shenanigans
-**/*/.DS_Store
+.DS_Store
 
 # Ignore ip locations
 assets/IP2LOCATION/IP2LOCATION-LITE-DB5.IPV6.BIN
