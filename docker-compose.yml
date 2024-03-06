@@ -27,6 +27,7 @@ services:
       - redis
     volumes:
       - .:/confesi
+      - gohome:/go
     environment:
       PORT:
       POSTGRES_DSN:
@@ -37,6 +38,7 @@ services:
       AWS_SECRET_ACCESS_KEY:
       AWS_REGION:
       MASK_SECRET:
+      GOCACHE: /go/cache
 
   redis:
       image: redis:alpine
@@ -47,5 +49,6 @@ services:
         - '6379:6379'
 
 volumes:
+  gohome:
   redis-data:
     driver: local
