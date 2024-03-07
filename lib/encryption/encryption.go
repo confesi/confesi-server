@@ -3,16 +3,17 @@ package encryption
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
-	"io"
+	"math"
 	"os"
-	"strconv"
 )
 
-var secretKey []byte
+var block cipher.Block
+
+// Strictness ensures that decode(x) = decode(y) only if x = y (I hope). This isn't targeted at a concrete problem, but is a better default.
+var encoding *base64.Encoding = base64.RawURLEncoding.Strict()
 
 func init() {
 	// load from .env
@@ -20,60 +21,59 @@ func init() {
 	if m == "" {
 		panic("MASK_SECRET env not found")
 	}
-	secretKey = []byte(m)
+
+	secretKey, err := encoding.DecodeString(m)
+	if err != nil {
+		panic(fmt.Errorf("couldn't decode MASK_SECRET: %w", err))
+	}
+
+	block, err = aes.NewCipher(secretKey)
+	if err != nil {
+		panic(fmt.Errorf("couldn't use MASK_SECRET as AES key: %w", err))
+	}
 }
 
-func Hash(input uint) string {
-	hash := sha256.Sum256([]byte(fmt.Sprint(input)))
-	return base64.RawURLEncoding.EncodeToString(hash[:])
+func encrypt(id uint32) string {
+	buf := make([]byte, aes.BlockSize)
+	binary.LittleEndian.PutUint32(buf[:4], id)
+	block.Encrypt(buf, buf)
+	return encoding.EncodeToString(buf)
+}
+
+func Hash(id uint) string {
+	if id > math.MaxUint32 {
+		panic("id out of range")
+	}
+
+	return encrypt(uint32(id))
 }
 
 func Mask(id uint) (string, error) {
-	block, err := aes.NewCipher(secretKey)
-	if err != nil {
-		return "", err
+	if id > math.MaxUint32 {
+		return "", fmt.Errorf("id out of range")
 	}
 
-	ciphertext := make([]byte, aes.BlockSize+len(fmt.Sprintf("%d", id)))
-	iv := ciphertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
-	}
-
-	ctr := cipher.NewCTR(block, iv)
-	plaintext := []byte(fmt.Sprintf("%d", id))
-	ctr.XORKeyStream(ciphertext[aes.BlockSize:], plaintext)
-
-	return base64.URLEncoding.EncodeToString(ciphertext), nil
+	return encrypt(uint32(id)), nil
 }
 
 func Unmask(ciphertext string) (uint, error) {
-	block, err := aes.NewCipher(secretKey)
-	if err != nil {
-		return 0, err
-	}
-
-	decodedCiphertext, err := base64.URLEncoding.DecodeString(ciphertext)
-	if err != nil {
-		return 0, err
-	}
-
-	if len(decodedCiphertext) < aes.BlockSize {
+	if len(ciphertext) != encoding.EncodedLen(aes.BlockSize) {
 		return 0, fmt.Errorf("invalid ciphertext length")
 	}
 
-	iv := decodedCiphertext[:aes.BlockSize]
-	if len(decodedCiphertext) <= aes.BlockSize {
-		return 0, fmt.Errorf("ciphertext too short")
-	}
-
-	ctr := cipher.NewCTR(block, iv)
-	plaintext := make([]byte, len(decodedCiphertext)-aes.BlockSize)
-	ctr.XORKeyStream(plaintext, decodedCiphertext[aes.BlockSize:])
-
-	decryptedID, err := strconv.Atoi(string(plaintext))
+	buf, err := encoding.DecodeString(ciphertext)
 	if err != nil {
 		return 0, err
 	}
-	return uint(decryptedID), nil
+
+	block.Decrypt(buf, buf)
+
+	// 256 - 32 = 224 bits for authenticated encryption. This check doesn't need to be timing-safe.
+	for _, b := range(buf[4:]) {
+		if b != 0 {
+			return 0, fmt.Errorf("invalid ciphertext")
+		}
+	}
+
+	return uint(binary.LittleEndian.Uint32(buf[:4])), nil
 }
