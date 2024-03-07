@@ -78,12 +78,21 @@ func (mu EncryptedID) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	hashed := encryption.Hash(mu.Val)
-	data := map[string]interface{}{
-		"masked": masked, // volatile, reversible
-		"hash":   hashed, // consistent, not reversible
+	return json.Marshal(masked)
+}
+
+func (mu *EncryptedID) UnmarshalJSON(data []byte) error {
+	var masked string
+	err := json.Unmarshal(data, &masked)
+	if err != nil {
+		return err
 	}
-	return json.Marshal(data)
+	unmasked, err := encryption.Unmask(masked)
+	if err != nil {
+		return err
+	}
+	mu.Val = unmasked
+	return nil
 }
 
 func (mu *EncryptedID) Scan(value interface{}) error {
