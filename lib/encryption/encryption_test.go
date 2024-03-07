@@ -10,19 +10,34 @@ import (
 //! Tests require `MASK_SECRET` env var to be set to pass
 
 func TestUniqueHash(t *testing.T) {
-	assert.Equal(t, Hash(1), Hash(1), "Hash should be deterministic")
-	assert.NotEqual(t, Hash(1), Hash(2), "Hash should be unique")
+
+	firstMask1, err := Mask(1)
+	if err != nil {
+		t.Errorf("Encryption error: %v", err)
+	}
+	secondMask1, err := Mask(1)
+	if err != nil {
+		t.Errorf("Encryption error: %v", err)
+	}
+
+	mask2, err := Mask(2)
+	if err != nil {
+		t.Errorf("Encryption error: %v", err)
+	}
+
+	assert.Equal(t, firstMask1, secondMask1, "Mask should be deterministic")
+	assert.NotEqual(t, firstMask1, mask2, "Mask should be unique")
 }
 
 func TestEncryptionAndDecryption(t *testing.T) {
 	tests := []struct {
 		id uint
 	}{
-		{0},                 // sub-test case 1
-		{123452121},         // sub-test case 2
-		{987654},            // sub-test case 3
-		{42},                // sub-test case 4
-		{123},               // sub-test case 5
+		{0},         // sub-test case 1
+		{123452121}, // sub-test case 2
+		{987654},    // sub-test case 3
+		{42},        // sub-test case 4
+		{123},       // sub-test case 5
 	}
 
 	for _, test := range tests {

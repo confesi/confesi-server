@@ -40,14 +40,6 @@ func encrypt(id uint32) string {
 	return encoding.EncodeToString(buf)
 }
 
-func Hash(id uint) string {
-	if id > math.MaxUint32 {
-		panic("id out of range")
-	}
-
-	return encrypt(uint32(id))
-}
-
 func Mask(id uint) (string, error) {
 	if id > math.MaxUint32 {
 		return "", fmt.Errorf("id out of range")
@@ -69,7 +61,7 @@ func Unmask(ciphertext string) (uint, error) {
 	block.Decrypt(buf, buf)
 
 	// 256 - 32 = 224 bits for authenticated encryption. This check doesn't need to be timing-safe.
-	for _, b := range(buf[4:]) {
+	for _, b := range buf[4:] {
 		if b != 0 {
 			return 0, fmt.Errorf("invalid ciphertext")
 		}
