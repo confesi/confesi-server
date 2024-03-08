@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
-export APPCHECK_TOKEN="test_token"
 export POSTGRES_DSN="postgres://postgres:postgres@localhost:5432/confesi?sslmode=disable"
-export CIPHER_KEY="thisis32bitlongpassphraseimusing"
-export CIPHER_NONCE="87379ff2d9e78998359c133a"
 
 
 go test -coverprofile=./coverprofile $1 -v

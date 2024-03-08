@@ -31,7 +31,6 @@ services:
     environment:
       PORT:
       POSTGRES_DSN:
-      APPCHECK_TOKEN:
       REDIS_CONN:
       PUBLIC_DOC_ACCESS:
       AWS_ACCESS_KEY_ID:
