@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.20-alpine as build-go
+FROM golang:1.22-alpine as build-go
 WORKDIR /confesi
 COPY . .
 EXPOSE 8080
