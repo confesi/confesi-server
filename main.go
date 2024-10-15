@@ -106,6 +106,7 @@ func main() {
 	dailyHottestPosts.StartDailyHottestPostsCronJob(fire.New())
 	clearExpiredFcmTokens.StartClearExpiredFcmTokensCronJob()
 	cronNotifications.StartDailyHottestPostsCronJob()
+	cronNotifications.StartPostEncouragementCronJob()
 
 	// Start the server
 	r.Run(fmt.Sprintf(":%s", port))

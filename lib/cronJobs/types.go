@@ -1,7 +1,8 @@
 package cronJobs
 
 const (
-	DailyHottestCronJobLog          = "daily_hottest"
-	ClearExpiredFcmTokensCronJobLog = "clear_expired_fcm_tokens"
-	HottestPostNotificationsCronJob = "hottest_post_notifications"
+	DailyHottestCronJobLog                = "daily_hottest"
+	ClearExpiredFcmTokensCronJobLog       = "clear_expired_fcm_tokens"
+	HottestPostNotificationsCronJob       = "hottest_post_notifications"
+	PostEncouragementNotificationsCronJob = "post_encouragement_notifications"
 )
